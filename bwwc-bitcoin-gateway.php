@@ -331,7 +331,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                                 'type' => 'text',
                                 'css'     => $this->service_provider!='blockchain_info'?'display:none;':'',
                                 'disabled' => $this->service_provider!='blockchain_info'?true:false,
-                                'description' => $this->service_provider!='blockchain_info'?__('Available when Bitcoin SV service provider is set to: <b>Blockchain.info</b> (at BitcoinWay plugin settings page)', 'woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'woocommerce'),
+                                'description' => $this->service_provider!='blockchain_info'?__('Available when Bitcoin SV address generation is set to: <b>Blockchain.info</b> (at BitcoinWay plugin settings page). Current method uses BIP32/BIP44 HD Wallet (xPub) for secure address generation.', 'woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'woocommerce'),
                                 'default' => '',
                             ),
 
@@ -384,7 +384,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 	    	<h3><?php _e('Bitcoin SV Payment', 'woocommerce'); ?></h3>
 	    	<p>
 	    		<?php _e(
-                'Allows to accept payments in Bitcoin SV. <a href="https://bitcoinsv.io" target="_blank">Bitcoin SV</a> is peer-to-peer, decentralized digital currency that enables instant payments from anyone to anyone, anywhere in the world',
+                'Allows to accept payments in Bitcoin SV. <a href="https://bitcoinsv.io" target="_blank">Bitcoin SV</a> is peer-to-peer electronic cash that enables instant payments from anyone to anyone, anywhere in the world',
                         'woocommerce'
             ); ?>
 	    	</p>

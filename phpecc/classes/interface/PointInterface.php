@@ -27,23 +27,23 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface PointInterface
+interface BWWC_PhpEcc_PointInterface
 {
-    public function __construct(CurveFp $curve, $x, $y, $order = null);
+    public function __construct(BWWC_PhpEcc_CurveFp $curve, $x, $y, $order = null);
 
     public static function cmp($p1, $p2);
 
     public static function add($p1, $p2);
 
-    public static function mul($x2, Point $p1);
+    public static function mul($x2, BWWC_PhpEcc_Point $p1);
 
     public static function leftmost_bit($x);
 
-    public static function rmul(Point $p1, $m);
+    public static function rmul(BWWC_PhpEcc_Point $p1, $m);
 
     public function __toString();
 
-    public static function double(Point $p1);
+    public static function double(BWWC_PhpEcc_Point $p1);
 
     public function getX();
 

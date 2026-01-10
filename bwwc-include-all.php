@@ -1,4 +1,6 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 /*
 Bitcoin SV Payments for WooCommerce
 https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
@@ -7,7 +9,7 @@ https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '5.0.0');
+    define('BWWC_VERSION', '5.1.0');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');
@@ -21,10 +23,10 @@ if (!defined('BWWC_PLUGIN_NAME')) {
     // i18n plugin domain for language files
     define('BWWC_I18N_DOMAIN', 'bwwc');
 
-    if (extension_loaded('gmp') && !defined('USE_EXT')) {
-        define('USE_EXT', 'GMP');
-    } elseif (extension_loaded('bcmath') && !defined('USE_EXT')) {
-        define('USE_EXT', 'BCMATH');
+    if (extension_loaded('gmp') && !defined('BWWC_USE_EXT')) {
+        define('BWWC_USE_EXT', 'GMP');
+    } elseif (extension_loaded('bcmath') && !defined('BWWC_USE_EXT')) {
+        define('BWWC_USE_EXT', 'BCMATH');
     }
 }
 //---------------------------------------------------------------------------
@@ -32,15 +34,15 @@ if (!defined('BWWC_PLUGIN_NAME')) {
 //------------------------------------------
 // Load wordpress for POSTback, WebHook and API pages that are called by external services directly.
 if (defined('BWWC_MUST_LOAD_WP') && !defined('WP_USE_THEMES') && !defined('ABSPATH')) {
-    $g_blog_dir = preg_replace('|(/+[^/]+){4}$|', '', str_replace('\\', '/', __FILE__)); // For love of the art of regex-ing
+    $bwwc_blog_dir = preg_replace('|(/+[^/]+){4}$|', '', str_replace('\\', '/', __FILE__)); // For love of the art of regex-ing
     define('WP_USE_THEMES', false);
-    require_once($g_blog_dir . '/wp-blog-header.php');
+    require_once($bwwc_blog_dir . '/wp-blog-header.php');
 
     // Force-elimination of header 404 for non-wordpress pages.
     header("HTTP/1.1 200 OK");
     header("Status: 200 OK");
 
-    require_once($g_blog_dir . '/wp-admin/includes/admin.php');
+    require_once($bwwc_blog_dir . '/wp-admin/includes/admin.php');
 }
 //------------------------------------------
 

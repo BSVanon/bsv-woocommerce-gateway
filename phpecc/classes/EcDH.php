@@ -31,7 +31,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-class EcDH implements EcDHInterface
+class BWWC_PhpEcc_EcDH implements BWWC_PhpEcc_EcDHInterface
 {
     private $generator;
     private $pubPoint;
@@ -39,36 +39,36 @@ class EcDH implements EcDHInterface
     private $secret;
     private $agreed_key;
 
-    public function __construct(Point $g)
+    public function __construct(BWWC_PhpEcc_Point $generator)
     {
-        $this->generator = $g;
+        $this->generator = $generator;
     }
 
     public function calculateKey()
     {
-        $this->agreed_key = Point::mul($this->secret, $this->receivedPubPoint)->getX();
+        $this->agreed_key = BWWC_PhpEcc_Point::mul($this->secret, $this->receivedPubPoint)->getX();
     }
 
     public function getPublicPoint()
     {
-        if (extension_loaded('gmp') && USE_EXT == 'GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT == 'GMP') {
             //alice selects a random number between 1 and the order of the generator point(private)
             $n = $this->generator->getOrder();
 
             $this->secret = gmp_Utils::gmp_random($n);
 
             //Alice computes da * generator Qa is public, da is private
-            $this->pubPoint = Point::mul($this->secret, $this->generator);
+            $this->pubPoint = BWWC_PhpEcc_Point::mul($this->secret, $this->generator);
 
             return $this->pubPoint;
-        } elseif (extension_loaded('bcmath') && USE_EXT == 'BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT == 'BCMATH') {
             //alice selects a random number between 1 and the order of the generator point(private)
             $n = $this->generator->getOrder();
 
             $this->secret = bcmath_Utils::bcrand($n);
 
             //Alice computes da * generator Qa is public, da is private
-            $this->pubPoint = Point::mul($this->secret, $this->generator);
+            $this->pubPoint = BWWC_PhpEcc_Point::mul($this->secret, $this->generator);
 
             return $this->pubPoint;
         } else {
@@ -76,9 +76,9 @@ class EcDH implements EcDHInterface
         }
     }
 
-    public function setPublicPoint(Point $q)
+    public function setReceivedPoint(BWWC_PhpEcc_Point $point)
     {
-        $this->receivedPubPoint = $q;
+        $this->receivedPubPoint = $point;
     }
 
     public function encrypt($string)

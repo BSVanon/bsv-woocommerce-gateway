@@ -1,5 +1,7 @@
 <?php
-/***********************************************************************
+/**
+ * This is the contract for implementing CurveFp (EC prime finite-field).
+ *
 Copyright (C) 2012 Matyas Danter
 
 Permission is hereby granted, free of charge, to any person obtaining
@@ -26,7 +28,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface CurveFpInterface
+interface BWWC_PhpEcc_CurveFpInterface
 {
     //constructor that sets up the instance variables
     public function __construct($prime, $a, $b);
@@ -39,5 +41,5 @@ interface CurveFpInterface
 
     public function getPrime();
 
-    public static function cmp(CurveFp $cp1, CurveFp $cp2);
+    public static function cmp(BWWC_PhpEcc_CurveFp $cp1, BWWC_PhpEcc_CurveFp $cp2);
 }

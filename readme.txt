@@ -1,17 +1,17 @@
 === Bitcoin SV Payments for WooCommerce ===
 Contributors: BSVanon
-Tags: bitcoin sv, bsv, cryptocurrency, payment gateway, woocommerce, self-custody, electrumsv
+Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
-Tested up to: 6.7
+Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.0.0
+Stable tag: 5.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
 WC tested up to: 9.5
 
 
-Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
+Accept Bitcoin SV payments directly to your wallet. Self-custody, no third-party processor. Modern fork with PHP 8+ and WooCommerce HPOS support.
 
 == Description ==
 
@@ -84,6 +84,19 @@ WooCommerce Blocks support is planned for v5.1.
 
 
 == Changelog ==
+
+= 5.1.0 - 2026-01-10 =
+**WordPress.org submission release**
+
+* **IMPROVED:** All PHPECC cryptography classes prefixed with BWWC_PhpEcc_ for WordPress naming compliance
+* **IMPROVED:** Removed debug code from PHPECC library
+* **IMPROVED:** Updated Bitcoin SV description to "electronic cash" terminology
+* **IMPROVED:** Modernized personal address availability text for BIP32/BIP44 HD Wallet
+* **SECURITY:** Added direct file access protection to all PHP files
+* **SECURITY:** Secured all database queries with proper $wpdb->prepare() usage
+* **FIXED:** Global constant and variable naming compliance (USE_EXT, WP_USE_THEMES)
+* **FIXED:** Updated readme.txt for WordPress 6.9 compatibility
+* **ADDED:** Woo-BSV branding image for plugin icon
 
 = 5.0.0 - 2026-01-09 =
 **Major modernization release**

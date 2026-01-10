@@ -1,4 +1,5 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) exit;
 
 // To fix problem with earlier PHP versions not supporting hex2bin
 if (!function_exists('hex2bin')) {
@@ -41,23 +42,23 @@ class ElectrumHelper
         }
 
         $params = self::secp256k1_params();
-        $curve = new CurveFp($params['p'], $params['a'], $params['b']);
-        $gen = new Point($curve, $params['x'], $params['y'], $params['n']);
+        $curve = new BWWC_PhpEcc_CurveFp($params['p'], $params['a'], $params['b']);
+        $gen = new BWWC_PhpEcc_Point($curve, $params['x'], $params['y'], $params['n']);
 
-        if (USE_EXT == 'GMP') {
+        if (BWWC_USE_EXT == 'GMP') {
             $x = gmp_Utils::gmp_hexdec('0x' . substr($mpk, 0, 64));
             $y = gmp_Utils::gmp_hexdec('0x' . substr($mpk, 64, 64));
             $z = gmp_Utils::gmp_hexdec('0x' . hash('sha256', hash('sha256', $index . ':0:' . pack('H*', $mpk), true)));
 
-            $pt = Point::add(new Point($curve, $x, $y), Point::mul($z, $gen));
+            $pt = BWWC_PhpEcc_Point::add(new BWWC_PhpEcc_Point($curve, $x, $y), BWWC_PhpEcc_Point::mul($z, $gen));
 
             $keystr = "\x04" . str_pad(gmp_Utils::gmp_dec2base($pt->getX(), 256), 32, "\x0", STR_PAD_LEFT) . str_pad(gmp_Utils::gmp_dec2base($pt->getY(), 256), 32, "\x0", STR_PAD_LEFT);
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             $x = bcmath_Utils::bchexdec('0x' . substr($mpk, 0, 64));
             $y = bcmath_Utils::bchexdec('0x' . substr($mpk, 64, 64));
             $z = bcmath_Utils::bchexdec('0x' . hash('sha256', hash('sha256', $index . ':0:' . pack('H*', $mpk), true)));
 
-            $pt = Point::add(new Point($curve, $x, $y), Point::mul($z, $gen));
+            $pt = BWWC_PhpEcc_Point::add(new BWWC_PhpEcc_Point($curve, $x, $y), BWWC_PhpEcc_Point::mul($z, $gen));
 
             $keystr = "\x04" . str_pad(bcmath_Utils::dec2base($pt->getX(), 256), 32, "\x0", STR_PAD_LEFT) . str_pad(bcmath_Utils::dec2base($pt->getY(), 256), 32, "\x0", STR_PAD_LEFT);
         } else {
@@ -87,7 +88,7 @@ class ElectrumHelper
 
     public static function ckd_mpk_check($key, $code, $n)
     {
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             if (gmp_cmp(strval($n), '0') < 0) {
                 throw new ErrorException("Negative index (master private key needed)");
             }
@@ -95,7 +96,7 @@ class ElectrumHelper
             if (gmp_cmp(strval($n), strval(self::BIP32_PRIME)) >= 0) {
                 throw new ErrorException("Index is too big");
             }
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             if (bccomp(strval($n), '0') < 0) {
                 throw new ErrorException("Negative index (master private key needed)");
             }
@@ -115,17 +116,17 @@ class ElectrumHelper
         $keystr = hash_hmac("sha512", $key . $n, $code, true);
 
         $params = self::secp256k1_params();
-        $curve = new CurveFp($params['p'], $params['a'], $params['b']);
-        $gen = new Point($curve, $params['x'], $params['y'], $params['n']);
+        $curve = new BWWC_PhpEcc_CurveFp($params['p'], $params['a'], $params['b']);
+        $gen = new BWWC_PhpEcc_Point($curve, $params['x'], $params['y'], $params['n']);
 
-        if (USE_EXT === 'GMP') {
-            $pubkey_point = Point::add(
-                Point::mul(gmp_Utils::gmp_base2dec(substr($keystr, 0, 32), 256), $gen),
+        if (BWWC_USE_EXT === 'GMP') {
+            $pubkey_point = BWWC_PhpEcc_Point::add(
+                BWWC_PhpEcc_Point::mul(gmp_Utils::gmp_base2dec(substr($keystr, 0, 32), 256), $gen),
                 self::ser_to_point($key, $curve, $gen)
             );
-        } elseif (USE_EXT === 'BCMATH') {
-            $pubkey_point = Point::add(
-                Point::mul(bcmath_Utils::base2dec(substr($keystr, 0, 32), 256), $gen),
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
+            $pubkey_point = BWWC_PhpEcc_Point::add(
+                BWWC_PhpEcc_Point::mul(bcmath_Utils::base2dec(substr($keystr, 0, 32), 256), $gen),
                 self::ser_to_point($key, $curve, $gen)
             );
         } else {
@@ -138,9 +139,9 @@ class ElectrumHelper
         return array($key_n, $code_n);
     }
 
-    public static function pkpoint_to_pubkey(Point $point, $compressed = false)
+    public static function pkpoint_to_pubkey(BWWC_PhpEcc_Point $point, $compressed = false)
     {
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             if ($compressed) {
                 if (gmp_strval(gmp_and($point->getY(), '1'))) {
                     $key = '03' . self::int_to_hex_pad($point->getX(), 32);
@@ -150,7 +151,7 @@ class ElectrumHelper
             } else {
                 $key = '04' . self::int_to_hex_pad($point->getX(), 32) . self::int_to_hex_pad($point->getY(), 32);
             }
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             if ($compressed) {
                 if (bcmod($point->getY(), '2')) {
                     $key = '03' . self::int_to_hex_pad($point->getX(), 32);
@@ -167,7 +168,7 @@ class ElectrumHelper
         return hex2bin($key);
     }
 
-    public static function ser_to_point($key, CurveFp $curve, Point $gen)
+    public static function ser_to_point($key, BWWC_PhpEcc_CurveFp $curve, BWWC_PhpEcc_Point $gen)
     {
         $order = $gen->getOrder();
 
@@ -175,9 +176,9 @@ class ElectrumHelper
             throw new ErrorException("Wrong key's zero byte");
         }
 
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             if ($key[0] === "\x04") {
-                return new Point(
+                return new BWWC_PhpEcc_Point(
                     $curve,
                     gmp_Utils::gmp_base2dec(substr($key, 1, 32), 256),
                     gmp_Utils::gmp_base2dec(substr($key, 33), 256),
@@ -186,9 +187,9 @@ class ElectrumHelper
             }
 
             $Mx = gmp_Utils::gmp_base2dec(substr($key, 1), 256);
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             if ($key[0] === "\x04") {
-                return new Point(
+                return new BWWC_PhpEcc_Point(
                     $curve,
                     bcmath_Utils::base2dec(substr($key, 1, 32), 256),
                     bcmath_Utils::base2dec(substr($key, 33), 256),
@@ -201,16 +202,16 @@ class ElectrumHelper
             throw new ErrorException("Unknown math module");
         }
 
-        return new Point($curve, $Mx, self::ECC_YfromX($Mx, $curve, $key[0] === "\x03"), $order);
+        return new BWWC_PhpEcc_Point($curve, $Mx, self::ECC_YfromX($Mx, $curve, $key[0] === "\x03"), $order);
     }
 
-    public static function ECC_YfromX($x, CurveFp $curve, $odd = true)
+    public static function ECC_YfromX($x, BWWC_PhpEcc_CurveFp $curve, $odd = true)
     {
         $p = $curve->getPrime();
         $a = $curve->getA();
         $b = $curve->getB();
 
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             for ($offset = 0; $offset < 128; ++$offset) {
                 $Mx = gmp_add($x, strval($offset));
                 $My2 = gmp_add(gmp_add(gmp_powm($Mx, '3', $p), $a * gmp_powm($Mx, '2', $p)), gmp_mod($b, $p));
@@ -224,7 +225,7 @@ class ElectrumHelper
                     return gmp_sub($p, $My);
                 }
             }
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             for ($offset = 0; $offset < 128; ++$offset) {
                 $Mx = bcadd($x, strval($offset));
                 $My2 = bcadd(bcadd(bcpowmod($Mx, '3', $p), $a * bcpowmod($Mx, '2', $p)), bcmod($b, $p));
@@ -283,13 +284,13 @@ class ElectrumHelper
         $base = '58';
 
         $num = "0";
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             for ($i = strlen($input) - 1, $j = "1"; $i >= 0; $i--, $j = gmp_mul($j, $base)) {
                 $num = gmp_add($num, gmp_mul($j, strval(strpos($alphabet, $input[$i]))));
             }
 
             return gmp_Utils::gmp_dec2base(gmp_strval($num), 256);
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             for ($i = strlen($input) - 1, $j = "1"; $i >= 0; $i--, $j = bcmul($j, $base)) {
                 $num = bcadd($num, bcmul($j, strval(strpos($alphabet, $input[$i]))));
             }
@@ -302,9 +303,9 @@ class ElectrumHelper
 
     public static function int_to_hex_pad($int, $pad)
     {
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             $hex = gmp_Utils::gmp_dec2base($int, 16);
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             $hex = bcmath_Utils::dec2base($int, 16);
         } else {
             throw new ErrorException("Unknown math module");
@@ -331,7 +332,7 @@ class ElectrumHelper
         $base = '58';
 
         $encoded = '';
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             $num = gmp_Utils::gmp_base2dec($input, 256);
             while (intval($num) >= $base) {
                 $div = gmp_strval(gmp_div($num, $base));
@@ -339,7 +340,7 @@ class ElectrumHelper
                 $encoded = $alphabet[intval($mod)] . $encoded;
                 $num = $div;
             }
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             $num = bcmath_Utils::base2dec($input, 256);
             while (intval($num) >= $base) {
                 $div = bcdiv($num, $base);
@@ -377,7 +378,7 @@ class ElectrumHelper
 
     public static function secp256k1_params()
     {
-        if (USE_EXT === 'GMP') {
+        if (BWWC_USE_EXT === 'GMP') {
             return array(
                 'p' => gmp_Utils::gmp_hexdec('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F'),
                 'a' => gmp_Utils::gmp_hexdec('0x0000000000000000000000000000000000000000000000000000000000000000'),
@@ -386,7 +387,7 @@ class ElectrumHelper
                 'x' => gmp_Utils::gmp_hexdec("0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798"),
                 'y' => gmp_Utils::gmp_hexdec("0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8")
             );
-        } elseif (USE_EXT === 'BCMATH') {
+        } elseif (BWWC_USE_EXT === 'BCMATH') {
             return array(
                 'p' => bcmath_Utils::bchexdec('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F'),
                 'a' => bcmath_Utils::bchexdec('0x0000000000000000000000000000000000000000000000000000000000000000'),

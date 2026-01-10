@@ -26,15 +26,15 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface EcDHInterface
+interface BWWC_PhpEcc_EcDHInterface
 {
-    public function __construct(Point $g);
+    public function __construct(BWWC_PhpEcc_Point $generator);
 
     public function calculateKey();
 
     public function getPublicPoint();
 
-    public function setPublicPoint(Point $q);
+    public function setReceivedPoint(BWWC_PhpEcc_Point $point);
 
     public function encrypt($string);
 

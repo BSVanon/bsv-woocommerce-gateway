@@ -26,7 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface SignatureInterface
+interface BWWC_PhpEcc_SignatureInterface
 {
     public function __construct($r, $s);
 

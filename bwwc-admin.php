@@ -389,22 +389,19 @@ function BWWC__create_database_tables($bwwc_settings)
         $version = floatval($bwwc_settings['database_schema_version']);
 
         if ($version < 1.1) {
-            $query = "ALTER TABLE `$btc_addresses_table_name` ADD INDEX `origin_id` (`origin_id` ASC) , ADD INDEX `status` (`status` ASC)";
-            $wpdb->query($query);
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` ADD INDEX `origin_id` (`origin_id` ASC) , ADD INDEX `status` (`status` ASC)", $btc_addresses_table_name));
             $bwwc_settings['database_schema_version'] = 1.1;
             $must_update_settings = true;
         }
 
         if ($version < 1.2) {
-            $query = "ALTER TABLE `$btc_addresses_table_name` DROP INDEX `index_in_wallet`, ADD INDEX `index_in_wallet` (`index_in_wallet` ASC)";
-            $wpdb->query($query);
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` DROP INDEX `index_in_wallet`, ADD INDEX `index_in_wallet` (`index_in_wallet` ASC)", $btc_addresses_table_name));
             $bwwc_settings['database_schema_version'] = 1.2;
             $must_update_settings = true;
         }
 
         if ($version < 1.3) {
-            $query = "ALTER TABLE `$btc_addresses_table_name` CHANGE COLUMN `origin_id` `origin_id` char(128)";
-            $wpdb->query($query);
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` CHANGE COLUMN `origin_id` `origin_id` char(128)", $btc_addresses_table_name));
             $bwwc_settings['database_schema_version'] = 1.3;
             $must_update_settings = true;
 
@@ -414,8 +411,7 @@ function BWWC__create_database_tables($bwwc_settings)
                 $mpk_old_value = 'electrum.mpk.' . md5($mpk);
                 // UPDATE table_name SET field = REPLACE(field, 'foo', 'bar') WHERE INSTR(field, 'foo') > 0;
                 // UPDATE [table_name] SET [field_name] = REPLACE([field_name], "foo", "bar");
-                $query = "UPDATE `$btc_addresses_table_name` SET `origin_id` = '$mpk' WHERE `origin_id` = '$mpk_old_value'";
-                $wpdb->query($query);
+                $wpdb->query($wpdb->prepare("UPDATE `%s` SET `origin_id` = %s WHERE `origin_id` = %s", $btc_addresses_table_name, $mpk, $mpk_old_value));
 
                 // Copy settings from old location to new, if new is empty.
                 if (!@$bwwc_settings['electrum_mpk_saved']) {
@@ -426,8 +422,7 @@ function BWWC__create_database_tables($bwwc_settings)
         }
 
         if ($version < 1.4) {
-            $query = "ALTER TABLE `$btc_addresses_table_name` MODIFY `address_meta` MEDIUMBLOB";
-            $wpdb->query($query);
+            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` MODIFY `address_meta` MEDIUMBLOB", $btc_addresses_table_name));
             $bwwc_settings['database_schema_version'] = 1.4;
             $must_update_settings = true;
         }

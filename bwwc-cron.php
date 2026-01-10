@@ -98,34 +98,32 @@ function BWWC_cron_job_worker($hardcron=false)
 
                 // Refresh 'received_funds_checked_at' field
                 $current_time = time();
-                $query =
-          "UPDATE `$btc_addresses_table_name`
-             SET
-                `total_received_funds` = '{$balance_info_array['balance']}',
-                `received_funds_checked_at`='$current_time'
-            WHERE `id`='$row_id';";
-                $ret_code = $wpdb->query($query);
+                $ret_code = $wpdb->query($wpdb->prepare(
+                    "UPDATE `%s` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
+                    $btc_addresses_table_name,
+                    $balance_info_array['balance'],
+                    $current_time,
+                    $row_id
+                ));
 
                 if ($balance_info_array['balance'] > 0) {
                     if ($row_for_balance_check['status'] == 'revalidate') {
                         // Address with suddenly appeared balance. Check if that is matching to previously-placed [likely expired] order
                         if (!$last_order_info || !@$last_order_info['order_id'] || !@$balance_info_array['balance'] || !@$last_order_info['order_total']) {
                             // No proper metadata present. Mark this address as 'xused' (used by unknown entity outside of this application) and be done with it forever.
-                            $query =
-                "UPDATE `$btc_addresses_table_name`
-                   SET
-                      `status` = 'xused'
-                  WHERE `id`='$row_id';";
-                            $ret_code = $wpdb->query($query);
+                            $ret_code = $wpdb->query($wpdb->prepare(
+                                "UPDATE `%s` SET `status` = 'xused' WHERE `id` = %d",
+                                $btc_addresses_table_name,
+                                $row_id
+                            ));
                             continue;
                         } else {
                             // Metadata for this address is present. Mark this address as 'assigned' and treat it like that further down...
-                            $query =
-                "UPDATE `$btc_addresses_table_name`
-                   SET
-                      `status` = 'assigned'
-                  WHERE `id`='$row_id';";
-                            $ret_code = $wpdb->query($query);
+                            $ret_code = $wpdb->query($wpdb->prepare(
+                                "UPDATE `%s` SET `status` = 'assigned' WHERE `id` = %d",
+                                $btc_addresses_table_name,
+                                $row_id
+                            ));
                         }
                     }
 
@@ -181,13 +179,12 @@ function BWWC_cron_job_worker($hardcron=false)
 
                     // Note: `total_received_funds` and `received_funds_checked_at` are already updated above.
                     //
-                    $query =
-              "UPDATE `$btc_addresses_table_name`
-	             SET
-	                `status`='used',
-	                `address_meta`='$address_meta_serialized'
-	            WHERE `id`='$row_id';";
-                    $ret_code = $wpdb->query($query);
+                    $ret_code = $wpdb->query($wpdb->prepare(
+                        "UPDATE `%s` SET `status` = 'used', `address_meta` = %s WHERE `id` = %d",
+                        $btc_addresses_table_name,
+                        $address_meta_serialized,
+                        $row_id
+                    ));
                     BWWC__log_event(__FILE__, __LINE__, "Cron job: SUCCESS: Order ID '{$last_order_info['order_id']}' successfully completed.");
 
 

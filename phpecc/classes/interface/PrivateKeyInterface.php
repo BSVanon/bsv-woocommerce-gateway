@@ -26,9 +26,9 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface PrivateKeyInterface
+interface BWWC_PhpEcc_PrivateKeyInterface
 {
-    public function __construct(PublicKey $public_key, $secret_multiplier);
+    public function __construct(BWWC_PhpEcc_Point $generator, $secret_multiplier);
 
     public function sign($hash, $random_k);
 
@@ -38,5 +38,5 @@ interface PrivateKeyInterface
 
     public static function digest_integer($m);
 
-    public static function point_is_valid(Point $generator, $x, $y);
+    public static function point_is_valid(BWWC_PhpEcc_Point $generator, $x, $y);
 }

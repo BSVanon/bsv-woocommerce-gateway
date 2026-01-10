@@ -24,13 +24,13 @@ OTHER DEALINGS IN THE SOFTWARE.
 /**
  * This class serves as public- private key exchange for signature verification
  */
-class PublicKey implements PublicKeyInterface
+class BWWC_PhpEcc_PublicKey implements BWWC_PhpEcc_PublicKeyInterface
 {
     protected $curve;
     protected $generator;
     protected $point;
 
-    public function __construct(Point $generator, Point $point)
+    public function __construct(BWWC_PhpEcc_Point $generator, BWWC_PhpEcc_Point $point)
     {
         $this->curve = $generator->getCurve();
         $this->generator = $generator;
@@ -41,15 +41,15 @@ class PublicKey implements PublicKeyInterface
         if ($n == null) {
             throw new ErrorExcpetion("Generator Must have order.");
         }
-        if (Point::cmp(Point::mul($n, $point), Point::$infinity) != 0) {
+        if (BWWC_PhpEcc_Point::cmp(BWWC_PhpEcc_Point::mul($n, $point), BWWC_PhpEcc_Point::$infinity) != 0) {
             throw new ErrorException("Generator Point order is bad.");
         }
 
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
             if (gmp_cmp($point->getX(), 0) < 0 || gmp_cmp($n, $point->getX()) <= 0 || gmp_cmp($point->getY(), 0) < 0 || gmp_cmp($n, $point->getY()) <= 0) {
                 throw new ErrorException("Generator Point has x and y out of range.");
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             if (bccomp($point->getX(), 0) == -1 || bccomp($n, $point->getX()) != 1 || bccomp($point->getY(), 0) == -1 || bccomp($n, $point->getY()) != 1) {
                 throw new ErrorException("Generator Point has x and y out of range.");
             }
@@ -58,9 +58,9 @@ class PublicKey implements PublicKeyInterface
         }
     }
 
-    public function verifies($hash, Signature $signature)
+    public function verifies($hash, BWWC_PhpEcc_Signature $signature)
     {
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
             $G = $this->generator;
             $n = $this->generator->getOrder();
             $point = $this->point;
@@ -76,7 +76,7 @@ class PublicKey implements PublicKeyInterface
             $c = NumberTheory::inverse_mod($s, $n);
             $u1 = gmp_Utils::gmp_mod2(gmp_mul($hash, $c), $n);
             $u2 = gmp_Utils::gmp_mod2(gmp_mul($r, $c), $n);
-            $xy = Point::add(Point::mul($u1, $G), Point::mul($u2, $point));
+            $xy = BWWC_PhpEcc_Point::add(BWWC_PhpEcc_Point::mul($u1, $G), BWWC_PhpEcc_Point::mul($u2, $point));
             $v = gmp_Utils::gmp_mod2($xy->getX(), $n);
 
             if (gmp_cmp($v, $r) == 0) {
@@ -84,7 +84,7 @@ class PublicKey implements PublicKeyInterface
             } else {
                 return false;
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             $G = $this->generator;
             $n = $this->generator->getOrder();
             $point = $this->point;
@@ -100,7 +100,7 @@ class PublicKey implements PublicKeyInterface
             $c = NumberTheory::inverse_mod($s, $n);
             $u1 = bcmod(bcmul($hash, $c), $n);
             $u2 = bcmod(bcmul($r, $c), $n);
-            $xy = Point::add(Point::mul($u1, $G), Point::mul($u2, $point));
+            $xy = BWWC_PhpEcc_Point::add(BWWC_PhpEcc_Point::mul($u1, $G), BWWC_PhpEcc_Point::mul($u2, $point));
             $v = bcmod($xy->getX(), $n);
 
             if (bccomp($v, $r) == 0) {
@@ -130,7 +130,6 @@ class PublicKey implements PublicKeyInterface
 
     public function getPublicKey()
     {
-        print_r($this);
         return $this;
     }
 }

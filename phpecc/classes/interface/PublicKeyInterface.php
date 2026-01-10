@@ -26,11 +26,11 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Matej Danter
  */
-interface PublicKeyInterface
+interface BWWC_PhpEcc_PublicKeyInterface
 {
-    public function __construct(Point $generator, Point $point);
+    public function __construct(BWWC_PhpEcc_Point $generator, BWWC_PhpEcc_Point $point);
 
-    public function verifies($hash, Signature $signature);
+    public function verifies($hash, BWWC_PhpEcc_Signature $signature);
 
     public function getCurve();
 

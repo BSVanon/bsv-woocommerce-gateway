@@ -27,7 +27,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  * @author Matej Danter
  */
 
-class Signature implements SignatureInterface
+class BWWC_PhpEcc_Signature implements BWWC_PhpEcc_SignatureInterface
 {
     protected $r;
     protected $s;

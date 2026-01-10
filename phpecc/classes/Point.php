@@ -33,7 +33,7 @@ OTHER DEALINGS IN THE SOFTWARE.
  * The rest of the methods are there for supporting the ones above.
  */
 
-class Point implements PointInterface
+class BWWC_PhpEcc_Point implements BWWC_PhpEcc_PointInterface
 {
     public $curve;
     public $x;
@@ -41,7 +41,7 @@ class Point implements PointInterface
     public $order;
     public static $infinity = 'infinity';
 
-    public function __construct(CurveFp $curve, $x, $y, $order = null)
+    public function __construct(BWWC_PhpEcc_CurveFp $curve, $x, $y, $order = null)
     {
         $this->curve = $curve;
         $this->x = $x;
@@ -49,9 +49,9 @@ class Point implements PointInterface
         $this->order = $order;
 
 
-        if (isset($this->curve) && ($this->curve instanceof CurveFp)) {
+        if (isset($this->curve) && ($this->curve instanceof BWWC_PhpEcc_CurveFp)) {
             if (!$this->curve->contains($this->x, $this->y)) {
-                throw new ErrorException("Curve" . print_r($this->curve, true) . " does not contain point ( " . $x . " , " . $y . " )");
+                throw new ErrorException(sprintf("Curve does not contain point ( %s , %s )", $x, $y));
             }
 
             if ($this->order != null) {
@@ -64,50 +64,50 @@ class Point implements PointInterface
 
     public static function cmp($p1, $p2)
     {
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
-            if (!($p1 instanceof Point)) {
-                if (($p2 instanceof Point)) {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
+            if (!($p1 instanceof BWWC_PhpEcc_Point)) {
+                if (($p2 instanceof BWWC_PhpEcc_Point)) {
                     return 1;
                 }
-                if (!($p2 instanceof Point)) {
+                if (!($p2 instanceof BWWC_PhpEcc_Point)) {
                     return 0;
                 }
             }
 
-            if (!($p2 instanceof Point)) {
-                if (($p1 instanceof Point)) {
+            if (!($p2 instanceof BWWC_PhpEcc_Point)) {
+                if (($p1 instanceof BWWC_PhpEcc_Point)) {
                     return 1;
                 }
-                if (!($p1 instanceof Point)) {
+                if (!($p1 instanceof BWWC_PhpEcc_Point)) {
                     return 0;
                 }
             }
 
-            if (gmp_cmp($p1->x, $p2->x) == 0 && gmp_cmp($p1->y, $p2->y) == 0 && CurveFp::cmp($p1->curve, $p2->curve)) {
+            if (gmp_cmp($p1->x, $p2->x) == 0 && gmp_cmp($p1->y, $p2->y) == 0 && BWWC_PhpEcc_CurveFp::cmp($p1->curve, $p2->curve)) {
                 return 0;
             } else {
                 return 1;
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
-            if (!($p1 instanceof Point)) {
-                if (($p2 instanceof Point)) {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
+            if (!($p1 instanceof BWWC_PhpEcc_Point)) {
+                if (($p2 instanceof BWWC_PhpEcc_Point)) {
                     return 1;
                 }
-                if (!($p2 instanceof Point)) {
+                if (!($p2 instanceof BWWC_PhpEcc_Point)) {
                     return 0;
                 }
             }
 
-            if (!($p2 instanceof Point)) {
-                if (($p1 instanceof Point)) {
+            if (!($p2 instanceof BWWC_PhpEcc_Point)) {
+                if (($p1 instanceof BWWC_PhpEcc_Point)) {
                     return 1;
                 }
-                if (!($p1 instanceof Point)) {
+                if (!($p1 instanceof BWWC_PhpEcc_Point)) {
                     return 0;
                 }
             }
 
-            if (bccomp($p1->x, $p2->x) == 0 && bccomp($p1->y, $p2->y) == 0 && CurveFp::cmp($p1->curve, $p2->curve)) {
+            if (bccomp($p1->x, $p2->y) == 0 && bccomp($p1->y, $p2->y) == 0 && BWWC_PhpEcc_CurveFp::cmp($p1->curve, $p2->curve)) {
                 return 0;
             } else {
                 return 1;
@@ -119,10 +119,10 @@ class Point implements PointInterface
 
     public static function add($p1, $p2)
     {
-        if (self::cmp($p2, self::$infinity) == 0 && ($p1 instanceof Point)) {
+        if (self::cmp($p2, self::$infinity) == 0 && ($p1 instanceof BWWC_PhpEcc_Point)) {
             return $p1;
         }
-        if (self::cmp($p1, self::$infinity) == 0 && ($p2 instanceof Point)) {
+        if (self::cmp($p1, self::$infinity) == 0 && ($p2 instanceof BWWC_PhpEcc_Point)) {
             return $p2;
         }
 
@@ -130,8 +130,8 @@ class Point implements PointInterface
             return self::$infinity;
         }
 
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
-            if (CurveFp::cmp($p1->curve, $p2->curve) == 0) {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
+            if (BWWC_PhpEcc_CurveFp::cmp($p1->curve, $p2->curve) == 0) {
                 if (gmp_Utils::gmp_mod2(gmp_cmp($p1->x, $p2->x), $p1->curve->getPrime()) == 0) {
                     if (gmp_Utils::gmp_mod2(gmp_add($p1->y, $p2->y), $p1->curve->getPrime()) == 0) {
                         return self::$infinity;
@@ -151,15 +151,15 @@ class Point implements PointInterface
                 $y3 = gmp_strval(gmp_Utils::gmp_mod2(gmp_sub(gmp_mul($l, gmp_sub($p1->x, $x3)), $p1->y), $p));
 
 
-                $p3 = new Point($p1->curve, $x3, $y3);
+                $p3 = new BWWC_PhpEcc_Point($p1->curve, $x3, $y3);
 
 
                 return $p3;
             } else {
                 throw new ErrorException("The Elliptic Curves do not match.");
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
-            if (CurveFp::cmp($p1->curve, $p2->curve) == 0) {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
+            if (BWWC_PhpEcc_CurveFp::cmp($p1->curve, $p2->curve) == 0) {
                 if (bcmod(bccomp($p1->x, $p2->x), $p1->curve->getPrime()) == 0) {
                     if (bcmod(bcadd($p1->y, $p2->y), $p1->curve->getPrime()) == 0) {
                         return self::$infinity;
@@ -184,7 +184,7 @@ class Point implements PointInterface
                     $y3 = bcadd($p, $y3);
                 }
 
-                $p3 = new Point($p1->curve, $x3, $y3);
+                $p3 = new BWWC_PhpEcc_Point($p1->curve, $x3, $y3);
 
 
                 return $p3;
@@ -196,9 +196,9 @@ class Point implements PointInterface
         }
     }
 
-    public static function mul($x2, Point $p1)
+    public static function mul($x2, BWWC_PhpEcc_Point $p1)
     {
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
             $e = $x2;
 
             if (self::cmp($p1, self::$infinity) == 0) {
@@ -216,7 +216,7 @@ class Point implements PointInterface
             if (gmp_cmp($e, 0) > 0) {
                 $e3 = gmp_mul(3, $e);
 
-                $negative_self = new Point($p1->curve, $p1->x, gmp_strval(gmp_sub(0, $p1->y)), $p1->order);
+                $negative_self = new BWWC_PhpEcc_Point($p1->curve, $p1->x, gmp_strval(gmp_sub(0, $p1->y)), $p1->order);
                 $i = gmp_div(self::leftmost_bit($e3), 2);
 
                 $result = $p1;
@@ -235,7 +235,7 @@ class Point implements PointInterface
                 }
                 return $result;
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             $e = $x2;
 
             if (self::cmp($p1, self::$infinity) == 0) {
@@ -253,7 +253,7 @@ class Point implements PointInterface
             if (bccomp($e, 0) == 1) {
                 $e3 = bcmul(3, $e);
 
-                $negative_self = new Point($p1->curve, $p1->x, bcsub(0, $p1->y), $p1->order);
+                $negative_self = new BWWC_PhpEcc_Point($p1->curve, $p1->x, bcsub(0, $p1->y), $p1->order);
                 $i = bcdiv(self::leftmost_bit($e3), 2);
 
                 $result = $p1;
@@ -280,7 +280,7 @@ class Point implements PointInterface
 
     public static function leftmost_bit($x)
     {
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
             if (gmp_cmp($x, 0) > 0) {
                 $result = 1;
                 while (gmp_cmp($result, $x) < 0 || gmp_cmp($result, $x) == 0) {
@@ -288,7 +288,7 @@ class Point implements PointInterface
                 }
                 return gmp_strval(gmp_div($result, 2));
             }
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             if (bccomp($x, 0) == 1) {
                 $result = 1;
                 while (bccomp($result, $x) == -1 || bccomp($result, $x) == 0) {
@@ -301,22 +301,22 @@ class Point implements PointInterface
         }
     }
 
-    public static function rmul(Point $x1, $m)
+    public static function rmul(BWWC_PhpEcc_Point $x1, $m)
     {
         return self::mul($m, $x1);
     }
 
     public function __toString()
     {
-        if (!($this instanceof Point) && $this == self::$infinity) {
+        if (!($this instanceof BWWC_PhpEcc_Point) && $this == self::$infinity) {
             return self::$infinity;
         }
         return "(" . $this->x . "," . $this->y . ")";
     }
 
-    public static function double(Point $p1)
+    public static function double(BWWC_PhpEcc_Point $p1)
     {
-        if (extension_loaded('gmp') && USE_EXT=='GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT=='GMP') {
             $p = $p1->curve->getPrime();
             $a = $p1->curve->getA();
 
@@ -334,10 +334,10 @@ class Point implements PointInterface
                 $y3 = gmp_strval(gmp_add($p, $y3));
             }
 
-            $p3 = new Point($p1->curve, $x3, $y3);
+            $p3 = new BWWC_PhpEcc_Point($p1->curve, $x3, $y3);
 
             return $p3;
-        } elseif (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        } elseif (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             $p = $p1->curve->getPrime();
             $a = $p1->curve->getA();
 
@@ -356,7 +356,7 @@ class Point implements PointInterface
                 $y3 = bcadd($p, $y3);
             }
 
-            $p3 = new Point($p1->curve, $x3, $y3);
+            $p3 = new BWWC_PhpEcc_Point($p1->curve, $x3, $y3);
 
             return $p3;
         } else {

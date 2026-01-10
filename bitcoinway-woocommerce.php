@@ -1,17 +1,34 @@
 <?php
-/*
+/**
+ * Plugin Name: Bitcoin SV Payments for WooCommerce
+ * Plugin URI: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
+ * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
+ * Version: 5.0.0
+ * Author: BSVanon
+ * Author URI: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * Text Domain: bitcoin-sv-woocommerce
+ * Domain Path: /lang
+ * Requires at least: 5.8
+ * Tested up to: 6.7
+ * Requires PHP: 7.4
+ * WC requires at least: 6.0
+ * WC tested up to: 9.5
+ */
+
+// Exit if accessed directly
+if (!defined('ABSPATH')) {
+    exit;
+}
 
 
-Plugin Name: Bitcoin SV Payments for WooCommerce
-Plugin URI: https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
-Description: Bitcoin SV Payments for WooCommerce plugin allows you to accept payments in Bitcoin SV for physical and digital products at your WooCommerce-powered online store.
-Version: 4.12
-Author: mboyd1
-Author URI: https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
-License: GNU General Public License 2.0 (GPL) http://www.gnu.org/licenses/gpl.html
-
-*/
-
+// Declare HPOS compatibility
+add_action('before_woocommerce_init', function() {
+    if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+    }
+});
 
 // Include everything
 include(dirname(__FILE__) . '/bwwc-include-all.php');

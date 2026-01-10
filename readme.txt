@@ -1,24 +1,31 @@
-2021-07-12  *Note this fork is not currently maintained, please check Anypay Inc's updated plugin here:
-https://github.com/anypay/anypay-woocommerce
+=== Bitcoin SV Payments for WooCommerce ===
+Contributors: BSVanon
+Tags: bitcoin sv, bsv, cryptocurrency, payment gateway, woocommerce, self-custody, electrumsv
+Requires at least: 5.8
+Tested up to: 6.7
+Requires PHP: 7.4
+Stable tag: 5.0.0
+License: GPL-2.0-or-later
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+WC requires at least: 6.0
+WC tested up to: 9.5
 
-=== (BETA) Bitcoin SV Payments for WooCommerce ===
-Contributors: mboyd1, sanchaz, gesman, bitcoinway.com
-Tags: bitcoin sv, bitcoin sv wordpress plugin, bitcoin sv plugin, bitcoin sv payments, accept bitcoin sv, bsv, bchsv
-Requires at least: Wordpress 3.0.1
-Tested up to: Wordpress 5.0.2
-Stable tag: trunk
-License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-
-Bitcoin SV Payments for WooCommerce is a Wordpress plugin that allows you to accept Bitcoin SV at WooCommerce-powered online stores.
+Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
 
 == Description ==
 
-Your online store must use WooCommerce platform (free wordpress p/lugin).
-Once you installed and activated WooCommerce, you may install and activate Bitcoin SV Payments for WooCommerce.
+This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments directly to your wallet using BIP32 address derivation. No third-party payment processors, no monthly fees, complete self-custody.
 
-This is still in Beta, some bugs may be encountered please open an issue.
+**Key Features:**
+* Direct payments to your ElectrumSV or BIP32-compatible wallet
+* Automatic per-order address derivation from your Master Public Key (xpub/MPK)
+* Real-time exchange rate conversion with configurable markup
+* Payment detection via blockchain APIs (WhatsOnChain, Blockchair)
+* QR code generation for easy mobile payments
+* WooCommerce HPOS (High-Performance Order Storage) compatible
+* PHP 8+ compatible
+* Modern WordPress 6.x and WooCommerce 9.x support
 
 = Benefits =
 
@@ -69,6 +76,21 @@ This is still in Beta, some bugs may be encountered please open an issue.
 
 
 == Changelog ==
+
+= 5.0.0 - 2026-01-09 =
+**Major modernization release**
+
+* **BREAKING:** Bumped minimum requirements to WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
+* **NEW:** Full PHP 8.0+ compatibility with proper type safety and input validation
+* **NEW:** WooCommerce HPOS (High-Performance Order Storage) compatibility declared
+* **NEW:** Modern exchange rate provider using CoinGecko API (free, no API key required)
+* **NEW:** WhatsOnChain blockchain API integration for payment detection
+* **FIXED:** All undefined array access warnings (PHP 8 deprecations)
+* **FIXED:** Replaced defunct BitcoinAverage API with working providers
+* **IMPROVED:** Input sanitization and security hardening throughout
+* **IMPROVED:** Updated plugin metadata for WordPress.org compatibility
+* **IMPROVED:** Comprehensive documentation (DEV_NOTES.md, CAPABILITIES.md)
+* **IMPROVED:** Docker-based development environment for testing
 
 = 4.20 =
 * Bitcoin SV support. Use Weighted Average exchange rate calculation. ElectrumSV wallet is compatible with this plugin. Previous wallet, Electron Cash version 3.3.2 is last compatible version with BSV.

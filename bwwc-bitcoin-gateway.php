@@ -243,6 +243,10 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             //-----------------------------------
             // Payment instructions
+            // Get settings for payment timeout
+            $bwwc_settings = BWWC__get_settings();
+            $payment_timeout_hours = round($bwwc_settings['assigned_address_expires_in_mins'] / 60);
+            
             $payment_instructions = '
 <table class="bwwc-payment-instructions-table" id="bwwc-payment-instructions-table">
   <tr class="bpit-table-row">
@@ -284,7 +288,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 <ol class="bpit-instructions">
     <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'woocommerce') . '</li>
     <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'woocommerce') . '</li>
-    <li>' . sprintf(__('You must make a payment within %d hours, or your order may be cancelled', 'woocommerce'), round($bwwc_settings['assigned_address_expires_in_mins'] / 60)) . '</li>
+    <li>' . sprintf(__('You must make a payment within %d hours, or your order may be cancelled', 'woocommerce'), $payment_timeout_hours) . '</li>
     <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'woocommerce') . '</li>
     <li>{{{EXTRA_INSTRUCTIONS}}}</li>
 </ol>

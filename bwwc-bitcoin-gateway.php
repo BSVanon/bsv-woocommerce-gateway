@@ -224,6 +224,21 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             }
 
             $currency_ticker = BWWC__get_exchange_rate_per_bitcoin($currency_code, 'getfirst', true);
+            
+            // Format exchange rate display
+            $exchange_rate_display = '';
+            if ($currency_ticker && is_numeric($currency_ticker)) {
+                $exchange_rate_display = '<div style="padding: 10px; background: #e7f7e7; border-left: 4px solid #46b450; margin: 10px 0;">';
+                $exchange_rate_display .= '<strong>' . __('Current Exchange Rate:', 'woocommerce') . '</strong> ';
+                $exchange_rate_display .= '1 BSV = ' . number_format((float)$currency_ticker, 2) . ' ' . esc_html($currency_code);
+                $exchange_rate_display .= ' <span style="color: #666; font-size: 12px;">(' . __('via CoinGecko', 'woocommerce') . ')</span>';
+                $exchange_rate_display .= '</div>';
+            } else {
+                $exchange_rate_display = '<div style="padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; margin: 10px 0;">';
+                $exchange_rate_display .= '<strong>' . __('Exchange Rate:', 'woocommerce') . '</strong> ';
+                $exchange_rate_display .= __('Unable to fetch current rate. Please check your server\'s internet connection.', 'woocommerce');
+                $exchange_rate_display .= '</div>';
+            }
             //-----------------------------------
 
             //-----------------------------------
@@ -294,6 +309,11 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                                 'type' => 'checkbox',
                                 'label' => __('Enable Bitcoin SV Payments', 'woocommerce'),
                                 'default' => 'yes'
+                            ),
+                'exchange_rate_info' => array(
+                                'title' => __('Exchange Rate Status', 'woocommerce'),
+                                'type' => 'title',
+                                'description' => $exchange_rate_display,
                             ),
                 'title' => array(
                                 'title' => __('Title', 'woocommerce'),
@@ -452,7 +472,20 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 $msg = 'ERROR: Cannot determine Bitcoin SV exchange rate. Possible issues: store server does not allow outgoing connections, exchange rate servers are blocking incoming connections or down. ' .
                        'You may avoid that by setting store currency directly to Bitcoin SV (BSV)';
                 BWWC__log_event(__FILE__, __LINE__, $msg);
-                exit('<h2 style="color:red;">' . $msg . '</h2>');
+                
+                // User-friendly error message
+                $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Processing Error', 'woocommerce') . '</h2>';
+                $user_msg .= '<p>' . __('We\'re unable to process Bitcoin SV payments at this time due to a temporary issue fetching exchange rates.', 'woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . __('What you can do:', 'woocommerce') . '</strong></p>';
+                $user_msg .= '<ul>';
+                $user_msg .= '<li>' . __('Try again in a few minutes', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Choose an alternative payment method', 'woocommerce') . '</li>';
+                $user_msg .= '</ul>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'woocommerce') . '</a></p>';
+                $user_msg .= '</div>';
+                exit($user_msg);
             }
 
             $order_total_in_btc   = ($order->get_total() / $exchange_rate);
@@ -513,7 +546,20 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             if (!$bitcoins_address) {
                 $msg = "ERROR: cannot generate Bitcoin SV address for the order: '" . @$ret_info_array['message'] . "'";
                 BWWC__log_event(__FILE__, __LINE__, $msg);
-                exit('<h2 style="color:red;">' . $msg . '</h2>');
+                
+                // User-friendly error message
+                $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Address Generation Error', 'woocommerce') . '</h2>';
+                $user_msg .= '<p>' . __('We\'re unable to generate a payment address for your order at this time.', 'woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . __('What you can do:', 'woocommerce') . '</strong></p>';
+                $user_msg .= '<ul>';
+                $user_msg .= '<li>' . __('Try placing your order again', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Choose an alternative payment method', 'woocommerce') . '</li>';
+                $user_msg .= '</ul>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'woocommerce') . '</a></p>';
+                $user_msg .= '</div>';
+                exit($user_msg);
             }
 
             BWWC__log_event(__FILE__, __LINE__, "     Generated unique Bitcoin SV address: '{$bitcoins_address}' for order_id " . $order_id);
@@ -647,6 +693,35 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $order->add_order_note(__("Order instructions: price=&#3647;{$order_total_in_btc}, incoming account:{$bitcoins_address}", 'woocommerce'));
 
             echo wpautop(wptexturize($instructions));
+            
+            // Add copy-to-clipboard button for BSV address
+            if ($bitcoins_address) {
+                echo '<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">';
+                echo '<p style="margin: 0 0 10px 0;"><strong>' . __('Bitcoin SV Address:', 'woocommerce') . '</strong></p>';
+                echo '<div style="display: flex; align-items: center; gap: 10px;">';
+                echo '<input type="text" value="' . esc_attr($bitcoins_address) . '" readonly style="flex: 1; padding: 8px; font-family: monospace; font-size: 14px; border: 1px solid #ced4da; border-radius: 4px;" id="bsv-address-field" />';
+                echo '<button type="button" onclick="bsvCopyAddress()" style="padding: 8px 16px; background: #0073aa; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">' . __('Copy Address', 'woocommerce') . '</button>';
+                echo '</div>';
+                echo '<p style="margin: 10px 0 0 0; font-size: 12px; color: #6c757d;" id="bsv-copy-status"></p>';
+                echo '</div>';
+                echo '<script>
+                function bsvCopyAddress() {
+                    var addressField = document.getElementById("bsv-address-field");
+                    var statusField = document.getElementById("bsv-copy-status");
+                    addressField.select();
+                    addressField.setSelectionRange(0, 99999);
+                    try {
+                        document.execCommand("copy");
+                        statusField.textContent = "' . esc_js(__('Address copied to clipboard!', 'woocommerce')) . '";
+                        statusField.style.color = "#28a745";
+                        setTimeout(function() { statusField.textContent = ""; }, 3000);
+                    } catch (err) {
+                        statusField.textContent = "' . esc_js(__('Failed to copy. Please copy manually.', 'woocommerce')) . '";
+                        statusField.style.color = "#dc3545";
+                    }
+                }
+                </script>';
+            }
         }
         //-------------------------------------------------------------------
 

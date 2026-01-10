@@ -46,6 +46,12 @@ register_uninstall_hook(__FILE__, 'BWWC_uninstall');
 add_filter('cron_schedules', 'BWWC__add_custom_scheduled_intervals');
 add_action('BWWC_cron_action', 'BWWC_cron_job_worker');     // Multiple functions can be attached to 'BWWC_cron_action' action
 
+// Add Settings link to plugin list
+add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'BWWC__plugin_action_links');
+
+// Admin notices for Blocks checkout detection
+add_action('admin_notices', 'BWWC__blocks_checkout_notice');
+
 BWWC_set_lang_file();
 //---------------------------------------------------------------------------
 
@@ -94,6 +100,50 @@ function BWWC__add_custom_scheduled_intervals($schedules)
 }
 //---------------------------------------------------------------------------
 //===========================================================================
+
+//===========================================================================
+/**
+ * Add Settings link to plugin actions
+ */
+function BWWC__plugin_action_links($links)
+{
+    $settings_link = '<a href="admin.php?page=BWWC-settings">' . __('Settings', 'bitcoin-sv-woocommerce') . '</a>';
+    array_unshift($links, $settings_link);
+    return $links;
+}
+//---------------------------------------------------------------------------
+
+//===========================================================================
+/**
+ * Show admin notice if WooCommerce Blocks checkout is detected
+ */
+function BWWC__blocks_checkout_notice()
+{
+    // Only show on relevant admin pages
+    $screen = get_current_screen();
+    if (!$screen || !in_array($screen->id, array('plugins', 'woocommerce_page_wc-settings', 'dashboard'))) {
+        return;
+    }
+
+    // Check if WooCommerce is active
+    if (!class_exists('WooCommerce')) {
+        return;
+    }
+
+    // Check if checkout page uses Blocks
+    $checkout_page_id = wc_get_page_id('checkout');
+    if ($checkout_page_id > 0) {
+        $checkout_page = get_post($checkout_page_id);
+        if ($checkout_page && has_block('woocommerce/checkout', $checkout_page)) {
+            echo '<div class="notice notice-warning is-dismissible">';
+            echo '<p><strong>' . __('Bitcoin SV Gateway:', 'bitcoin-sv-woocommerce') . '</strong> ';
+            echo __('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-woocommerce');
+            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#important-classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-woocommerce') . '</a></p>';
+            echo '</div>';
+        }
+    }
+}
+//---------------------------------------------------------------------------
 
 //===========================================================================
 // deactivating

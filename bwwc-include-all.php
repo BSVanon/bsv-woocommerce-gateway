@@ -59,3 +59,4 @@ require_once(dirname(__FILE__) . '/bwwc-utils.php');
 require_once(dirname(__FILE__) . '/bwwc-admin.php');
 require_once(dirname(__FILE__) . '/bwwc-render-settings.php');
 require_once(dirname(__FILE__) . '/bwwc-bitcoin-gateway.php');
+require_once(dirname(__FILE__) . '/bwwc-dashboard-widget.php');

@@ -495,6 +495,21 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     }
 
     if (!is_numeric($funds_received)) {
+        // Modern provider: WhatsOnChain (returns sats)
+        $whatsonchain_response = BWWC__file_get_contents(
+            'https://api.whatsonchain.com/v1/bsv/main/address/' . $btc_address . '/balance',
+            false,
+            $api_timeout
+        );
+        if ($whatsonchain_response) {
+            $whatsonchain_json = json_decode(trim($whatsonchain_response), true);
+            if (is_array($whatsonchain_json) && isset($whatsonchain_json['confirmed'])) {
+                $funds_received = $whatsonchain_json['confirmed'];
+            }
+        }
+    }
+
+    if (!is_numeric($funds_received)) {
         // Help: http://bchsvexplorer.com
         $funds_received = BWWC__file_get_contents('http://bchsvexplorer.com/api/addr/' . $btc_address . '/totalReceived', true, $api_timeout);
 
@@ -661,41 +676,22 @@ function BWWC__get_exchange_rate_per_bitcoin($currency_code, $rate_retrieval_met
     $rates = array();
 
 
-    // bitcoinaverage covers both - vwap and realtime
-    $rates[] = BWWC__get_exchange_rate_from_bitcoinaverage($currency_code, $exchange_rate_type, $bwwc_settings);  // Requested vwap, realtime or bestrate
-    if ($rates[0]) {
-
-        // First call succeeded
-        //comment out bitpay for now until they add bitcoin sv
-        //if ($exchange_rate_type == 'bestrate')
-        //	$rates[] = BWWC__get_exchange_rate_from_bitpay ($currency_code, $exchange_rate_type, $bwwc_settings);		   // Requested bestrate
-
-        $rates = array_filter($rates);
-        if (count($rates) && $rates[0]) {
-            $exchange_rate = min($rates);
-            // Save new currency exchange rate info in cache
-            BWWC__update_exchange_rate_cache($currency_code, $requested_cache_method_type, $exchange_rate);
-        } else {
-            $exchange_rate = false;
-        }
+    // Try CoinGecko first (free, no API key required)
+    $rates[] = BWWC__get_exchange_rate_from_coingecko($currency_code, $exchange_rate_type, $bwwc_settings);
+    
+    // If CoinGecko fails, try Blockchair
+    if (!$rates[0]) {
+        $rates[] = BWWC__get_exchange_rate_from_blockchair($currency_code, $exchange_rate_type, $bwwc_settings);
+    }
+    
+    // Filter out false values and get the rate
+    $rates = array_filter($rates);
+    if (count($rates) && $rates[0]) {
+        $exchange_rate = min($rates);
+        // Save new currency exchange rate info in cache
+        BWWC__update_exchange_rate_cache($currency_code, $requested_cache_method_type, $exchange_rate);
     } else {
-
-        // First call failed
-        if ($exchange_rate_type == 'vwap') {
-            $rates[] = BWWC__get_exchange_rate_from_coinmarketcap($currency_code, $exchange_rate_type, $bwwc_settings);
-        }
-        //else
-        //	$rates[] = BWWC__get_exchange_rate_from_bitpay ($currency_code, $exchange_rate_type, $bwwc_settings);		   // Requested bestrate
-
-        $rates = array_filter($rates);
-        if (count($rates)) {
-            $exchange_rate = min($rates);
-        } else {
-            $exchange_rate = false;
-        }
-        if ($exchange_rate) {// If array contained only meaningless data (all 'false's)
-            BWWC__update_exchange_rate_cache($currency_code, $requested_cache_method_type, $exchange_rate);
-        }
+        $exchange_rate = false;
     }
 
 
@@ -739,31 +735,21 @@ function BWWC__update_exchange_rate_cache($currency_code, $requested_cache_metho
 
 //===========================================================================
 // $rate_type: 'vwap' | 'realtime' | 'bestrate'
-function BWWC__get_exchange_rate_from_bitcoinaverage($currency_code, $rate_type, $bwwc_settings)
+// CoinGecko API - free, no API key required
+function BWWC__get_exchange_rate_from_coingecko($currency_code, $rate_type, $bwwc_settings)
 {
-    $source_url	=	"https://XXXapiv2.bitcoinaverage.com/indices/global/ticker/short?crypto=BSV&fiat={$currency_code}";
+    $currency_code_lower = strtolower($currency_code);
+    $source_url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies={$currency_code_lower}";
     $result = @BWWC__file_get_contents($source_url, false, $bwwc_settings['exchange_rate_api_timeout_secs']);
 
     $rate_obj = @json_decode(trim($result), true);
 
-    if (!is_array($rate_obj)) {
+    if (!is_array($rate_obj) || !isset($rate_obj['bitcoin-cash-sv'][$currency_code_lower])) {
         return false;
     }
 
-    $json_root = 'BSV' . strtoupper($currency_code);
-
-    if (@$rate_obj[$json_root] && @$rate_obj[$json_root]['averages'] && @$rate_obj['averages']['day']) {
-        $rate_24h_avg = @$rate_obj[$json_root]['averages']['day'];
-    } elseif (@$rate_obj[$json_root]) {
-        $rate_24h_avg = @$rate_obj[$json_root]['last'];
-    }
-
-    switch ($rate_type) {
-        case 'vwap':				return $rate_24h_avg;
-        case 'realtime':		return @$rate_obj[$json_root]['last'];
-        case 'bestrate':
-        default:						return min($rate_24h_avg, @$rate_obj['last']);
-    }
+    // CoinGecko returns current market price
+    return $rate_obj['bitcoin-cash-sv'][$currency_code_lower];
 }
 //===========================================================================
 

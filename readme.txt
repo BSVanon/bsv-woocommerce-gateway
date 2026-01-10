@@ -46,6 +46,14 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 3. Activate.
 4. Configure plugin with your local ElectrumSV (electrumsv.io) master public key
 
+**Important for WooCommerce 8.3+**: This plugin requires classic checkout. If using WooCommerce Blocks:
+1. Create a new page with the shortcode: [woocommerce_checkout]
+2. Go to WooCommerce → Settings → Advanced
+3. Set the new page as your Checkout page
+4. Save changes
+
+WooCommerce Blocks support is planned for v5.1.
+
 
 
 == Screenshots ==
@@ -183,4 +191,43 @@ soon
 
 == Frequently Asked Questions ==
 
-soon
+= Why doesn't the Bitcoin SV payment option appear at checkout? =
+
+If you're using WooCommerce 8.3+ with the new Blocks-based checkout, you need to switch to classic checkout:
+
+1. Create a new page with the shortcode: [woocommerce_checkout]
+2. Go to WooCommerce → Settings → Advanced → Page setup
+3. Set your new page as the Checkout page
+4. Save changes
+
+The plugin currently requires classic checkout. Blocks support is coming in v5.1.
+
+= What are the minimum requirements? =
+
+* WordPress 5.8 or higher
+* WooCommerce 6.0 or higher
+* PHP 7.4 or higher (8.x recommended)
+* PHP extension: gmp (preferred) or bcmath
+
+= Do I need an API key? =
+
+No! v5.0.0 uses CoinGecko's free API for exchange rates and WhatsOnChain for blockchain lookups. No API keys required.
+
+= Is my Master Public Key (xpub) safe? =
+
+Yes. The xpub only allows *receiving* payments. It cannot be used to spend funds. Your private keys remain secure in your ElectrumSV wallet.
+
+= How do I get my Master Public Key from ElectrumSV? =
+
+1. Open ElectrumSV wallet
+2. Go to Wallet → Information
+3. Copy the Master Public Key (xpub format, 111 characters)
+4. Paste into plugin settings
+
+= What happens if exchange rates fail? =
+
+As a workaround, you can temporarily set your WooCommerce store currency to "BTC" for 1:1 pricing. Check your server's ability to make outbound HTTPS connections.
+
+= How long does payment detection take? =
+
+The plugin checks for payments via WP-Cron (default: every 2.5 minutes). For faster detection, configure a real cron job. Payments show as confirmed after your configured number of blockchain confirmations (recommended: 1-6).

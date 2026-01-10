@@ -934,7 +934,7 @@ function BWWC__safe_string_escape($str="")
     $escapeCount=0;
     $targetString='';
     for ($offset=0; $offset<$len; $offset++) {
-        switch ($c=$str{$offset}) {
+        switch ($c=$str[$offset]) {
          case "'":
          // Escapes this quote only if its not preceded by an unescaped backslash
                  if ($escapeCount % 2 == 0) {

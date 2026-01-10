@@ -33,6 +33,16 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
      */
     class BWWC_Bitcoin extends WC_Payment_Gateway
     {
+        /**
+         * Woo gateway public properties to avoid PHP 8.2 dynamic property notices.
+         */
+        public $service_provider;
+        public $bitcoin_addr_merchant;
+        public $confs_num;
+        public $instructions;
+        public $instructions_multi_payment_str;
+        public $instructions_single_payment_str;
+
         //-------------------------------------------------------------------
         /**
          * Constructor for the gateway.
@@ -56,12 +66,11 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $this->init_settings();
 
             // Define user set variables
-            $this->title 		= $this->settings['title'];	// The title which the user is shown on the checkout – retrieved from the settings which init_settings loads.
-            $this->bitcoin_addr_merchant = $this->settings['bitcoin_addr_merchant'];	// Forwarding address where all product payments will aggregate.
-            
+            $this->title = $this->get_option('title', __('Bitcoin SV Payment', 'woocommerce'));
+            $this->bitcoin_addr_merchant = $this->get_option('bitcoin_addr_merchant', '');
             $this->confs_num = $bwwc_settings['confs_num'];  //$this->settings['confirmations'];
-            $this->description 	= $this->settings['description'];	// Short description about the gateway which is shown on checkout.
-            $this->instructions = $this->settings['instructions'];	// Detailed payment instructions for the buyer.
+            $this->description = $this->get_option('description', __('Please proceed to the next screen to see necessary payment details.', 'woocommerce'));	// Short description about the gateway which is shown on checkout.
+            $this->instructions = $this->get_option('instructions', ''); // Detailed payment instructions for the buyer.
             $this->instructions_multi_payment_str  = __('You may send payments from multiple accounts to reach the total required.', 'woocommerce');
             $this->instructions_single_payment_str = __('You must pay in a single payment in full.', 'woocommerce');
              if (isset($bwwc_settings['selected_checkout_icon']) && $bwwc_settings['selected_checkout_icon'] != "") {
@@ -615,11 +624,14 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             // Get order object.
             // http://wcdocs.woothemes.com/apidocs/class-WC_Order.html
-            $order = new WC_Order($order_id);
+            $order = wc_get_order($order_id);
+            if (!$order) {
+                return;
+            }
 
             // Assemble detailed instructions.
-            $order_total_in_btc   = get_post_meta($order->id, 'order_total_in_btc', true); // set single to true to receive properly unserialized array
-            $bitcoins_address = get_post_meta($order->id, 'bitcoins_address', true); // set single to true to receive properly unserialized array
+            $order_total_in_btc   = get_post_meta($order->get_id(), 'order_total_in_btc', true); // set single to true to receive properly unserialized array
+            $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true); // set single to true to receive properly unserialized array
 
 
             $instructions = $this->instructions;

@@ -321,8 +321,68 @@ function BWWC__render_general_settings_page_html()
 //===========================================================================
 function BWWC__render_advanced_settings_page_html()
 {
+    $bwwc_settings = BWWC__get_settings();
  ?>
- <p style="text-align:center;"><h3>Bitcoin is for everyone.</h3></p>
+ <h3>Advanced Configuration</h3>
+ <p>These settings control technical aspects of the plugin. Only modify if you understand the implications.</p>
+ 
+ <table class="form-table">
+    <tr valign="top">
+        <th scope="row">Exchange Rate Cache Duration</th>
+        <td>
+            <input type="text" name="cache_exchange_rates_for_minutes" value="<?php echo esc_attr($bwwc_settings['cache_exchange_rates_for_minutes']); ?>" size="4" />
+            <span class="description">minutes. How long to cache exchange rates before fetching fresh data. Default: 10 minutes.</span>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">API Timeout</th>
+        <td>
+            <input type="text" name="exchange_rate_api_timeout_secs" value="<?php echo esc_attr($bwwc_settings['exchange_rate_api_timeout_secs']); ?>" size="4" />
+            <span class="description">seconds. Maximum time to wait for exchange rate API responses. Default: 20 seconds.</span>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Cron Job Schedule</th>
+        <td>
+            <select name="soft_cron_job_schedule_name">
+                <option value="minutes_1" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_1'); ?>>Every 1 minute</option>
+                <option value="minutes_2.5" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_2.5'); ?>>Every 2.5 minutes (recommended)</option>
+                <option value="minutes_5" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_5'); ?>>Every 5 minutes</option>
+            </select>
+            <span class="description">How often to check for incoming BSV payments. More frequent = faster detection but higher server load.</span>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Enable Cron Job</th>
+        <td>
+            <input type="checkbox" name="enable_soft_cron_job" value="1" <?php checked($bwwc_settings['enable_soft_cron_job'], '1'); ?> />
+            <span class="description">Enable automatic payment detection via WordPress cron. Disable if using external cron job.</span>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Delete Data on Uninstall</th>
+        <td>
+            <input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], '1'); ?> />
+            <span class="description">Remove all plugin data when uninstalling. <strong>Warning:</strong> This will delete payment history!</span>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Payment Timeout</th>
+        <td>
+            <input type="text" name="assigned_address_expires_in_mins" value="<?php echo esc_attr($bwwc_settings['assigned_address_expires_in_mins']); ?>" size="6" />
+            <span class="description">minutes. How long customers have to complete payment before order expires. Default: 240 minutes (4 hours).</span>
+        </td>
+    </tr>
+ </table>
+ 
+ <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
+    <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
+ </p>
 <?php
 }
 //===========================================================================

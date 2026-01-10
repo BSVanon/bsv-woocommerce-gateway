@@ -320,6 +320,7 @@ function BWWC__render_advanced_settings_page_html()
 {
     $bwwc_settings = BWWC__get_settings();
  ?>
+ <form method="post" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
  <h3>Advanced Configuration</h3>
  <p>These settings control technical aspects of the plugin. Only modify if you understand the implications.</p>
  
@@ -380,6 +381,11 @@ function BWWC__render_advanced_settings_page_html()
  <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
     <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
  </p>
+ 
+ <p class="submit">
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php _e('Save Changes') ?>" />
+ </p>
+ </form>
 <?php
 }
 //===========================================================================

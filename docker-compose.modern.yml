@@ -1,0 +1,33 @@
+services:
+  mysql-modern:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data_modern:/var/lib/mysql
+    ports:
+      - "3307:3306"
+
+  wordpress-modern:
+    image: wordpress:6.7-php8.2-apache
+    depends_on:
+      - mysql-modern
+    ports:
+      - "8081:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql-modern:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - ./docker/wp-modern:/var/www/html
+      - ./:/var/www/html/wp-content/plugins/bitcoin-sv-payments-for-woocommerce
+
+volumes:
+  db_data_modern:

@@ -1,4 +1,7 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 /***********************************************************************
  * Copyright (C) 2012 Matyas Danter
  *
@@ -31,7 +34,7 @@ class gmp_Utils
 {
     public static function gmp_mod2($n, $d)
     {
-        if (extension_loaded('gmp') && USE_EXT == 'GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT == 'GMP') {
             $res = gmp_div_r($n, $d);
             if (gmp_cmp(0, $res) > 0) {
                 $res = gmp_add($d, $res);
@@ -44,7 +47,7 @@ class gmp_Utils
 
     public static function gmp_hexdec($hex)
     {
-        if (extension_loaded('gmp') && USE_EXT == 'GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT == 'GMP') {
             $dec = gmp_strval(gmp_init($hex), 10);
 
             return $dec;
@@ -55,7 +58,7 @@ class gmp_Utils
 
     public static function gmp_dechex($dec)
     {
-        if (extension_loaded('gmp') && USE_EXT == 'GMP') {
+        if (extension_loaded('gmp') && BWWC_USE_EXT == 'GMP') {
             $hex = gmp_strval(gmp_init($dec), 16);
 
             return $hex;

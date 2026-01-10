@@ -31,7 +31,7 @@ function BWWC__MATH_generate_bitcoin_address_from_mpk_v2($master_public_key, $ke
 //===========================================================================
 function BWWC__MATH_generate_bitcoin_address_from_mpk($master_public_key, $key_index, $is_for_change = false)
 {
-    if (USE_EXT != 'GMP' && USE_EXT != 'BCMATH') {
+    if (BWWC_USE_EXT != 'GMP' && BWWC_USE_EXT != 'BCMATH') {
         BWWC__log_event(__FILE__, __LINE__, "Neither GMP nor BCMATH PHP math libraries are present. Aborting.");
         return false;
     }

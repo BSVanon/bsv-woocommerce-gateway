@@ -4,6 +4,8 @@ Bitcoin SV Payments for WooCommerce
 https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 */
 
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 
 //---------------------------------------------------------------------------
 add_action('plugins_loaded', 'BWWC__plugins_loaded__load_bitcoin_gateway', 0);
@@ -225,20 +227,17 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             $currency_ticker = BWWC__get_exchange_rate_per_bitcoin($currency_code, 'getfirst', true);
             
-            // Format exchange rate display
+            // Format exchange rate display - only show if successfully fetched
             $exchange_rate_display = '';
-            if ($currency_ticker && is_numeric($currency_ticker)) {
+            if ($currency_ticker && is_numeric($currency_ticker) && $currency_ticker > 0) {
                 $exchange_rate_display = '<div style="padding: 10px; background: #e7f7e7; border-left: 4px solid #46b450; margin: 10px 0;">';
                 $exchange_rate_display .= '<strong>' . __('Current Exchange Rate:', 'woocommerce') . '</strong> ';
                 $exchange_rate_display .= '1 BSV = ' . number_format((float)$currency_ticker, 2) . ' ' . esc_html($currency_code);
                 $exchange_rate_display .= ' <span style="color: #666; font-size: 12px;">(' . __('via CoinGecko', 'woocommerce') . ')</span>';
                 $exchange_rate_display .= '</div>';
-            } else {
-                $exchange_rate_display = '<div style="padding: 10px; background: #fff3cd; border-left: 4px solid #ffc107; margin: 10px 0;">';
-                $exchange_rate_display .= '<strong>' . __('Exchange Rate:', 'woocommerce') . '</strong> ';
-                $exchange_rate_display .= __('Unable to fetch current rate. Please check your server\'s internet connection.', 'woocommerce');
-                $exchange_rate_display .= '</div>';
             }
+            // Note: If rate fetch fails, we simply don't display anything rather than showing an error
+            // Exchange rates are fetched in real-time during checkout, so this is just informational
             //-----------------------------------
 
             //-----------------------------------
@@ -331,7 +330,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                                 'type' => 'text',
                                 'css'     => $this->service_provider!='blockchain_info'?'display:none;':'',
                                 'disabled' => $this->service_provider!='blockchain_info'?true:false,
-                                'description' => $this->service_provider!='blockchain_info'?__('Available when Bitcoin SV address generation is set to: <b>Blockchain.info</b> (at BitcoinWay plugin settings page). Current method uses BIP32/BIP44 HD Wallet (xPub) for secure address generation.', 'woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'woocommerce'),
+                                'description' => $this->service_provider!='blockchain_info'?__('Not used with current address generation method. This plugin uses BIP32/BIP44 HD Wallet (xPub) for secure per-order address derivation. Configure your Master Public Key in the BSV Plugin settings page.', 'woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'woocommerce'),
                                 'default' => '',
                             ),
 
@@ -458,8 +457,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $order_meta['bw_items'] = $order->get_items();
             $order_meta['bw_b_addr'] = $order->get_formatted_billing_address();
             $order_meta['bw_s_addr'] = $order->get_formatted_shipping_address();
-            $order_meta['bw_b_email'] = $order->billing_email;
-            $order_meta['bw_currency'] = $order->order_currency;
+            $order_meta['bw_b_email'] = $order->get_billing_email();
+            $order_meta['bw_currency'] = $order->get_currency();
             $order_meta['bw_settings'] = $bwwc_settings;
             $order_meta['bw_store'] = plugins_url('', __FILE__);
 

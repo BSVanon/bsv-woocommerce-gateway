@@ -1,4 +1,7 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 /***********************************************************************
 Copyright (C) 2012 Matyas Danter
 
@@ -35,7 +38,7 @@ class bcmath_Utils
 {
     public static function bchexdec($hex)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             $len = strlen($hex);
             $dec = '';
             for ($i = 1; $i <= $len; $i++) {
@@ -50,7 +53,7 @@ class bcmath_Utils
 
     public static function bcdechex($dec)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             $hex = '';
             $positive = $dec < 0 ? false : true;
 
@@ -136,7 +139,7 @@ class bcmath_Utils
 
     public static function bcor($x, $y)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             return self::_bcbitwise_internal($x, $y, 'self::_bcor');
         } else {
             throw new ErrorException("Please install BCMATH");
@@ -147,7 +150,7 @@ class bcmath_Utils
 
     public static function bcxor($x, $y)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             return self::_bcbitwise_internal($x, $y, 'self::_bcxor');
         } else {
             throw new ErrorException("Please install BCMATH");
@@ -158,7 +161,7 @@ class bcmath_Utils
 
     public static function bcleftshift($num, $shift)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             bcscale(0);
             return bcmul($num, bcpow(2, $shift));
         } else {
@@ -170,7 +173,7 @@ class bcmath_Utils
 
     public static function bcrightshift($num, $shift)
     {
-        if (extension_loaded('bcmath') && USE_EXT=='BCMATH') {
+        if (extension_loaded('bcmath') && BWWC_USE_EXT=='BCMATH') {
             bcscale(0);
             return bcdiv($num, bcpow(2, $shift));
         } else {

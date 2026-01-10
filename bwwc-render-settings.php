@@ -142,23 +142,27 @@ function BWWC__render_general_settings_page_html()
           <td>
             <textarea style="width:75%;" name="electrum_mpk_saved"><?php echo $bwwc_settings['electrum_mpk_saved']; ?></textarea>
             <p class="description">
+              <strong>How to get your Master Public Key (xPub):</strong>
               <ol class="description">
                 <li>
-                  Launch ElectrumSV and get Master Public Key value from:
-                  Wallet -> Information
+                  Open your BIP32-compatible wallet (ElectrumSV, Electrum, HandCash, etc.)
                 </li>
                 <li>
-                  Copy long number string and paste it in this field.
+                  Locate your Master Public Key (xPub). This is typically found in:
+                  <ul style="margin-top: 5px;">
+                    <li>Wallet Information or Wallet Details menu</li>
+                    <li>May be labeled as "Master Public Key", "xPub", or "Extended Public Key"</li>
+                    <li>Starts with "xpub" (111 characters) or is a 128-character hex string</li>
+                  </ul>
                 </li>
                 <li>
-                  Change "gap limit" value to bigger value (to make sure youll see the total balance on your wallet):
-                  <br />Click on "Console" tab and run this command: <tt>wallet.storage.put('gap_limit',100)</tt>
+                  Copy the entire Master Public Key string and paste it into the field above.
                 </li>
                 <li>
-                  Restart ElectrumSV wallet to activate new gap limit. You may do it later at any time - gap limit does not affect functionlity of your online store.
-                  <br />If your online store receives lots of orders in Bitcoin SV - you might need to set gap limit to even bigger value.
+                  <strong>Important:</strong> Ensure your wallet's "gap limit" is set to at least 100 to properly detect all incoming payments. Consult your wallet's documentation for instructions on adjusting this setting.
                 </li>
               </ol>
+              <p style="margin-top: 10px;"><em>Note: The Master Public Key allows address generation but cannot spend funds. It is safe to use on your web server.</em></p>
             </p>
           </td>
         </tr>

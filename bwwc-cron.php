@@ -4,6 +4,8 @@ Bitcoin SV Payments for WooCommerce
 https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 */
 
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 
 // Include everything
 define('BWWC_MUST_LOAD_WP', '1');

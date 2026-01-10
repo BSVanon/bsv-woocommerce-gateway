@@ -31,6 +31,8 @@ OTHER DEALINGS IN THE SOFTWARE.
  *
  *
  */
+if ( ! defined( 'ABSPATH' ) ) exit;
+
 class NumberTheory
 {
     public static function modular_exp($base, $exponent, $modulus)

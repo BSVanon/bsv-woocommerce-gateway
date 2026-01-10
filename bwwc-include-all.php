@@ -22,11 +22,16 @@ if (!defined('BWWC_PLUGIN_NAME')) {
 
     // i18n plugin domain for language files
     define('BWWC_I18N_DOMAIN', 'bwwc');
+}
 
-    if (extension_loaded('gmp') && !defined('BWWC_USE_EXT')) {
+// Determine which math extension is available (runs on every load so upgrades are detected).
+if (!defined('BWWC_USE_EXT')) {
+    if (extension_loaded('gmp')) {
         define('BWWC_USE_EXT', 'GMP');
-    } elseif (extension_loaded('bcmath') && !defined('BWWC_USE_EXT')) {
+    } elseif (extension_loaded('bcmath')) {
         define('BWWC_USE_EXT', 'BCMATH');
+    } else {
+        define('BWWC_USE_EXT', 'NONE');
     }
 }
 //---------------------------------------------------------------------------

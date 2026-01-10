@@ -114,7 +114,7 @@ See `docs/TESTING.md` for comprehensive test procedures.
 
 ## 🤝 Support
 
-- **Issues**: [GitHub Issues](https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce/issues)
+- **Issues**: [GitHub Issues](https://github.com/BSVanon/bsv-woocommerce-gateway/issues)
 - **Documentation**: See `docs/` folder
 - **Testing**: Follow `docs/TESTING.md`
 

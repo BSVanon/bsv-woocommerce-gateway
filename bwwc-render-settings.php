@@ -180,23 +180,23 @@ function BWWC__render_general_settings_page_html()
         </tr>
 
         <tr valign="top">
-          <th scope="row">Bitcoin SV Exchange rate calculation type:</th>
+          <th scope="row">Stale Exchange Rate Handling:</th>
           <td>
             <select name="exchange_rate_type" class="select ">
               <option <?php if ($bwwc_settings['exchange_rate_type'] == 'vwap') {
         echo 'selected="selected"';
-    } ?> value="vwap">Weighted Average</option>
+    } ?> value="vwap">Use last available rate (default)</option>
               <option <?php if ($bwwc_settings['exchange_rate_type'] == 'realtime') {
         echo 'selected="selected"';
-    } ?> value="realtime">Real Time</option>
+    } ?> value="realtime">Disable gateway if rate older than 1 hour</option>
               <option <?php if ($bwwc_settings['exchange_rate_type'] == 'bestrate') {
         echo 'selected="selected"';
-    } ?> value="bestrate">Most profitable</option>
+    } ?> value="bestrate">Disable gateway if rate older than 6 hours</option>
             </select>
             <p class="description">
-              Weighted Average (recommended): <a href="http://en.wikipedia.org/wiki/Volume-weighted_average_price">weighted average</a> rates polled from a number of exchange services
-              <br />Real time: the most recent transaction rates polled from a number of exchange services.
-              <br />Most profitable: pick better exchange rate of all indicators (most favorable for merchant). Calculated as: MIN (Weighted Average, Real time)
+              <strong>Use last available rate (recommended):</strong> Always use the most recent exchange rate, regardless of age. Gateway remains available even if API is temporarily down.
+              <br /><strong>Disable if stale:</strong> Hide BSV payment option from customers if exchange rate data is too old. Prevents orders with outdated pricing.
+              <br /><em>Note: Exchange rates are fetched from CoinGecko API and cached for the duration set in Advanced settings.</em>
             </p>
           </td>
         </tr>

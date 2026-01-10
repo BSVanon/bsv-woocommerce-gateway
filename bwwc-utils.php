@@ -1122,6 +1122,40 @@ function BWWC__is_gateway_valid_for_use(&$ret_reason_message=null)
             }
             return false;
         }
+        
+        // Check if exchange rate is too stale based on settings
+        $exchange_rate_type = $bwwc_settings['exchange_rate_type'];
+        $requested_cache_method_type = 'getfirst|' . $exchange_rate_type;
+        $this_currency_info = @$bwwc_settings['exchange_rates'][$store_currency_code][$requested_cache_method_type];
+        
+        if ($this_currency_info && isset($this_currency_info['time-last-checked'])) {
+            $age_in_seconds = time() - $this_currency_info['time-last-checked'];
+            $age_in_hours = $age_in_seconds / 3600;
+            
+            // 'vwap' = use last available rate (no age limit)
+            // 'realtime' = disable if older than 1 hour
+            // 'bestrate' = disable if older than 6 hours
+            $max_age_hours = 0;
+            if ($exchange_rate_type == 'realtime') {
+                $max_age_hours = 1;
+            } elseif ($exchange_rate_type == 'bestrate') {
+                $max_age_hours = 6;
+            }
+            
+            if ($max_age_hours > 0 && $age_in_hours > $max_age_hours) {
+                $valid = false;
+                $reason_message = sprintf(
+                    __("Bitcoin SV payment option is temporarily unavailable. Exchange rate data is %s hours old (maximum allowed: %s hours). Please try again later or contact the store owner.", 'woocommerce'),
+                    number_format($age_in_hours, 1),
+                    $max_age_hours
+                );
+                
+                if ($ret_reason_message !== null) {
+                    $ret_reason_message = $reason_message;
+                }
+                return false;
+            }
+        }
     }
     //----------------------------------
 

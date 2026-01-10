@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Bitcoin SV Payments for WooCommerce
- * Plugin URI: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
+ * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
  * Version: 5.0.0
  * Author: BSVanon
- * Author URI: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
+ * Author URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bitcoin-sv-woocommerce
@@ -107,7 +107,7 @@ function BWWC__add_custom_scheduled_intervals($schedules)
  */
 function BWWC__plugin_action_links($links)
 {
-    $settings_link = '<a href="admin.php?page=BWWC-settings">' . __('Settings', 'bitcoin-sv-woocommerce') . '</a>';
+    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'bitcoin-sv-woocommerce') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
@@ -138,7 +138,7 @@ function BWWC__blocks_checkout_notice()
             echo '<div class="notice notice-warning is-dismissible">';
             echo '<p><strong>' . __('Bitcoin SV Gateway:', 'bitcoin-sv-woocommerce') . '</strong> ';
             echo __('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-woocommerce');
-            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#important-classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-woocommerce') . '</a></p>';
+            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-woocommerce') . '</a></p>';
             echo '</div>';
         }
     }

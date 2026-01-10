@@ -183,28 +183,28 @@ function BWWC_create_menu()
     add_menu_page(
         __('Woo Bitcoin SV', BWWC_I18N_DOMAIN),                    // Page title
         __('Bitcoin SV', BWWC_I18N_DOMAIN),                        // Menu Title - lower corner of admin menu
-        'administrator',                                        // Capability
-        'bwwc-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
+        'manage_options',                                        // Capability
+        'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page',                   // Function
 
         plugins_url('/images/bitcoin_16x.png', __FILE__)      // Icon URL
         );
 
     add_submenu_page(
-        'bwwc-settings',                                        // Parent
+        'BWWC-settings',                                        // Parent
         __("WooCommerce Bitcoin SV Payments Gateway", BWWC_I18N_DOMAIN),                   // Page title
         __("General Settings", BWWC_I18N_DOMAIN),               // Menu Title
-        'administrator',                                        // Capability
-        'bwwc-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
+        'manage_options',                                        // Capability
+        'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page'                    // Function
         );
 
     add_submenu_page(
-        'bwwc-settings',                                        // Parent
+        'BWWC-settings',                                        // Parent
         __("Bitcoin SV Plugin Advanced Settings", BWWC_I18N_DOMAIN),       // Page title
         __("Advanced Settings", BWWC_I18N_DOMAIN),                // Menu title
-        'administrator',                                        // Capability
-        'bwwc-settings-advanced',                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
+        'manage_options',                                        // Capability
+        'BWWC-settings-advanced',                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_advanced_settings_page'            // Function
         );
 }

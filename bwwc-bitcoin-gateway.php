@@ -682,10 +682,21 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $order_total_in_btc   = get_post_meta($order->get_id(), 'order_total_in_btc', true); // set single to true to receive properly unserialized array
             $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true); // set single to true to receive properly unserialized array
 
+            // Get current payment timeout setting and calculate hours dynamically
+            $bwwc_settings = BWWC__get_settings();
+            $payment_timeout_hours = round($bwwc_settings['assigned_address_expires_in_mins'] / 60);
 
             $instructions = $this->instructions;
             $instructions = str_replace('{{{BITCOINS_AMOUNT}}}', $order_total_in_btc, $instructions);
             $instructions = str_replace('{{{BITCOINS_ADDRESS}}}', $bitcoins_address, $instructions);
+            
+            // Replace the payment timeout hours dynamically with current setting
+            $instructions = preg_replace(
+                '/within \d+ hours/',
+                'within ' . $payment_timeout_hours . ' hours',
+                $instructions
+            );
+            
             $instructions =
                 str_replace(
                     '{{{EXTRA_INSTRUCTIONS}}}',

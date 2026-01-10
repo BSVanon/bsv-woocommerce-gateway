@@ -1,0 +1,28 @@
+name: PHP Syntax Check
+
+on:
+  push:
+    branches: [ main, legacy-bootstrap ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  php-lint:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: ${{ matrix.php-version }}
+        extensions: gmp, bcmath
+    
+    - name: Validate PHP syntax
+      run: |
+        find . -name "*.php" -not -path "./docker/*" -not -path "./vendor/*" -exec php -l {} \; | (! grep -v "No syntax errors")

@@ -52,7 +52,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 3. Set the new page as your Checkout page
 4. Save changes
 
-WooCommerce Blocks support is planned for v5.1.
+WooCommerce Blocks support is planned for v5.2.
 
 
 

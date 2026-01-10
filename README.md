@@ -15,6 +15,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **QR Codes**: Easy mobile payments
 - **Modern Stack**: PHP 8.0-8.3, WordPress 6.7, WooCommerce 9.5
 - **HPOS Compatible**: High-Performance Order Storage ready
+- **Self-Custody Focused**: All funds settle directly to wallets you control
 
 ## 📦 Installation
 

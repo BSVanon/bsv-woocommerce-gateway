@@ -1,7 +1,7 @@
 # Bitcoin SV Payments for WooCommerce
 
-**Version:** 5.1.0-beta  
-**Status:** Ready for Testing  
+**Version:** 5.1.0  
+**Status:** WordPress.org Submission Ready  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 
 Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
@@ -72,26 +72,26 @@ See `docs/TESTING.md` for comprehensive test procedures.
 
 - **[TESTING.md](docs/TESTING.md)** - Test suite and procedures
 - **[UPGRADE.md](docs/UPGRADE.md)** - Migration guide from v4.x
-- **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - v5.0.0 changes
+- **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - v5.1.0 changes
 - **[DEV_NOTES.md](docs/DEV_NOTES.md)** - Development environment setup
 - **[CAPABILITIES.md](docs/CAPABILITIES.md)** - Feature specification
 
-## ⚠️ Known Limitations (v5.0.0-beta)
+## ⚠️ Known Limitations (v5.1.0)
 
 - **WooCommerce Blocks**: Not yet supported (use classic checkout with `[woocommerce_checkout]` shortcode)
-- **Provider Configuration**: API endpoints are hardcoded (customization UI planned for v5.1)
 - **Rate Limiting**: CoinGecko free tier has 50 calls/min limit
 
 ## 🗺️ Roadmap
 
-### v5.1 (Planned)
+### v5.2 (Planned)
 - WooCommerce Blocks checkout support
 - Provider configuration UI (custom API endpoints)
-- Admin diagnostics dashboard improvements
-
-### v5.2 (Planned)
 - Webhook support for instant payment notifications
 - Enhanced address pool management
+
+### v6.0 (Future)
+- Multi-currency support improvements
+- Admin diagnostics dashboard enhancements
 - Performance optimizations
 
 ## 🐛 Troubleshooting
@@ -130,8 +130,8 @@ https://www.gnu.org/licenses/gpl-2.0.html
 - sanchaz (Bitcoin Cash fork)
 - gesman (Bitcoin SV adaptation)
 
-### v5.0.0 Modernization
-- BSVanon (2026 modernization and maintenance)
+### v5.x Modernization & Maintenance
+- BSVanon (2026 WordPress.org submission and ongoing maintenance)
 
 ### Special Thanks
 - ElectrumSV team
@@ -141,4 +141,4 @@ https://www.gnu.org/licenses/gpl-2.0.html
 
 ---
 
-**Ready for Beta Testing** - Please report issues on GitHub!
+**v5.1.0 - WordPress.org Submission Ready** - Report issues on GitHub!

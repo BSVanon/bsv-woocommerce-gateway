@@ -462,8 +462,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 'order_id'								=> $order_id,
                 'order_total'			    	 	=> $order_total_in_btc,  // Order total in BTC
                 'order_datetime'  				=> date('Y-m-d H:i:s T'),
-                'requested_by_ip'					=> @$_SERVER['REMOTE_ADDR'],
-                'requested_by_ua'					=> @$_SERVER['HTTP_USER_AGENT'],
+                'requested_by_ip'					=> isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '',
+                'requested_by_ua'					=> isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '',
                 'requested_by_srv'				=> BWWC__base64_encode(serialize($_SERVER)),
                 );
 
@@ -692,8 +692,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             if (isset($_REQUEST['bitcoinway']) && $_REQUEST['bitcoinway'] == '1') {
                 BWWC__log_event(__FILE__, __LINE__, "BWWC__maybe_bitcoin_ipn_callback () called and 'bitcoinway=1' detected. REQUEST  =  " . serialize(@$_REQUEST));
 
-                if (@$_GET['src'] != 'bcinfo') {
-                    $src = $_GET['src'];
+                if (!isset($_GET['src']) || $_GET['src'] != 'bcinfo') {
+                    $src = isset($_GET['src']) ? $_GET['src'] : 'unknown';
                     BWWC__log_event(__FILE__, __LINE__, "Warning: received IPN notification with 'src'= '{$src}', which is not matching expected: 'bcinfo'. Ignoring ...");
                     exit();
                 }
@@ -701,25 +701,25 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 // Processing IPN callback from blockchain.info ('bcinfo')
 
 
-                $order_id = @$_GET['order_id'];
+                $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
 
                 $secret_key = get_post_meta($order_id, 'secret_key', true);
-                $secret_key_sent = @$_GET['secret_key'];
+                $secret_key_sent = isset($_GET['secret_key']) ? sanitize_text_field($_GET['secret_key']) : '';
                 // Check the Request secret_key matches the original one (blockchain.info sends all params back)
                 if ($secret_key_sent != $secret_key) {
                     BWWC__log_event(__FILE__, __LINE__, "Warning: secret_key does not match! secret_key sent: '{$secret_key_sent}'. Expected: '{$secret_key}'. Processing aborted.");
                     exit('Invalid secret_key');
                 }
 
-                $confirmations = @$_GET['confirmations'];
+                $confirmations = isset($_GET['confirmations']) ? intval($_GET['confirmations']) : 0;
 
 
                 if ($confirmations >= $this->confs_num) {
 
                     // The value of the payment received in satoshi (not including fees). Divide by 100000000 to get the value in BTC.
-                    $value_in_btc 		= @$_GET['value'] / 100000000;
-                    $txn_hash 			= @$_GET['transaction_hash'];
-                    $txn_confirmations 	= @$_GET['confirmations'];
+                    $value_in_btc 		= isset($_GET['value']) ? intval($_GET['value']) / 100000000 : 0;
+                    $txn_hash 			= isset($_GET['transaction_hash']) ? sanitize_text_field($_GET['transaction_hash']) : '';
+                    $txn_confirmations 	= isset($_GET['confirmations']) ? intval($_GET['confirmations']) : 0;
 
                     //---------------------------
                     // Update incoming payments array stats
@@ -727,7 +727,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                     $incoming_payments[$txn_hash] =
                         array(
                             'txn_value' 		=> $value_in_btc,
-                            'dest_address' 		=> @$_GET['address'],
+                            'dest_address' 		=> isset($_GET['address']) ? sanitize_text_field($_GET['address']) : '',
                             'confirmations' 	=> $txn_confirmations,
                             'datetime'			=> date("Y-m-d, G:i:s T"),
                             );

@@ -7,7 +7,7 @@ https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '4.20');
+    define('BWWC_VERSION', '5.0.0');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');

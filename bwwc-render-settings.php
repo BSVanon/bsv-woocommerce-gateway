@@ -263,14 +263,14 @@ function BWWC__render_general_settings_page_html()
         echo '<p style="background-color:#FFC;color:#2A2;"><b>NOTE</b>: Hard Cron job is enabled: make sure to follow instructions below to enable hard cron job at your hosting panel.</p>';
     } ?>
                 Cron job will take care of all regular Bitcoin SV payment processing tasks, like checking if payments are made and automatically completing the orders.<br />
-                <b>Soft Cron</b>: - Wordpress-driven (runs on behalf of a random site visitor).
+                <b>Soft Cron</b>: WordPress-driven (runs on behalf of a random site visitor).
                 <br />
-                <b>Hard Cron</b>: - Cron job driven by the website hosting system/server (usually via CPanel). <br />
+                <b>Hard Cron</b>: Cron job driven by the website hosting system/server (usually via cPanel). <br />
                 When enabling Hard Cron job - make this script to run every 5 minutes at your hosting panel cron job scheduler:<br />
                 <?php echo '<tt style="background-color:#FFA;color:#B00;padding:0px 6px;">wget -O /dev/null ' . $g_BWWC__cron_script_url . '?hardcron=1</tt>'; ?>
-                <br /><b style="color:red;">NOTE:</b> Cron jobs <b>might not work</b> if your site is password protected with HTTP Basic auth or other methods. This will result in WooCommerce store not seeing received payments (even though funds will arrive correctly to your Bitcoin SV addresses).
+                <br /><b style="color:red;">NOTE:</b> Cron jobs <b>might not work</b> if your site is password protected with HTTP Basic authentication or other methods. This will result in WooCommerce store not seeing received payments (even though funds will arrive correctly to your Bitcoin SV addresses).
                 <br /><u>Note:</u> You will need to deactivate/reactivate plugin after changing this setting for it to have effect.<br />
-                "Hard" cron jobs may not be properly supported by all hosting plans (many shared hosting plans has restrictions in place).               
+                "Hard" cron jobs may not be properly supported by all hosting plans (many shared hosting plans have restrictions in place).               
               </p>
             </td>
         </tr>

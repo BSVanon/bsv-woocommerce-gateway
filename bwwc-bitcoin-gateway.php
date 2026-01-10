@@ -282,9 +282,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
 ' . __('Please note:', 'woocommerce') . '
 <ol class="bpit-instructions">
-    <li>' . __('We ONLY accept Bitcoin SV (BSV). Any oter payments (BTC/BCH) will not process and the money will be lost!', 'woocommerce') . '</li>
+    <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'woocommerce') . '</li>
     <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'woocommerce') . '</li>
-    <li>' . __('You must make a payment within 1 hour, or your order may be cancelled', 'woocommerce') . '</li>
+    <li>' . sprintf(__('You must make a payment within %d hours, or your order may be cancelled', 'woocommerce'), round($bwwc_settings['assigned_address_expires_in_mins'] / 60)) . '</li>
     <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'woocommerce') . '</li>
     <li>{{{EXTRA_INSTRUCTIONS}}}</li>
 </ol>

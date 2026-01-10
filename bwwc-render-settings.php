@@ -124,24 +124,21 @@ function BWWC__render_general_settings_page_html()
         </tr>
 
         <tr valign="top">
-          <th scope="row">Bitcoin SV Service Provider:</th>
+          <th scope="row">Bitcoin SV Address Generation:</th>
           <td>
             <select name="service_provider" class="select ">
               <option <?php if ($bwwc_settings['service_provider'] == 'electrum_wallet') {
         echo 'selected="selected"';
-    } ?> value="electrum_wallet">Your own ElectrumSV wallet</option>
-              <option disabled <?php if ($bwwc_settings['service_provider'] == 'blockchain_info') {
-        echo 'selected="selected"';
-    } ?> value="blockchain_info">Blockchain.info API (Disabled for Bitcoin SV)</option>
+    } ?> value="electrum_wallet">BIP32/BIP44 HD Wallet (xPub)</option>
             </select>
             <p class="description">
-              Required setting: <b>Your own ElectrumSV wallet</b>.
+              Use any BIP32/BIP44 compatible HD wallet (ElectrumSV, Electrum, HandCash, etc.). The plugin generates unique payment addresses from your Master Public Key (xPub).
             </p>
           </td>
         </tr>
 
         <tr valign="top">
-          <th scope="row">ElectrumSV Master Public Key (MPK):</th>
+          <th scope="row">Master Public Key (xPub):</th>
           <td>
             <textarea style="width:75%;" name="electrum_mpk_saved"><?php echo $bwwc_settings['electrum_mpk_saved']; ?></textarea>
             <p class="description">

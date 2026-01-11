@@ -244,7 +244,10 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // Payment instructions
             // Get settings for payment timeout
             $bwwc_settings = BWWC__get_settings();
-            $payment_timeout_hours = round($bwwc_settings['assigned_address_expires_in_mins'] / 60);
+            $payment_timeout_mins = $bwwc_settings['assigned_address_expires_in_mins'];
+            $payment_timeout_hours = $payment_timeout_mins / 60;
+            // Format hours: show 1 decimal if needed, otherwise show whole number
+            $payment_timeout_display = ($payment_timeout_hours == floor($payment_timeout_hours)) ? (int)$payment_timeout_hours : number_format($payment_timeout_hours, 1);
             
             $payment_instructions = '
 <table class="bwwc-payment-instructions-table" id="bwwc-payment-instructions-table">
@@ -287,7 +290,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 <ol class="bpit-instructions">
     <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'woocommerce') . '</li>
     <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'woocommerce') . '</li>
-    <li>' . sprintf(__('You must make a payment within %d hours, or your order may be cancelled', 'woocommerce'), $payment_timeout_hours) . '</li>
+    <li>' . sprintf(__('You must make a payment within %s hours, or your order may be cancelled', 'woocommerce'), $payment_timeout_display) . '</li>
     <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'woocommerce') . '</li>
     <li>{{{EXTRA_INSTRUCTIONS}}}</li>
 </ol>
@@ -684,7 +687,10 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             // Get current payment timeout setting and calculate hours dynamically
             $bwwc_settings = BWWC__get_settings();
-            $payment_timeout_hours = round($bwwc_settings['assigned_address_expires_in_mins'] / 60);
+            $payment_timeout_mins = $bwwc_settings['assigned_address_expires_in_mins'];
+            $payment_timeout_hours = $payment_timeout_mins / 60;
+            // Format hours: show 1 decimal if needed, otherwise show whole number
+            $payment_timeout_display = ($payment_timeout_hours == floor($payment_timeout_hours)) ? (int)$payment_timeout_hours : number_format($payment_timeout_hours, 1);
 
             $instructions = $this->instructions;
             $instructions = str_replace('{{{BITCOINS_AMOUNT}}}', $order_total_in_btc, $instructions);
@@ -692,8 +698,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             
             // Replace the payment timeout hours dynamically with current setting
             $instructions = preg_replace(
-                '/within \d+ hours/',
-                'within ' . $payment_timeout_hours . ' hours',
+                '/within [\d.]+ hours/',
+                'within ' . $payment_timeout_display . ' hours',
                 $instructions
             );
             
@@ -871,6 +877,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
     //-----------------------------------------------------------------------
     // Hook into WooCommerce - add necessary hooks and filters
     add_filter('woocommerce_payment_gateways', 'BWWC__add_bitcoin_gateway');
+    
+    // Register WooCommerce Blocks support
+    add_action('woocommerce_blocks_loaded', 'BWWC__register_blocks_support');
 
     // Disable unnecessary billing fields.
     /// Note: it affects whole store.
@@ -898,6 +907,27 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
     {
         $methods[] = 'BWWC_Bitcoin';
         return $methods;
+    }
+    //=======================================================================
+
+    //=======================================================================
+    /**
+     * Register WooCommerce Blocks integration
+     */
+    function BWWC__register_blocks_support()
+    {
+        if (!class_exists('Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodType')) {
+            return;
+        }
+
+        require_once dirname(__FILE__) . '/includes/class-bsv-blocks-integration.php';
+
+        add_action(
+            'woocommerce_blocks_payment_method_type_registration',
+            function($payment_method_registry) {
+                $payment_method_registry->register(new WC_Gateway_Bitcoin_Blocks_Support());
+            }
+        );
     }
     //=======================================================================
 

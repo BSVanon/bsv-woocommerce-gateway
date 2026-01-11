@@ -24,6 +24,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 * Payment detection via blockchain APIs (WhatsOnChain, Blockchair)
 * QR code generation for easy mobile payments
 * WooCommerce HPOS (High-Performance Order Storage) compatible
+* WooCommerce Blocks checkout support
 * PHP 8+ compatible
 * Modern WordPress 6.x and WooCommerce 9.x support
 
@@ -46,13 +47,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 3. Activate.
 4. Configure plugin with your local ElectrumSV (electrumsv.io) master public key
 
-**Important for WooCommerce 8.3+**: This plugin requires classic checkout. If using WooCommerce Blocks:
-1. Create a new page with the shortcode: [woocommerce_checkout]
-2. Go to WooCommerce → Settings → Advanced
-3. Set the new page as your Checkout page
-4. Save changes
-
-WooCommerce Blocks support is planned for v5.2.
+**Checkout Compatibility**: This plugin supports both classic shortcode checkout `[woocommerce_checkout]` and modern WooCommerce Blocks checkout. No special configuration needed.
 
 
 
@@ -88,6 +83,8 @@ WooCommerce Blocks support is planned for v5.2.
 = 5.1.0 - 2026-01-10 =
 **WordPress.org submission release**
 
+* **NEW:** WooCommerce Blocks checkout support (modern block-based checkout)
+* **IMPROVED:** Payment timeout display now shows fractional hours (e.g., 90 mins = 1.5 hours)
 * **IMPROVED:** All PHPECC cryptography classes prefixed with BWWC_PhpEcc_ for WordPress naming compliance
 * **IMPROVED:** Removed debug code from PHPECC library
 * **IMPROVED:** Updated Bitcoin SV description to "electronic cash" terminology

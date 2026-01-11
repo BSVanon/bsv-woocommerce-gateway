@@ -1,7 +1,7 @@
 # Bitcoin SV Payments for WooCommerce
 
-**Version:** 5.1.0  
-**Status:** WordPress.org Submission Ready  
+**Version:** 5.2.0  
+**Status:** WordPress 6.9 / WooCommerce Blocks Ready  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 
 Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
@@ -13,9 +13,10 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Real-Time Exchange Rates**: CoinGecko integration with configurable markup
 - **Payment Detection**: WhatsOnChain blockchain API integration
 - **QR Codes**: Easy mobile payments
-- **Modern Stack**: PHP 8.0-8.3, WordPress 6.7, WooCommerce 9.5
+- **Modern Stack**: PHP 8.0-8.3, WordPress 6.9, WooCommerce 10.4
 - **HPOS Compatible**: High-Performance Order Storage ready
 - **Self-Custody Focused**: All funds settle directly to wallets you control
+- **Checkout Options**: Works with both WooCommerce Blocks and classic shortcode checkout
 
 ## 📦 Installation
 
@@ -40,17 +41,9 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 4. Set **Number of Confirmations** (recommended: 1-6)
 5. Save changes
 
-### Important: Classic Checkout Required
+### Checkout Compatibility
 
-**WooCommerce Blocks Checkout is not yet supported.** You must use the classic checkout:
-
-1. Create a new page (e.g., "Checkout")
-2. Add the shortcode: `[woocommerce_checkout]`
-3. Go to **WooCommerce → Settings → Advanced**
-4. Set **Checkout page** to your new classic checkout page
-5. Save changes
-
-The Bitcoin SV payment option will now appear correctly at checkout.
+WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortcode are both supported. No special action is required—just add the standard WooCommerce Checkout block/page during onboarding. If you prefer the legacy experience, you can still create a classic checkout page with the shortcode.
 
 ### Optional Settings
 - **Exchange Rate Multiplier**: Add markup/markdown percentage
@@ -72,20 +65,18 @@ See `docs/TESTING.md` for comprehensive test procedures.
 ## 📚 Documentation
 
 - **[TESTING.md](docs/TESTING.md)** - Test suite and procedures
-- **[UPGRADE.md](docs/UPGRADE.md)** - Migration guide from v4.x
-- **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - v5.1.0 changes
+- **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - Latest release details
 - **[DEV_NOTES.md](docs/DEV_NOTES.md)** - Development environment setup
 - **[CAPABILITIES.md](docs/CAPABILITIES.md)** - Feature specification
 
-## ⚠️ Known Limitations (v5.1.0)
+## ⚠️ Known Limitations
 
-- **WooCommerce Blocks**: Not yet supported (use classic checkout with `[woocommerce_checkout]` shortcode)
 - **Rate Limiting**: CoinGecko free tier has 50 calls/min limit
+- **Provider Failover**: Only primary WhatsOnChain + Blockchair fallback
 
 ## 🗺️ Roadmap
 
-### v5.2 (Planned)
-- WooCommerce Blocks checkout support
+### v5.3 (Planned)
 - Provider configuration UI (custom API endpoints)
 - Webhook support for instant payment notifications
 - Enhanced address pool management
@@ -142,4 +133,4 @@ https://www.gnu.org/licenses/gpl-2.0.html
 
 ---
 
-**v5.1.0 - WordPress.org Submission Ready** - Report issues on GitHub!
+**v5.2.0 - Blocks Ready Release** - Report issues on GitHub!

@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.1.0
+Stable tag: 5.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -80,11 +80,18 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 
 == Changelog ==
 
-= 5.1.0 - 2026-01-10 =
-**WordPress.org submission release**
+= 5.2.0 - 2026-01-10 =
+**Blocks-ready release**
 
 * **NEW:** WooCommerce Blocks checkout support (modern block-based checkout)
 * **IMPROVED:** Payment timeout display now shows fractional hours (e.g., 90 mins = 1.5 hours)
+* **IMPROVED:** Readme and metadata updated for WordPress 6.9 / WooCommerce 10.4
+* **IMPROVED:** Documentation reflects simultaneous support for Blocks and classic checkout
+* **FIXED:** Ensured gateway instructions reference dynamic timeout text without rounding
+
+= 5.1.0 - 2026-01-09 =
+**WordPress.org submission release**
+
 * **IMPROVED:** All PHPECC cryptography classes prefixed with BWWC_PhpEcc_ for WordPress naming compliance
 * **IMPROVED:** Removed debug code from PHPECC library
 * **IMPROVED:** Updated Bitcoin SV description to "electronic cash" terminology

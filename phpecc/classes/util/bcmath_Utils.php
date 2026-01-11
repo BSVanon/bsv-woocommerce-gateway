@@ -41,7 +41,14 @@ class bcmath_Utils
                 $min = 0;
             }
 
-            return bcadd(bcmul(bcdiv(mt_rand(0, mt_getrandmax()), mt_getrandmax(), strlen($max)), bcsub(bcadd($max, 1), $min)), $min);
+            if (function_exists('wp_rand')) {
+                $rand_max = 2147483647;
+                $rand_val = wp_rand(0, $rand_max);
+            } else {
+                $rand_max = mt_getrandmax();
+                $rand_val = mt_rand(0, $rand_max);
+            }
+            return bcadd(bcmul(bcdiv($rand_val, $rand_max, strlen($max)), bcsub(bcadd($max, 1), $min)), $min);
         } else {
             throw new ErrorException("Please install BCMATH");
         }

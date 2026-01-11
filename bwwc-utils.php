@@ -48,11 +48,16 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
     $current_time = time();
 
     if ($bwwc_settings['reuse_expired_addresses']) {
-        $reuse_expired_addresses_freshb_query_part =
-          "OR (`status`='assigned'
-      		AND (('$current_time' - `assigned_at`) > '$assigned_address_expires_in_secs')
-      		AND (('$current_time' - `received_funds_checked_at`) < '$funds_received_value_expires_in_secs')
-      		)";
+        $reuse_expired_addresses_freshb_query_part = $wpdb->prepare(
+            "OR (`status`='assigned'
+                AND ((%d - `assigned_at`) > %d)
+                AND ((%d - `received_funds_checked_at`) < %d)
+            )",
+            $current_time,
+            $assigned_address_expires_in_secs,
+            $current_time,
+            $funds_received_value_expires_in_secs
+        );
     } else {
         $reuse_expired_addresses_freshb_query_part = "";
     }
@@ -65,13 +70,16 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
     //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
     //
     // Hence - any returned address will be clean to use.
-    $query =
-      "SELECT `btc_address` FROM `$btc_addresses_table_name`
-         WHERE `origin_id`='$origin_id'
-         AND `total_received_funds`='0'
-         AND (`status`='unused' $reuse_expired_addresses_freshb_query_part)
-         ORDER BY `index_in_wallet` ASC
-         LIMIT 1;"; // Try to use lower indexes first
+    $query = $wpdb->prepare(
+        "SELECT `btc_address` FROM `$btc_addresses_table_name`
+            WHERE `origin_id` = %s
+              AND `total_received_funds` = %s
+              AND (`status` = 'unused' $reuse_expired_addresses_freshb_query_part)
+            ORDER BY `index_in_wallet` ASC
+            LIMIT 1",
+        $origin_id,
+        '0'
+    );
     $clean_address = $wpdb->get_var($query);
 
     //-------------------------------------------------------
@@ -88,25 +96,32 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         //
         // Hence - any returned address with freshened balance==0 will be clean to use.
         if ($bwwc_settings['reuse_expired_addresses']) {
-            $reuse_expired_addresses_oldb_query_part =
-              "OR (`status`='assigned'
-	      		AND (('$current_time' - `assigned_at`) > '$assigned_address_expires_in_secs')
-	      		AND (('$current_time' - `received_funds_checked_at`) > '$funds_received_value_expires_in_secs')
-	      		)";
+            $reuse_expired_addresses_oldb_query_part = $wpdb->prepare(
+                "OR (`status`='assigned'
+                    AND ((%d - `assigned_at`) > %d)
+                    AND ((%d - `received_funds_checked_at`) > %d)
+                )",
+                $current_time,
+                $assigned_address_expires_in_secs,
+                $funds_received_value_expires_in_secs
+            );
         } else {
             $reuse_expired_addresses_oldb_query_part = "";
         }
 
-        $query =
-         "SELECT * FROM `$btc_addresses_table_name`
-            WHERE `origin_id`='$origin_id'
-	         	AND `total_received_funds`='0'
-            AND (
-               `status`='unused'
-               OR `status`='unknown'
-               $reuse_expired_addresses_oldb_query_part
-               )
-            ORDER BY `index_in_wallet` ASC;"; // Try to use lower indexes first
+        $query = $wpdb->prepare(
+            "SELECT * FROM `$btc_addresses_table_name`
+                WHERE `origin_id` = %s
+                  AND `total_received_funds` = %s
+                  AND (
+                        `status`='unused'
+                        OR `status`='unknown'
+                        $reuse_expired_addresses_oldb_query_part
+                  )
+                ORDER BY `index_in_wallet` ASC",
+            $origin_id,
+            '0'
+        ); // Try to use lower indexes first
         $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results($query, ARRAY_A);
 
         if (!is_array($addresses_to_verify_for_zero_balances_rows)) {
@@ -161,14 +176,19 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
                     }				// No orders were ever placed to this address. Likely payment was sent to this address outside of this online store business.
 
                     $current_time = time();
-                    $query =
-                  "UPDATE `$btc_addresses_table_name`
-			         SET
-			            `status`='$new_status',
-			            `total_received_funds` = '{$ret_info_array['balance']}',
-			            `received_funds_checked_at`='$current_time'
-			        WHERE `btc_address`='$address_to_verify_for_zero_balance';";
-                    $ret_code = $wpdb->query($query);
+                    $query = $wpdb->prepare(
+                        "UPDATE `$btc_addresses_table_name`
+                            SET
+                                `status` = %s,
+                                `total_received_funds` = %f,
+                                `received_funds_checked_at` = %d
+                            WHERE `btc_address` = %s",
+                        $new_status,
+                        $ret_info_array['balance'],
+                        $current_time,
+                        $address_to_verify_for_zero_balance
+                    );
+                    $wpdb->query($query);
                 }
             }
         }
@@ -228,7 +248,12 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         */
 
         // Prepare `address_meta` field for this clean address.
-        $address_meta = $wpdb->get_var("SELECT `address_meta` FROM `$btc_addresses_table_name` WHERE `btc_address`='$clean_address'");
+        $address_meta = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT `address_meta` FROM `$btc_addresses_table_name` WHERE `btc_address` = %s",
+                $clean_address
+            )
+        );
         $address_meta = BWWC_unserialize_address_meta($address_meta);
 
         if (!isset($address_meta['orders']) || !is_array($address_meta['orders'])) {
@@ -245,17 +270,25 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         //
         $current_time = time();
         $remote_addr  = $order_info['requested_by_ip'];
-        $query =
-      "UPDATE `$btc_addresses_table_name`
-         SET
-            `total_received_funds` = '0',
-            `received_funds_checked_at`='$current_time',
-            `status`='assigned',
-            `assigned_at`='$current_time',
-            `last_assigned_to_ip`='$remote_addr',
-            `address_meta`='$address_meta_serialized'
-        WHERE `btc_address`='$clean_address';";
-        $ret_code = $wpdb->query($query);
+        $query = $wpdb->prepare(
+            "UPDATE `$btc_addresses_table_name`
+                SET
+                    `total_received_funds` = %s,
+                    `received_funds_checked_at` = %d,
+                    `status` = %s,
+                    `assigned_at` = %d,
+                    `last_assigned_to_ip` = %s,
+                    `address_meta` = %s
+                WHERE `btc_address` = %s",
+            '0',
+            $current_time,
+            'assigned',
+            $current_time,
+            $remote_addr,
+            $address_meta_serialized,
+            $clean_address
+        );
+        $wpdb->query($query);
 
         $ret_info_array = array(
          'result'                      => 'success',
@@ -342,7 +375,12 @@ function BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings=f
     $clean_address = false;
 
     // Find next index to generate
-    $next_key_index = $wpdb->get_var("SELECT MAX(`index_in_wallet`) AS `max_index_in_wallet` FROM `$btc_addresses_table_name` WHERE `origin_id`='$origin_id';");
+    $next_key_index = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT MAX(`index_in_wallet`) AS `max_index_in_wallet` FROM `$btc_addresses_table_name` WHERE `origin_id` = %s",
+            $origin_id
+        )
+    );
     if ($next_key_index === null) {
         $next_key_index = $bwwc_settings['starting_index_for_new_btc_addresses'];
     } // Start generation of addresses from index #2 (skip two leading wallet's addresses)
@@ -375,11 +413,18 @@ function BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings=f
         $received_funds_checked_at_time  = ($ret_info_array['balance'] === false)?0:time();
 
         // Insert newly generated address into DB
-        $query =
-      "INSERT INTO `$btc_addresses_table_name`
-      (`btc_address`, `origin_id`, `index_in_wallet`, `total_received_funds`, `received_funds_checked_at`, `status`) VALUES
-      ('$new_btc_address', '$origin_id', '$next_key_index', '$funds_received', '$received_funds_checked_at_time', '$status');";
-        $ret_code = $wpdb->query($query);
+        $query = $wpdb->prepare(
+            "INSERT INTO `$btc_addresses_table_name`
+                (`btc_address`, `origin_id`, `index_in_wallet`, `total_received_funds`, `received_funds_checked_at`, `status`)
+                VALUES ( %s, %s, %d, %f, %d, %s )",
+            $new_btc_address,
+            $origin_id,
+            $next_key_index,
+            $funds_received,
+            $received_funds_checked_at_time,
+            $status
+        );
+        $wpdb->query($query);
 
         $next_key_index++;
 
@@ -1239,28 +1284,28 @@ function BWWC__base64_encode($data)
     }
     do {
         // pack three octets into four hexets
-        $o1 = charCodeAt($data, $i++);
-        $o2 = charCodeAt($data, $i++);
-        $o3 = charCodeAt($data, $i++);
+        $o1 = bwwc_charCodeAt($data, $i++);
+        $o2 = bwwc_charCodeAt($data, $i++);
+        $o3 = bwwc_charCodeAt($data, $i++);
         $bits = $o1 << 16 | $o2 << 8 | $o3;
         $h1 = $bits >> 18 & 0x3f;
         $h2 = $bits >> 12 & 0x3f;
         $h3 = $bits >> 6 & 0x3f;
         $h4 = $bits & 0x3f;
         // use hexets to index into b64, and append result to encoded string
-        $tmp_arr[$ac++] = charAt($b64, $h1).charAt($b64, $h2).charAt($b64, $h3).charAt($b64, $h4);
+        $tmp_arr[$ac++] = bwwc_charAt($b64, $h1).bwwc_charAt($b64, $h2).bwwc_charAt($b64, $h3).bwwc_charAt($b64, $h4);
     } while ($i < strlen($data));
     $enc = implode($tmp_arr, '');
     $r = (strlen($data) % 3);
     return ($r ? substr($enc, 0, ($r - 3)) : $enc) . substr('===', ($r || 3));
 }
 
-function charCodeAt($data, $char)
+function bwwc_charCodeAt($data, $char)
 {
     return ord(substr($data, $char, 1));
 }
 
-function charAt($data, $char)
+function bwwc_charAt($data, $char)
 {
     return substr($data, $char, 1);
 }

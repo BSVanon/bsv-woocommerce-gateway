@@ -23,29 +23,28 @@ function BWWC__render_settings_page($menu_page_name)
 {
     $bwwc_settings = BWWC__get_settings();
 
-    if (isset($_POST['button_update_bwwc_settings'])) {
-        BWWC__update_settings("", false);
-        echo <<<HHHH
-<div align="center" style="background-color:#FFFFE0;padding:5px;font-size:120%;border: 1px solid #E6DB55;margin:5px;border-radius:3px;">
-Settings updated!
-</div>
-HHHH;
-    } elseif (isset($_POST['button_reset_bwwc_settings'])) {
-        BWWC__reset_all_settings(false);
-        echo <<<HHHH
-<div align="center" style="background-color:#FFFFE0;padding:5px;font-size:120%;border: 1px solid #E6DB55;margin:5px;border-radius:3px;">
-All settings reverted to all defaults
-</div>
-HHHH;
-    } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
-        BWWC__reset_partial_settings(false);
-        echo <<<HHHH
-<div align="center" style="background-color:#FFFFE0;padding:5px;font-size:120%;border: 1px solid #E6DB55;margin:5px;border-radius:3px;">
-Settings on this page reverted to defaults
-</div>
-HHHH;
-    } elseif (isset($_POST['validate_bwwc-license'])) {
-        BWWC__update_settings("", false);
+    $action_message = '';
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (
+            ! isset($_POST['bwwc_settings_nonce']) ||
+            ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
+        ) {
+            wp_die(__('Security check failed. Please try again.', 'woocommerce'));
+        }
+
+        if (isset($_POST['button_update_bwwc_settings'])) {
+            BWWC__update_settings("", false);
+            $action_message = __('Settings updated!', 'woocommerce');
+        } elseif (isset($_POST['button_reset_bwwc_settings'])) {
+            BWWC__reset_all_settings(false);
+            $action_message = __('All settings reverted to defaults.', 'woocommerce');
+        } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
+            BWWC__reset_partial_settings(false);
+            $action_message = __('Settings on this page reverted to defaults.', 'woocommerce');
+        } elseif (isset($_POST['validate_bwwc-license'])) {
+            BWWC__update_settings("", false);
+            $action_message = __('License validated.', 'woocommerce');
+        }
     }
 
     // Output full admin settings HTML
@@ -78,6 +77,13 @@ HHHH;
 
     echo '<div class="wrap">';
 
+    if (!empty($action_message)) {
+        printf(
+            '<div class="notice notice-success is-dismissible"><p>%s</p></div>',
+            esc_html($action_message)
+        );
+    }
+
     switch ($menu_page_name) {
       case 'general':
         echo  BWWC__GetPluginNameVersionEdition(true);
@@ -105,10 +111,11 @@ function BWWC__render_general_settings_page_html()
     $bwwc_settings = BWWC__get_settings();
     global $g_BWWC__cron_script_url; ?>
 
-    <form method="post" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
+    <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+      <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php _e('Save Changes') ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php _e('Reset settings') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'woocommerce')); ?>');" />
       </p>
       <table class="form-table">
 
@@ -116,9 +123,7 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Delete all plugin-specific settings, database tables and data on uninstall:</th>
           <td>
-            <input type="hidden" name="delete_db_tables_on_uninstall" value="0" /><input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php if ($bwwc_settings['delete_db_tables_on_uninstall']) {
-        echo 'checked="checked"';
-    } ?> />
+            <input type="hidden" name="delete_db_tables_on_uninstall" value="0" /><input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], 1); ?> />
             <p class="description">If checked - all plugin-specific settings, database tables and data will be removed from Wordpress database upon plugin uninstall (but not upon deactivation or upgrade).</p>
           </td>
         </tr>
@@ -127,9 +132,7 @@ function BWWC__render_general_settings_page_html()
           <th scope="row">Bitcoin SV Address Generation:</th>
           <td>
             <select name="service_provider" class="select ">
-              <option <?php if ($bwwc_settings['service_provider'] == 'electrum_wallet') {
-        echo 'selected="selected"';
-    } ?> value="electrum_wallet">BIP32/BIP44 HD Wallet (xPub)</option>
+              <option <?php selected($bwwc_settings['service_provider'], 'electrum_wallet'); ?> value="electrum_wallet">BIP32/BIP44 HD Wallet (xPub)</option>
             </select>
             <p class="description">
               Use any BIP32/BIP44 compatible HD wallet (ElectrumSV, Electrum, HandCash, etc.). The plugin generates unique payment addresses from your Master Public Key (xPub).
@@ -140,7 +143,7 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Master Public Key (xPub):</th>
           <td>
-            <textarea style="width:75%;" name="electrum_mpk_saved"><?php echo $bwwc_settings['electrum_mpk_saved']; ?></textarea>
+            <textarea style="width:75%;" name="electrum_mpk_saved"><?php echo esc_textarea($bwwc_settings['electrum_mpk_saved']); ?></textarea>
             <p class="description">
               <strong>How to get your Master Public Key (xPub):</strong>
               <ol class="description">
@@ -170,7 +173,7 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Number of confirmations required before accepting payment:</th>
           <td>
-            <input type="text" name="confs_num" value="<?php echo $bwwc_settings['confs_num']; ?>" size="4" />
+            <input type="text" name="confs_num" value="<?php echo esc_attr($bwwc_settings['confs_num']); ?>" size="4" />
             <p class="description">
               After a transaction is broadcast to the Bitcoin SV network, it may be included in a block that is published
               to the network. When that happens it is said that one <a href="https://en.bitcoin.it/wiki/Confirmation"><b>confirmation</b></a> has occurred for the transaction.
@@ -184,15 +187,9 @@ function BWWC__render_general_settings_page_html()
           <th scope="row">Stale Exchange Rate Handling:</th>
           <td>
             <select name="exchange_rate_type" class="select ">
-              <option <?php if ($bwwc_settings['exchange_rate_type'] == 'vwap') {
-        echo 'selected="selected"';
-    } ?> value="vwap">Use last available rate (default)</option>
-              <option <?php if ($bwwc_settings['exchange_rate_type'] == 'realtime') {
-        echo 'selected="selected"';
-    } ?> value="realtime">Disable gateway if rate older than 1 hour</option>
-              <option <?php if ($bwwc_settings['exchange_rate_type'] == 'bestrate') {
-        echo 'selected="selected"';
-    } ?> value="bestrate">Disable gateway if rate older than 6 hours</option>
+              <option <?php selected($bwwc_settings['exchange_rate_type'], 'vwap'); ?> value="vwap">Use last available rate (default)</option>
+              <option <?php selected($bwwc_settings['exchange_rate_type'], 'realtime'); ?> value="realtime">Disable gateway if rate older than 1 hour</option>
+              <option <?php selected($bwwc_settings['exchange_rate_type'], 'bestrate'); ?> value="bestrate">Disable gateway if rate older than 6 hours</option>
             </select>
             <p class="description">
               <strong>Use last available rate (recommended):</strong> Always use the most recent exchange rate, regardless of age. Gateway remains available even if API is temporarily down.
@@ -205,7 +202,7 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Exchange rate multiplier:</th>
           <td>
-            <input type="text" name="exchange_multiplier" value="<?php echo $bwwc_settings['exchange_multiplier']; ?>" size="4" />
+            <input type="text" name="exchange_multiplier" value="<?php echo esc_attr($bwwc_settings['exchange_multiplier']); ?>" size="4" />
             <p class="description">
               Extra multiplier to apply to convert store default currency to Bitcoin SV price.
               <br />Example: 1.05 - will add extra 5% to the total price in Bitcoin SV.
@@ -221,8 +218,8 @@ function BWWC__render_general_settings_page_html()
 
 
               <select name="reuse_expired_addresses" class="select">
-                <option <?php if ($bwwc_settings['reuse_expired_addresses']) { echo 'selected="selected"'; } ?>value="1">No (default)</option>
-                <option <?php if (!$bwwc_settings['reuse_expired_addresses']) { echo 'selected="selected"'; } ?>value="0">Yes</option>
+                <option <?php selected($bwwc_settings['reuse_expired_addresses'], 1); ?> value="1">No (default)</option>
+                <option <?php selected($bwwc_settings['reuse_expired_addresses'], 0); ?> value="0">Yes</option>
               </select>
 
               <p class="description">
@@ -238,9 +235,7 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Auto-complete paid orders:</th>
           <td>
-            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php if ($bwwc_settings['autocomplete_paid_orders']) {
-        echo 'checked="checked"';
-    } ?> />
+            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php checked($bwwc_settings['autocomplete_paid_orders'], 1); ?> />
             <p class="description">If checked - fully paid order will be marked as 'completed' and '<i>Your order is complete</i>' email will be immediately delivered to customer.
             	<br />If unchecked: store admin will need to mark order as completed manually - assuming extra time needed to ship physical product after payment is received.
             	<br />Note: virtual/downloadable products will automatically complete upon receiving full payment (so this setting does not have effect in this case).
@@ -252,12 +247,8 @@ function BWWC__render_general_settings_page_html()
             <th scope="row">Cron job type:</th>
             <td>
               <select name="enable_soft_cron_job" class="select ">
-                <option <?php if ($bwwc_settings['enable_soft_cron_job'] == '1') {
-        echo 'selected="selected"';
-    } ?> value="1">Soft Cron (Wordpress-driven)</option>
-                <option <?php if ($bwwc_settings['enable_soft_cron_job'] != '1') {
-        echo 'selected="selected"';
-    } ?> value="0">Hard Cron (Cpanel-driven)</option>
+                <option <?php selected($bwwc_settings['enable_soft_cron_job'], '1'); ?> value="1">Soft Cron (Wordpress-driven)</option>
+                <option <?php selected($bwwc_settings['enable_soft_cron_job'], '0'); ?> value="0">Hard Cron (Cpanel-driven)</option>
               </select>
               <p class="description">
                 <?php if ($bwwc_settings['enable_soft_cron_job'] != '1') {
@@ -268,7 +259,7 @@ function BWWC__render_general_settings_page_html()
                 <br />
                 <b>Hard Cron</b>: Cron job driven by the website hosting system/server (usually via cPanel). <br />
                 When enabling Hard Cron job - make this script to run every 5 minutes at your hosting panel cron job scheduler:<br />
-                <?php echo '<tt style="background-color:#FFA;color:#B00;padding:0px 6px;">wget -O /dev/null ' . $g_BWWC__cron_script_url . '?hardcron=1</tt>'; ?>
+                <?php echo '<tt style="background-color:#FFA;color:#B00;padding:0px 6px;">wget -O /dev/null ' . esc_url($g_BWWC__cron_script_url . '?hardcron=1') . '</tt>'; ?>
                 <br /><b style="color:red;">NOTE:</b> Cron jobs <b>might not work</b> if your site is password protected with HTTP Basic authentication or other methods. This will result in WooCommerce store not seeing received payments (even though funds will arrive correctly to your Bitcoin SV addresses).
                 <br /><u>Note:</u> You will need to deactivate/reactivate plugin after changing this setting for it to have effect.<br />
                 "Hard" cron jobs may not be properly supported by all hosting plans (many shared hosting plans have restrictions in place).               
@@ -294,15 +285,15 @@ function BWWC__render_general_settings_page_html()
                     if ($bwwc_settings['selected_checkout_icon'] == $icon_rel_path) {
                         $checked = 'checked';
                     }
-                    echo '<input type="radio" name="selected_checkout_icon" id="' . $icon. '" value="' . $icon_rel_path . '" ' . $checked . '/>';
-                    echo '<label for="' . $icon. '"><img src="' . $icon_url . '" height="32"></img></label><br />';
+                    echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . $checked . '/>';
+                    echo '<label for="' . esc_attr($icon) . '"><img src="' . esc_url($icon_url) . '" height="32" alt="Checkout icon" /></label><br />';
                 }
                 ?>
               </p>
               </fieldset>
               <p class="description">
                 Icon displayed to users when choosing the payment method.<br />
-                You can upload new icons to: <?php echo str_replace(ABSPATH, "", $plugin_root . $icon_dir); ?><br />
+                You can upload new icons to: <?php echo esc_html(str_replace(ABSPATH, "", $plugin_root . $icon_dir)); ?><br />
                 Make sure to scale the image to a height of 32px.
               </p>
           </td>
@@ -324,7 +315,8 @@ function BWWC__render_advanced_settings_page_html()
 {
     $bwwc_settings = BWWC__get_settings();
  ?>
- <form method="post" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
+ <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+ <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
  <h3>Advanced Configuration</h3>
  <p>These settings control technical aspects of the plugin. Only modify if you understand the implications.</p>
  

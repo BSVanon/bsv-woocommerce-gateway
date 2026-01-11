@@ -196,9 +196,17 @@ class TestSuite
         $start_time = microtime(true);
         $n_tests = 0;
         for ($i = 0; $i < 100; $i++) {
-            $m = rand(20, 10000);
+            if (function_exists('wp_rand')) {
+                $m = wp_rand(20, 10000);
+            } else {
+                $m = rand(20, 10000);
+            }
             for ($j = 0; $j < 100; $j++) {
-                $a = rand(1, $m - 1);
+                if (function_exists('wp_rand')) {
+                    $a = wp_rand(1, $m - 1);
+                } else {
+                    $a = rand(1, $m - 1);
+                }
                 if (NumberTheory::gcd2($a, $m) == 1) {
                     $n_tests++;
                     $inv = NumberTheory::inverse_mod($a, $m);
@@ -698,9 +706,17 @@ class TestSuite
         $start_time = microtime(true);
         $n_tests = 0;
         for ($i = 0; $i < 100; $i++) {
-            $m = rand(20, 10000);
+            if (function_exists('wp_rand')) {
+                $m = wp_rand(20, 10000);
+            } else {
+                $m = rand(20, 10000);
+            }
             for ($j = 0; $j < 100; $j++) {
-                $a = rand(1, $m - 1);
+                if (function_exists('wp_rand')) {
+                    $a = wp_rand(1, $m - 1);
+                } else {
+                    $a = rand(1, $m - 1);
+                }
                 if (NumberTheory::gcd2($a, $m) == 1) {
                     $n_tests++;
                     $inv = NumberTheory::inverse_mod($a, $m);
@@ -1329,11 +1345,11 @@ class TestSuite
         $got = $pubk->verifies(PrivateKey::digest_integer($Msg), new Signature($R, $S));
         if (bccomp($got, $expected) == 0) {
             if ($verbose) {
-                print "Signature tested as expected: received " . var_export($got, true) . ", expected " . var_export($expected, true) . ".<br />";
+                print "Signature tested as expected: received " . esc_html($got) . ", expected " . esc_html($expected) . ".<br />";
             }
             flush();
         } else {
-            print "*** Signature test failed: received " . var_export($got, true) . ", expected " . var_export($expected, true) . ".<br />";
+            print "*** Signature test failed: received " . esc_html($got) . ", expected " . esc_html($expected) . ".<br />";
         }
         flush();
     }

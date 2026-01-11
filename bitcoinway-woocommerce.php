@@ -52,7 +52,7 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'BWWC__plugin_act
 // Admin notices for Blocks checkout detection
 add_action('admin_notices', 'BWWC__blocks_checkout_notice');
 
-BWWC_set_lang_file();
+add_action('init', 'BWWC_set_lang_file');
 //---------------------------------------------------------------------------
 
 //===========================================================================

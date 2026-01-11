@@ -46,7 +46,11 @@ class gmp_Utils
     {
         if (extension_loaded('gmp') && USE_EXT=='GMP') {
             $random = gmp_strval(gmp_random());
-            $small_rand = rand();
+            if (function_exists('wp_rand')) {
+                $small_rand = wp_rand(1, 2147483647);
+            } else {
+                $small_rand = rand();
+            }
             while (gmp_cmp($random, $n) > 0) {
                 $random = gmp_div($random, $small_rand, GMP_ROUND_ZERO);
             }

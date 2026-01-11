@@ -47,16 +47,21 @@ function BWWC_cron_job_worker($hardcron=false)
     //     'assigned'   - unexpired, with old balances (due for revalidation. Fresh balances and still 'assigned' means no [full] payment received yet)
     //     'revalidate' - all
     //        order results by most recently assigned
-    $query =
-    "SELECT * FROM `$btc_addresses_table_name`
-      WHERE
-      (
-        (`status`='assigned' AND (('$current_time' - `assigned_at`) < '$assigned_address_expires_in_secs'))
-        OR
-        (`status`='revalidate')
-      )
-      AND (('$current_time' - `received_funds_checked_at`) > '$funds_received_value_expires_in_secs')
-      ORDER BY `received_funds_checked_at` ASC;"; // Check the ones that haven't been checked for longest time
+    $query = $wpdb->prepare(
+        "SELECT * FROM `$btc_addresses_table_name`
+            WHERE
+            (
+              (`status`='assigned' AND ((%d - `assigned_at`) < %d))
+              OR
+              (`status`='revalidate')
+            )
+            AND ((%d - `received_funds_checked_at`) > %d)
+            ORDER BY `received_funds_checked_at` ASC",
+        $current_time,
+        $assigned_address_expires_in_secs,
+        $current_time,
+        $funds_received_value_expires_in_secs
+    ); // Check the ones that haven't been checked for longest time
 
     $rows_for_balance_check = $wpdb->get_results($query, ARRAY_A);
 
@@ -228,7 +233,11 @@ function BWWC_cron_job_worker($hardcron=false)
             $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
 
             if ($bwwc_settings['reuse_expired_addresses']) {
-                $reuse_expired_addresses_query_part = "OR (`status`='assigned' AND (('$current_time' - `assigned_at`) > '$assigned_address_expires_in_secs'))";
+                $reuse_expired_addresses_query_part = $wpdb->prepare(
+                    "OR (`status`='assigned' AND ((%d - `assigned_at`) > %d))",
+                    $current_time,
+                    $assigned_address_expires_in_secs
+                );
             } else {
                 $reuse_expired_addresses_query_part = "";
             }
@@ -241,12 +250,14 @@ function BWWC_cron_job_worker($hardcron=false)
             //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
             //
             // Hence - any returned address will be clean to use.
-            $query =
-        "SELECT COUNT(*) as `total_unused_addresses` FROM `$btc_addresses_table_name`
-           WHERE `origin_id`='$origin_id'
-           AND `total_received_funds`='0'
-           AND (`status`='unused' $reuse_expired_addresses_query_part)
-           ";
+            $query = $wpdb->prepare(
+                "SELECT COUNT(*) as `total_unused_addresses` FROM `$btc_addresses_table_name`
+                   WHERE `origin_id` = %s
+                   AND `total_received_funds` = %s
+                   AND (`status`='unused' $reuse_expired_addresses_query_part)",
+                $origin_id,
+                '0'
+            );
             $total_unused_addresses = $wpdb->get_var($query);
 
 

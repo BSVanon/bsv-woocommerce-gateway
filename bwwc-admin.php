@@ -97,19 +97,39 @@ function BWWC__GetProLabel()
 {
     return '<span style="background-color:#FF4;color:#F44;border:1px solid #F44;padding:2px 6px;font-family:\'Open Sans\',sans-serif;font-size:14px;border-radius:6px;"><a href="' . BWWC__GetProUrl() . '">PRO Only</a></span>';
 }
+
+/**
+ * Recursively sanitize incoming values from forms.
+ *
+ * @param mixed $value Value to sanitize.
+ *
+ * @return mixed
+ */
+function BWWC__sanitize_recursive($value)
+{
+    if (is_array($value)) {
+        return array_map('BWWC__sanitize_recursive', $value);
+    }
+
+    if (is_scalar($value)) {
+        return sanitize_text_field(wp_unslash($value));
+    }
+
+    return $value;
+}
 //===========================================================================
 
 //===========================================================================
 // These are coming from plugin-specific table.
 function BWWC__get_persistent_settings($key=false)
 {
-    ////// PERSISTENT SETTINGS CURRENTLY UNUSED
-    return array();
-    //////
     global $wpdb;
 
     $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
-    $sql_query = "SELECT * FROM `$persistent_settings_table_name` WHERE `id` = '1';";
+    $sql_query = $wpdb->prepare(
+        "SELECT * FROM `$persistent_settings_table_name` WHERE `id` = %d",
+        1
+    );
 
     $row = $wpdb->get_row($sql_query, ARRAY_A);
     if ($row) {
@@ -128,20 +148,23 @@ function BWWC__get_persistent_settings($key=false)
 //===========================================================================
 function BWWC__update_persistent_settings($bwwc_use_these_settings_array=false)
 {
-    ////// PERSISTENT SETTINGS CURRENTLY UNUSED
-    return;
-    //////
     global $wpdb;
 
     $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
 
-    if (!$bwwc_use_these_settings) {
-        $bwwc_use_these_settings = array();
+    if (!$bwwc_use_these_settings_array) {
+        $bwwc_use_these_settings_array = array();
     }
 
     $db_ready_settings = BWWC__safe_string_escape(serialize($bwwc_use_these_settings_array));
 
-    $wpdb->update($persistent_settings_table_name, array('settings' => $db_ready_settings), array('id' => '1'), array('%s'));
+    $wpdb->update(
+        $persistent_settings_table_name,
+        array('settings' => $db_ready_settings),
+        array('id' => 1),
+        array('%s'),
+        array('%d')
+    );
 }
 //===========================================================================
 
@@ -149,10 +172,6 @@ function BWWC__update_persistent_settings($bwwc_use_these_settings_array=false)
 // Wipe existing table's contents and recreate first record with all defaults.
 function BWWC__reset_all_persistent_settings()
 {
-    ////// PERSISTENT SETTINGS CURRENTLY UNUSED
-    return;
-    //////
-
     global $wpdb;
     global $g_BWWC__config_defaults;
 
@@ -160,14 +179,14 @@ function BWWC__reset_all_persistent_settings()
 
     $initial_settings = BWWC__safe_string_escape(serialize($g_BWWC__config_defaults));
 
-    $query = "TRUNCATE TABLE `$persistent_settings_table_name`;";
-    $wpdb->query($query);
+    $wpdb->query("TRUNCATE TABLE `$persistent_settings_table_name`");
 
-    $query = "INSERT INTO `$persistent_settings_table_name`
-      (`id`, `settings`)
-        VALUES
-      ('1', '$initial_settings');";
-    $wpdb->query($query);
+    $insert_sql = $wpdb->prepare(
+        "INSERT INTO `$persistent_settings_table_name` (`id`, `settings`) VALUES ( %d, %s )",
+        1,
+        $initial_settings
+    );
+    $wpdb->query($insert_sql);
 }
 //===========================================================================
 
@@ -210,10 +229,11 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
 
     foreach ($g_BWWC__config_defaults as $k=>$v) {
         if (isset($_POST[$k])) {
+            $sanitized_value = BWWC__sanitize_recursive($_POST[$k]);
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";
             } // Force set to something.
-            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $_POST[$k]);
+            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $sanitized_value);
         }
         // If not in POST - existing will be used.
     }
@@ -271,6 +291,7 @@ function BWWC__reset_partial_settings($also_reset_persistent_settings=false)
     $bwwc_settings = BWWC__get_settings();
 
     foreach ($_POST as $k=>$v) {
+        $sanitized_value = BWWC__sanitize_recursive($v);
         if (isset($g_BWWC__config_defaults[$k])) {
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";

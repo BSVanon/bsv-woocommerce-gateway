@@ -64,6 +64,8 @@ See `docs/TESTING.md` for comprehensive test procedures.
 
 ## 📚 Documentation
 
+These guides live inside the `docs/` directory of this repository:
+
 - **[TESTING.md](docs/TESTING.md)** - Test suite and procedures
 - **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - Latest release details
 - **[DEV_NOTES.md](docs/DEV_NOTES.md)** - Development environment setup
@@ -126,6 +128,7 @@ https://www.gnu.org/licenses/gpl-2.0.html
 - BSVanon (2026 WordPress.org submission and ongoing maintenance)
 
 ### Special Thanks
+- Bitcoin Dictionary @BitcoinDict
 - ElectrumSV team
 - WhatsOnChain
 - CoinGecko

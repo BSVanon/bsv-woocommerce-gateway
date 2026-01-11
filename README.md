@@ -57,7 +57,7 @@ See `docs/TESTING.md` for comprehensive test procedures.
 
 **Quick Test:**
 1. Add a product to cart
-2. Proceed to classic checkout page
+2. Proceed to your checkout page (Blocks or classic shortcode)
 3. Select "Bitcoin SV Payment"
 4. Complete order
 5. Verify payment instructions with QR code appear
@@ -89,7 +89,7 @@ See `docs/TESTING.md` for comprehensive test procedures.
 ## 🐛 Troubleshooting
 
 ### Payment Gateway Not Showing
-- Ensure you're using **classic checkout** (not Blocks)
+- Ensure your checkout page contains either the WooCommerce Checkout block or the `[woocommerce_checkout]` shortcode
 - Verify Master Public Key is entered correctly
 - Check PHP extensions: `gmp` or `bcmath` must be enabled
 - Review WooCommerce → Status → Logs for errors

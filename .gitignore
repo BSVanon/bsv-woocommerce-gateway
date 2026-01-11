@@ -17,8 +17,13 @@ wp-content/backups/
 docker/wp-modern/
 docker/wp-legacy/
 
-# Local documentation (not for public repo)
-docs/
+# Local documentation (only publish key guides referenced in README)
+/docs/*
+!/docs/
+!/docs/TESTING.md
+!/docs/RELEASE_NOTES.md
+!/docs/DEV_NOTES.md
+!/docs/CAPABILITIES.md
 
 # Plugin debug log
 __log.php

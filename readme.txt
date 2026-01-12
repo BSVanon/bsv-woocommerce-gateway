@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.2.0
+Stable tag: 5.3.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -64,21 +64,28 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 2. Delete plugin through the 'Plugins' menu in WordPress
 
 
-== Supporters ==
+== Support Development ==
 
-* mboyd1:  https://bitcoincloud.net
-* sanchaz: http://sanchaz.net
-* Yifu Guo: http://bitsyn.com/
-* Bitcoin Grants: http://bitcoingrant.org/
-* Chris Savery: https://github.com/bkkcoins/misc
-* lowcostego: http://wordpress.org/support/profile/lowcostego
-* WebDesZ: http://wordpress.org/support/profile/webdesz
-* ninjastik: http://wordpress.org/support/profile/ninjastik
-* timbowhite: https://github.com/timbowhite
-* devlinfox: http://wordpress.org/support/profile/devlinfox
+If you find this plugin useful, please consider supporting its development with a BSV donation:
 
+**Paymail:** BSVanon@paymail.us
+**BSV Address:** 1KcwesgbcSWE8BGUdceSBezsyPxGU7Bruk
+
+Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 5.3.0 - 2025-01-11 =
+* Added: Modern payment console UI with QR code, copy buttons, and live countdown
+* Added: Real-time payment status updates via AJAX polling
+* Added: Enhanced email payment instructions with QR codes and styled blocks
+* Added: Payment state tracking (waiting/detected/confirmed/expired/underpaid/overpaid)
+* Added: "I've Paid" force recheck button with cooldown protection
+* Added: Admin settings for email instructions and status polling interval
+* Added: Dark mode support for payment console
+* Improved: Mobile-responsive payment interface
+* Fixed: Type safety for number_format() calls in payment console
+* Security: Nonce-protected AJAX endpoints with order key validation
 
 = 5.2.0 - 2026-01-10 =
 **Blocks-ready release**

@@ -9,7 +9,7 @@ https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '5.2.0');
+    define('BWWC_VERSION', '5.3.0');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');
@@ -21,7 +21,7 @@ if (!defined('BWWC_PLUGIN_NAME')) {
 
 
     // i18n plugin domain for language files
-    define('BWWC_I18N_DOMAIN', 'bwwc');
+    define('BWWC_I18N_DOMAIN', 'bitcoin-sv-payments-for-woocommerce');
 }
 
 // Determine which math extension is available (runs on every load so upgrades are detected).
@@ -38,10 +38,10 @@ if (!defined('BWWC_USE_EXT')) {
 
 //------------------------------------------
 // Load wordpress for POSTback, WebHook and API pages that are called by external services directly.
-if (defined('BWWC_MUST_LOAD_WP') && !defined('WP_USE_THEMES') && !defined('ABSPATH')) {
+if (defined('BWWC_MUST_LOAD_WP') && !defined('ABSPATH')) {
     $bwwc_blog_dir = preg_replace('|(/+[^/]+){4}$|', '', str_replace('\\', '/', __FILE__)); // For love of the art of regex-ing
-    define('WP_USE_THEMES', false);
-    require_once($bwwc_blog_dir . '/wp-blog-header.php');
+
+    require_once($bwwc_blog_dir . '/wp-load.php');
 
     // Force-elimination of header 404 for non-wordpress pages.
     header("HTTP/1.1 200 OK");
@@ -67,3 +67,4 @@ require_once(dirname(__FILE__) . '/bwwc-admin.php');
 require_once(dirname(__FILE__) . '/bwwc-render-settings.php');
 require_once(dirname(__FILE__) . '/bwwc-bitcoin-gateway.php');
 require_once(dirname(__FILE__) . '/bwwc-dashboard-widget.php');
+require_once(dirname(__FILE__) . '/includes/bsv-payment-console.php');

@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 /**
  * WooCommerce Blocks Integration for Bitcoin SV Payment Gateway
  *
@@ -11,7 +15,7 @@ use Automattic\WooCommerce\Blocks\Payments\Integrations\AbstractPaymentMethodTyp
 /**
  * BSV payment method integration for WooCommerce Blocks
  */
-final class WC_Gateway_Bitcoin_Blocks_Support extends AbstractPaymentMethodType {
+final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
     /**
      * Payment method name/id/slug.
      *

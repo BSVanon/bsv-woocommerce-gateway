@@ -1,4 +1,8 @@
 <?php
+
+if ( ! defined( 'ABSPATH' ) ) {
+    exit;
+}
 /*
 Bitcoin SV Payments for WooCommerce
 https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
@@ -266,6 +270,47 @@ function BWWC__render_general_settings_page_html()
               </p>
             </td>
         </tr>
+        <tr valign="top">
+          <th scope="row">Email Payment Instructions:</th>
+          <td>
+            <input type="hidden" name="email_instructions_enabled" value="0" /><input type="checkbox" name="email_instructions_enabled" value="1" <?php checked($bwwc_settings['email_instructions_enabled'], 1); ?> />
+            <p class="description">Include payment instructions with QR code in WooCommerce order emails (new orders, on-hold status).
+              <br />When enabled, customers receive a beautifully formatted payment block with amount, address, QR code, and direct payment link.
+            </p>
+          </td>
+        </tr>
+
+        <tr valign="top">
+          <th scope="row">Include QR Code in Emails:</th>
+          <td>
+            <input type="hidden" name="email_instructions_include_qr" value="0" /><input type="checkbox" name="email_instructions_include_qr" value="1" <?php checked($bwwc_settings['email_instructions_include_qr'], 1); ?> />
+            <p class="description">Include QR code image in email payment instructions for easy mobile wallet scanning.
+              <br />Disable if email size is a concern or if your email provider blocks external images.
+            </p>
+          </td>
+        </tr>
+
+        <tr valign="top">
+          <th scope="row">Email Instructions Custom Intro:</th>
+          <td>
+            <input type="text" name="email_instructions_intro" value="<?php echo esc_attr(isset($bwwc_settings['email_instructions_intro']) ? $bwwc_settings['email_instructions_intro'] : ''); ?>" style="width: 75%;" placeholder="Complete your Bitcoin SV payment using the details below:" />
+            <p class="description">Custom introductory text for email payment instructions. Leave empty to use default message.
+              <br />Default: "Complete your Bitcoin SV payment using the details below:"
+            </p>
+          </td>
+        </tr>
+
+        <tr valign="top">
+          <th scope="row">Payment Status Polling Interval:</th>
+          <td>
+            <input type="number" name="status_polling_interval" value="<?php echo esc_attr(isset($bwwc_settings['status_polling_interval']) ? $bwwc_settings['status_polling_interval'] : '10'); ?>" min="5" max="60" size="4" /> seconds
+            <p class="description">How often the payment console checks for payment updates (5-60 seconds).
+              <br />Lower values = more responsive updates but more server load. Recommended: 10 seconds.
+              <br />The "I've Paid" button allows customers to force an immediate check regardless of this interval.
+            </p>
+          </td>
+        </tr>
+
         <tr valign="top">
           <th scope="row">Checkout Icon:</th>
           <td>

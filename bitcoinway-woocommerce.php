@@ -3,12 +3,12 @@
  * Plugin Name: Bitcoin SV Payments for WooCommerce
  * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
- * Version: 5.2.0
+ * Version: 5.3.0
  * Author: BSVanon
  * Author URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: bitcoin-sv-woocommerce
+ * Text Domain: bitcoin-sv-payments-for-woocommerce
  * Domain Path: /lang
  * Requires at least: 5.8
  * Tested up to: 6.9
@@ -107,7 +107,7 @@ function BWWC__add_custom_scheduled_intervals($schedules)
  */
 function BWWC__plugin_action_links($links)
 {
-    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'bitcoin-sv-woocommerce') . '</a>';
+    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'bitcoin-sv-payments-for-woocommerce') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
@@ -136,9 +136,9 @@ function BWWC__blocks_checkout_notice()
         $checkout_page = get_post($checkout_page_id);
         if ($checkout_page && has_block('woocommerce/checkout', $checkout_page)) {
             echo '<div class="notice notice-warning is-dismissible">';
-            echo '<p><strong>' . __('Bitcoin SV Gateway:', 'bitcoin-sv-woocommerce') . '</strong> ';
-            echo __('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-woocommerce');
-            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-woocommerce') . '</a></p>';
+            echo '<p><strong>' . __('Bitcoin SV Gateway:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
+            echo __('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-payments-for-woocommerce');
+            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
             echo '</div>';
         }
     }

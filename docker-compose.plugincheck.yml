@@ -1,0 +1,30 @@
+services:
+  mysql-plugincheck:
+    image: mysql:8.0
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db_data_plugincheck:/var/lib/mysql
+
+  wordpress-plugincheck:
+    image: wordpress:6.7-php8.2-apache
+    depends_on:
+      - mysql-plugincheck
+    ports:
+      - "8082:80"
+    environment:
+      WORDPRESS_DB_HOST: mysql-plugincheck:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DEBUG: 1
+    volumes:
+      - ./docker/wp-modern:/var/www/html
+
+volumes:
+  db_data_plugincheck:

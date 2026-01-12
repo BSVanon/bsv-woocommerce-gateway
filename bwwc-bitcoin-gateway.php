@@ -681,67 +681,13 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 return;
             }
 
-            // Assemble detailed instructions.
-            $order_total_in_btc   = get_post_meta($order->get_id(), 'order_total_in_btc', true); // set single to true to receive properly unserialized array
-            $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true); // set single to true to receive properly unserialized array
-
-            // Get current payment timeout setting and calculate hours dynamically
-            $bwwc_settings = BWWC__get_settings();
-            $payment_timeout_mins = $bwwc_settings['assigned_address_expires_in_mins'];
-            $payment_timeout_hours = $payment_timeout_mins / 60;
-            // Format hours: show 1 decimal if needed, otherwise show whole number
-            $payment_timeout_display = ($payment_timeout_hours == floor($payment_timeout_hours)) ? (int)$payment_timeout_hours : number_format($payment_timeout_hours, 1);
-
-            $instructions = $this->instructions;
-            $instructions = str_replace('{{{BITCOINS_AMOUNT}}}', $order_total_in_btc, $instructions);
-            $instructions = str_replace('{{{BITCOINS_ADDRESS}}}', $bitcoins_address, $instructions);
+            // Render modern payment console
+            BWWC__render_payment_console($order);
             
-            // Replace the payment timeout hours dynamically with current setting
-            $instructions = preg_replace(
-                '/within [\d.]+ hours/',
-                'within ' . $payment_timeout_display . ' hours',
-                $instructions
-            );
-            
-            $instructions =
-                str_replace(
-                    '{{{EXTRA_INSTRUCTIONS}}}',
-
-                    $this->instructions_multi_payment_str,
-                    $instructions
-                    );
+            // Add order note
+            $order_total_in_btc = get_post_meta($order->get_id(), 'order_total_in_btc', true);
+            $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
             $order->add_order_note(__("Order instructions: price=&#3647;{$order_total_in_btc}, incoming account:{$bitcoins_address}", 'woocommerce'));
-
-            echo wpautop(wptexturize($instructions));
-            
-            // Add copy-to-clipboard button for BSV address
-            if ($bitcoins_address) {
-                echo '<div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px;">';
-                echo '<p style="margin: 0 0 10px 0;"><strong>' . __('Bitcoin SV Address:', 'woocommerce') . '</strong></p>';
-                echo '<div style="display: flex; align-items: center; gap: 10px;">';
-                echo '<input type="text" value="' . esc_attr($bitcoins_address) . '" readonly style="flex: 1; padding: 8px; font-family: monospace; font-size: 14px; border: 1px solid #ced4da; border-radius: 4px;" id="bsv-address-field" />';
-                echo '<button type="button" onclick="bsvCopyAddress()" style="padding: 8px 16px; background: #0073aa; color: white; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap;">' . __('Copy Address', 'woocommerce') . '</button>';
-                echo '</div>';
-                echo '<p style="margin: 10px 0 0 0; font-size: 12px; color: #6c757d;" id="bsv-copy-status"></p>';
-                echo '</div>';
-                echo '<script>
-                function bsvCopyAddress() {
-                    var addressField = document.getElementById("bsv-address-field");
-                    var statusField = document.getElementById("bsv-copy-status");
-                    addressField.select();
-                    addressField.setSelectionRange(0, 99999);
-                    try {
-                        document.execCommand("copy");
-                        statusField.textContent = "' . esc_js(__('Address copied to clipboard!', 'woocommerce')) . '";
-                        statusField.style.color = "#28a745";
-                        setTimeout(function() { statusField.textContent = ""; }, 3000);
-                    } catch (err) {
-                        statusField.textContent = "' . esc_js(__('Failed to copy. Please copy manually.', 'woocommerce')) . '";
-                        statusField.style.color = "#dc3545";
-                    }
-                }
-                </script>';
-            }
         }
         //-------------------------------------------------------------------
 
@@ -759,30 +705,101 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             if ($sent_to_admin) {
                 return;
             }
-            if (!in_array($order->status, array('pending', 'on-hold'), true)) {
+            if (!in_array($order->get_status(), array('pending', 'on-hold'), true)) {
                 return;
             }
-            if ($order->payment_method !== 'bitcoin') {
+            if ($order->get_payment_method() !== 'bitcoin') {
                 return;
             }
 
-            // Assemble payment instructions for email
-            $order_total_in_btc   = get_post_meta($order->id, 'order_total_in_btc', true); // set single to true to receive properly unserialized array
-            $bitcoins_address = get_post_meta($order->id, 'bitcoins_address', true); // set single to true to receive properly unserialized array
+            // Check if email instructions are enabled
+            $bwwc_settings = BWWC__get_settings();
+            if (isset($bwwc_settings['email_instructions_enabled']) && !$bwwc_settings['email_instructions_enabled']) {
+                return;
+            }
 
+            // Get payment details
+            $order_id = $order->get_id();
+            $order_total_in_btc = get_post_meta($order_id, 'order_total_in_btc', true);
+            $bitcoins_address = get_post_meta($order_id, 'bitcoins_address', true);
+            $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+            $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+            
+            if (!$bitcoins_address || !$order_total_in_btc) {
+                return;
+            }
 
-            $instructions = $this->instructions;
-            $instructions = str_replace('{{{BITCOINS_AMOUNT}}}', $order_total_in_btc, $instructions);
-            $instructions = str_replace('{{{BITCOINS_ADDRESS}}}', $bitcoins_address, $instructions);
-            $instructions =
-                str_replace(
-                    '{{{EXTRA_INSTRUCTIONS}}}',
+            // Calculate sats if not stored
+            if (!$expected_sats) {
+                $expected_sats = intval(round($order_total_in_btc * 100000000));
+            }
 
-                    $this->instructions_multi_payment_str,
-                    $instructions
-                    );
+            // Get store currency
+            $store_currency = get_woocommerce_currency();
+            $order_total = $order->get_total();
 
-            echo wpautop(wptexturize($instructions));
+            // Generate pay link
+            $pay_link = $order->get_checkout_payment_url();
+
+            // Email intro text (customizable in settings)
+            $intro_text = isset($bwwc_settings['email_instructions_intro']) && !empty($bwwc_settings['email_instructions_intro']) 
+                ? $bwwc_settings['email_instructions_intro'] 
+                : __('Complete your Bitcoin SV payment using the details below:', 'bitcoin-sv-payments-for-woocommerce');
+
+            // Generate QR code URL
+            $bip21_uri = 'bitcoin:' . $bitcoins_address . '?amount=' . $order_total_in_btc;
+            $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($bip21_uri);
+
+            // Check if QR should be included
+            $include_qr = !isset($bwwc_settings['email_instructions_include_qr']) || $bwwc_settings['email_instructions_include_qr'];
+
+            // Build email content
+            echo '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">';
+            echo '<h3 style="margin-top: 0; color: #333;">' . esc_html__('Bitcoin SV Payment Instructions', 'bitcoin-sv-payments-for-woocommerce') . '</h3>';
+            echo '<p style="color: #555; line-height: 1.6;">' . esc_html($intro_text) . '</p>';
+            
+            // Payment amount
+            echo '<div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #FCCA09;">';
+            echo '<p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">' . esc_html__('Amount to Send', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+            echo '<p style="margin: 0; font-size: 24px; font-weight: 700; color: #333;">' . esc_html(number_format($expected_sats, 0, '.', ',')) . ' <span style="font-size: 14px; font-weight: 600; color: #666;">sats</span></p>';
+            echo '<p style="margin: 8px 0 0 0; font-size: 13px; color: #888;">≈ ' . esc_html(sprintf('%s %s', number_format($order_total, 2), $store_currency)) . '</p>';
+            echo '</div>';
+            
+            // Payment address
+            echo '<div style="background: white; padding: 15px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #FCCA09;">';
+            echo '<p style="margin: 0 0 8px 0; font-size: 13px; color: #666; font-weight: 600;">' . esc_html__('Payment Address', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+            echo '<p style="margin: 0; font-family: monospace; font-size: 13px; color: #333; word-break: break-all;">' . esc_html($bitcoins_address) . '</p>';
+            echo '</div>';
+            
+            // QR Code
+            if ($include_qr) {
+                echo '<div style="text-align: center; margin: 20px 0;">';
+                echo '<p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">' . esc_html__('Scan to Pay', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+                echo '<img src="' . esc_url($qr_url) . '" alt="QR Code" style="max-width: 200px; border: 8px solid white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />';
+                echo '</div>';
+            }
+            
+            // Pay link button
+            echo '<div style="text-align: center; margin: 20px 0;">';
+            echo '<a href="' . esc_url($pay_link) . '" style="display: inline-block; background: #0073aa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 15px;">' . esc_html__('Complete Payment Online', 'bitcoin-sv-payments-for-woocommerce') . '</a>';
+            echo '</div>';
+            
+            // Expiration notice
+            if ($expires_at) {
+                $payment_timeout_mins = $bwwc_settings['assigned_address_expires_in_mins'];
+                $payment_timeout_hours = $payment_timeout_mins / 60;
+                $payment_timeout_display = ($payment_timeout_hours == floor($payment_timeout_hours)) ? (int)$payment_timeout_hours : number_format($payment_timeout_hours, 1);
+                echo '<p style="font-size: 12px; color: #888; text-align: center; margin: 15px 0 0 0;">';
+                echo esc_html(sprintf(__('⏱ Please complete payment within %s hours', 'bitcoin-sv-payments-for-woocommerce'), $payment_timeout_display));
+                echo '</p>';
+            }
+            
+            // Important notes
+            echo '<div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #ffc107;">';
+            echo '<p style="margin: 0; font-size: 12px; color: #856404; line-height: 1.5;"><strong>' . esc_html__('Important:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ' . esc_html__('Only send Bitcoin SV (BSV) to this address. Other cryptocurrencies (BTC, BCH, etc.) will be lost.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+            echo '</div>';
+            
+            echo '</div>';
         }
         //-------------------------------------------------------------------
 
@@ -925,7 +942,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
         add_action(
             'woocommerce_blocks_payment_method_type_registration',
             function($payment_method_registry) {
-                $payment_method_registry->register(new WC_Gateway_Bitcoin_Blocks_Support());
+                $payment_method_registry->register(new BWWC_WC_Gateway_Blocks_Support());
             }
         );
     }

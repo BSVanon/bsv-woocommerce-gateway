@@ -64,6 +64,12 @@ $g_BWWC__config_defaults = array(
     // New BSV settings
     'selected_checkout_icon'               =>  '/images/checkout-icons/orange-1.png',
     //'checkout_icon_select'                 =>  '',
+    
+    // UI/UX Settings (v5.3.0+)
+    'email_instructions_enabled'           =>  '1',    // Include payment instructions in WooCommerce emails
+    'email_instructions_include_qr'        =>  '1',    // Include QR code in email instructions
+    'email_instructions_intro'             =>  '',     // Custom intro text for email instructions (empty = use default)
+    'status_polling_interval'              =>  '10',   // Seconds between status checks on payment console
     ////////
 
    // ------- Copy of $this->settings of 'BWWC_Bitcoin' class.

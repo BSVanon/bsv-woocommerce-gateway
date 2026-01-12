@@ -136,8 +136,24 @@ function BWWC_cron_job_worker($hardcron=false)
 
                     BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Detected non-zero balance at address: '{$row_for_balance_check['btc_address']}, order ID = '{$last_order_info['order_id']}'. Detected balance ='{$balance_info_array['balance']}'.");
 
+                    // Update payment state meta for UI
+                    $order_id = $last_order_info['order_id'];
+                    $received_btc = floatval($balance_info_array['balance']);
+                    $expected_btc = floatval($last_order_info['order_total']);
+                    $received_sats = intval(round($received_btc * 100000000));
+                    $expected_sats = intval(round($expected_btc * 100000000));
+                    
+                    update_post_meta($order_id, 'received_sats', $received_sats);
+                    update_post_meta($order_id, 'last_checked_at', time());
+                    
+                    // Determine payment state
                     if ($balance_info_array['balance'] < $last_order_info['order_total']) {
+                        update_post_meta($order_id, 'payment_state', 'underpaid');
                         BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: balance at address: '{$row_for_balance_check['btc_address']}' (BTC '{$balance_info_array['balance']}') is not yet sufficient to complete it's order (order ID = '{$last_order_info['order_id']}'). Total required: '{$last_order_info['order_total']}'. Will wait for more funds to arrive...");
+                    } elseif ($balance_info_array['balance'] > $last_order_info['order_total']) {
+                        update_post_meta($order_id, 'payment_state', 'overpaid');
+                    } else {
+                        update_post_meta($order_id, 'payment_state', 'detected');
                     }
                 } else {
                 }
@@ -170,6 +186,10 @@ function BWWC_cron_job_worker($hardcron=false)
 
                     // Last order was fully paid! Complete it...
                     BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Full payment for order ID '{$last_order_info['order_id']}' detected at address: '{$row_for_balance_check['btc_address']}' (BTC '{$balance_info_array['balance']}'). Total was required for this order: '{$last_order_info['order_total']}'. Processing order ...");
+
+                    // Update payment state to confirmed
+                    update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
+                    update_post_meta($last_order_info['order_id'], 'best_confirmations', 1); // Will be updated by blockchain check
 
                     // Update order' meta info
                     $address_meta['orders'][0]['paid'] = true;

@@ -35,7 +35,7 @@ $g_BWWC__config_defaults = array(
    'max_unusable_generated_addresses'     =>  '20',   // Return error after this number of unusable (non-empty) bitcoin addresses were sequentially generated
    'blockchain_api_timeout_secs'          =>  '20',   // Connection and request timeouts for curl operations dealing with blockchain requests.
    'exchange_rate_api_timeout_secs'       =>  '10',   // Connection and request timeouts for curl operations dealing with exchange rate API requests.
-   'soft_cron_job_schedule_name'          =>  'minutes_1',   // WP cron job frequency
+   'soft_cron_job_schedule_name'          =>  'minutes_2.5',   // WP cron job frequency
    'delete_expired_unpaid_orders'         =>  '1',   // Automatically delete expired, unpaid orders from WooCommerce->Orders database
    'reuse_expired_addresses'              =>  '1',   // True - may reduce anonymouty of store customers (someone may click/generate bunch of fake orders to list many addresses that in a future will be used by real customers).
                                                       // False - better anonymouty but may leave many addresses in wallet unused (and hence will require very high 'gap limit') due to many unpaid order clicks.
@@ -246,8 +246,10 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
 
     //---------------------------------------
     // Validation
-    //if ($bwwc_settings['aff_payout_percents3'] > 90)
-    //   $bwwc_settings['aff_payout_percents3'] = "90";
+    // Enforce minimum 1 confirmation (blockchain APIs only return confirmed transactions)
+    if (isset($bwwc_settings['confs_num']) && intval($bwwc_settings['confs_num']) < 1) {
+        $bwwc_settings['confs_num'] = '1';
+    }
     //---------------------------------------
 
     // ---------------------------------------

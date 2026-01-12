@@ -140,6 +140,18 @@
     border-color: #46b450;
 }
 
+/* Button success state */
+.bsv-btn-success {
+    background: #46b450 !important;
+    color: #fff !important;
+    border-color: #46b450 !important;
+}
+
+.bsv-btn-success:hover {
+    background: #3ea042 !important;
+    border-color: #3ea042 !important;
+}
+
 /* Status box */
 .bsv-status-box {
     margin: 2rem 0;

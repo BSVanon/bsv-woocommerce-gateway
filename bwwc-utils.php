@@ -542,7 +542,7 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     }
 
     if (!is_numeric($funds_received)) {
-        // Modern provider: WhatsOnChain (returns sats)
+        // Primary provider: WhatsOnChain (returns sats)
         $whatsonchain_response = BWWC__file_get_contents(
             'https://api.whatsonchain.com/v1/bsv/main/address/' . $btc_address . '/balance',
             false,
@@ -557,15 +557,28 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     }
 
     if (!is_numeric($funds_received)) {
-        // Help: http://bchsvexplorer.com
+        // Fallback provider: Bitails (returns sats)
+        $bitails_response = BWWC__file_get_contents(
+            'https://api.bitails.io/address/' . $btc_address . '/balance',
+            false,
+            $api_timeout
+        );
+        if ($bitails_response) {
+            $bitails_json = json_decode(trim($bitails_response), true);
+            if (is_array($bitails_json) && isset($bitails_json['confirmed'])) {
+                $funds_received = $bitails_json['confirmed'];
+            }
+        }
+    }
+
+    if (!is_numeric($funds_received)) {
+        // Legacy fallback: bchsvexplorer.com (returns satoshis)
         $funds_received = BWWC__file_get_contents('http://bchsvexplorer.com/api/addr/' . $btc_address . '/totalReceived', true, $api_timeout);
 
         if (!is_numeric($funds_received)) {
             $blockchain_info_failure_reply = $funds_received;
 
-            // Help: https://blockexplorer.com/api
-            // NOTE blockexplorer API no longer has 'confirmations' parameter. Hence if blockchain.info call fails - blockchain
-            //      will report successful transaction immediately.
+            // Final fallback: https bchsvexplorer
             $funds_received = BWWC__file_get_contents('https://bchsvexplorer.com/api/addr/' . $btc_address . '/totalReceived', true, $api_timeout);
 
             $blockexplorer_com_failure_reply = $funds_received;

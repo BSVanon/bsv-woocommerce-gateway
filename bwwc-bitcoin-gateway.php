@@ -603,6 +603,19 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
               'bsv_exchange_rate',	// meta key
               $exchange_rate 	// meta value. If array - will be auto-serialized
               );
+            
+            // Store expected amount in satoshis for UI
+            $expected_sats = intval(round($order_total_in_btc * 100000000));
+            update_post_meta($order_id, 'expected_sats', $expected_sats);
+            
+            // Store expiration timestamp
+            $bwwc_settings = BWWC__get_settings();
+            $expires_at = time() + ($bwwc_settings['assigned_address_expires_in_mins'] * 60);
+            update_post_meta($order_id, 'address_expires_at', $expires_at);
+            
+            // Initialize payment state
+            update_post_meta($order_id, 'payment_state', 'waiting');
+            update_post_meta($order_id, 'received_sats', 0);
             update_post_meta(
              $order_id, 				// post id ($order_id)
              '_incoming_payments',	// meta key. Starts with '_' - hidden from UI.
@@ -1038,5 +1051,29 @@ function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=fal
                 );
         }
     }
+}
+//===========================================================================
+
+//===========================================================================
+/**
+ * Add wallet top-up link to checkout page
+ */
+function BWWC__add_wallet_topup_link() {
+    // Check if BSV gateway is available in the current checkout
+    $available_gateways = WC()->payment_gateways->get_available_payment_gateways();
+    if (!isset($available_gateways['bitcoin'])) {
+        return;
+    }
+    
+    ?>
+    <div class="bsv-wallet-topup-notice" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px 15px; margin-bottom: 24px; text-align: center;">
+        <p style="margin: 0 0 8px 0; font-size: 14px; color: #495057;">
+            <?php esc_html_e('Need BSV to complete your purchase?', 'bitcoin-sv-payments-for-woocommerce'); ?>
+        </p>
+        <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" class="button" style="display: inline-block; padding: 8px 20px; background: #FCCA09; color: #000; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">
+            <?php esc_html_e('Top up your BitcoinSV wallet balance', 'bitcoin-sv-payments-for-woocommerce'); ?> ↗
+        </a>
+    </div>
+    <?php
 }
 //===========================================================================

@@ -1,7 +1,7 @@
 # Bitcoin SV Payments for WooCommerce
 
-**Version:** 5.2.0  
-**Status:** WordPress 6.9 / WooCommerce Blocks Ready  
+**Version:** 5.3.1  
+**Status:** Production Ready - Payment Detection Fixed  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 
 Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
@@ -11,7 +11,9 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Direct Payments**: Funds go straight to your ElectrumSV or BIP32-compatible wallet
 - **Per-Order Addresses**: Automatic unique address derivation from Master Public Key (xpub/MPK)
 - **Real-Time Exchange Rates**: CoinGecko integration with configurable markup
-- **Payment Detection**: WhatsOnChain blockchain API integration
+- **Payment Detection**: WhatsOnChain + Bitails API with automatic fallback
+- **Modern Payment UI**: Real-time status updates, QR codes, countdown timers
+- **Aggregate Payments**: Automatically handles multiple transactions to same address
 - **QR Codes**: Easy mobile payments
 - **Modern Stack**: PHP 8.0-8.3, WordPress 6.9, WooCommerce 10.4
 - **HPOS Compatible**: High-Performance Order Storage ready
@@ -71,10 +73,20 @@ These guides live inside the `docs/` directory of this repository:
 - **[DEV_NOTES.md](docs/DEV_NOTES.md)** - Development environment setup
 - **[CAPABILITIES.md](docs/CAPABILITIES.md)** - Feature specification
 
+## ✅ Recent Fixes (v5.3.1)
+
+- **CRITICAL**: Fixed payment detection - now works correctly
+- **Fixed**: Blockchain explorer URLs (was missing /address/ path)
+- **Fixed**: Transaction IDs now stored and displayed
+- **Fixed**: "I've Paid" button triggers immediate check
+- **Added**: Bitails API fallback for reliability
+- **Added**: Wallet top-up links for customer convenience
+- **Improved**: Underpaid/overpaid payment handling with clear UI feedback
+- **Improved**: Confirmation time estimates shown to customers
+
 ## ⚠️ Known Limitations
 
 - **Rate Limiting**: CoinGecko free tier has 50 calls/min limit
-- **Provider Failover**: Only primary WhatsOnChain + Blockchair fallback
 
 ## 🗺️ Roadmap
 

@@ -9,7 +9,7 @@ https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '5.3.0');
+    define('BWWC_VERSION', '5.3.1');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');
@@ -68,3 +68,4 @@ require_once(dirname(__FILE__) . '/bwwc-render-settings.php');
 require_once(dirname(__FILE__) . '/bwwc-bitcoin-gateway.php');
 require_once(dirname(__FILE__) . '/bwwc-dashboard-widget.php');
 require_once(dirname(__FILE__) . '/includes/bsv-payment-console.php');
+require_once(dirname(__FILE__) . '/includes/bsv-payment-check.php');

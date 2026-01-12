@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.3.0
+Stable tag: 5.3.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -21,8 +21,11 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 * Direct payments to your ElectrumSV or BIP32-compatible wallet
 * Automatic per-order address derivation from your Master Public Key (xpub/MPK)
 * Real-time exchange rate conversion with configurable markup
-* Payment detection via blockchain APIs (WhatsOnChain, Blockchair)
+* Payment detection via blockchain APIs (WhatsOnChain + Bitails fallback)
+* Modern payment console with live status updates and countdown timer
+* Aggregate payment support (handles multiple transactions to same address)
 * QR code generation for easy mobile payments
+* Wallet top-up links for customer convenience
 * WooCommerce HPOS (High-Performance Order Storage) compatible
 * WooCommerce Blocks checkout support
 * PHP 8+ compatible
@@ -74,6 +77,15 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 5.3.1 - 2026-01-12 =
+* CRITICAL FIX: Payment detection now works correctly
+* FIXED: Blockchain explorer URLs now generate correctly (was missing /address/ and /tx/ paths)
+* FIXED: Transaction IDs are now stored and displayed in payment console
+* FIXED: "I've Paid" button now triggers immediate payment check
+* ADDED: Bitails API as fallback provider for improved reliability
+* FIXED: Order meta fields (expected_sats, address_expires_at, payment_state) now initialized on order creation
+* FIXED: Countdown timer now displays correctly
 
 = 5.3.0 - 2025-01-11 =
 * Added: Modern payment console UI with QR code, copy buttons, and live countdown

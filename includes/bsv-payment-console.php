@@ -159,8 +159,14 @@ function BWWC__render_payment_console($order) {
         <?php endif; ?>
 
         <div class="bsv-actions">
-            <button class="bsv-btn bsv-btn-primary bsv-recheck-btn">
-                <?php esc_html_e("I've Paid", 'bitcoin-sv-payments-for-woocommerce'); ?>
+            <button class="bsv-btn bsv-btn-primary bsv-recheck-btn" data-paid-state="<?php echo esc_attr($payment_state); ?>">
+                <?php 
+                if ($payment_state === 'detected' || $payment_state === 'confirmed') {
+                    esc_html_e('Payment Received!', 'bitcoin-sv-payments-for-woocommerce');
+                } else {
+                    esc_html_e("I've Paid", 'bitcoin-sv-payments-for-woocommerce');
+                }
+                ?>
             </button>
             <a href="<?php echo esc_url($order->get_view_order_url()); ?>" class="bsv-btn bsv-btn-secondary">
                 <?php esc_html_e('View Order', 'bitcoin-sv-payments-for-woocommerce'); ?>
@@ -169,6 +175,34 @@ function BWWC__render_payment_console($order) {
 
         <div class="bsv-explorer-link" style="display: none;">
             <!-- Populated by JS when tx detected -->
+        </div>
+        
+        <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+        <div class="bsv-wallet-topup" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">
+                <?php esc_html_e('Need to top up your BSV wallet?', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            </p>
+            <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" style="display: inline-block; padding: 8px 16px; background: #FCCA09; color: #000; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 13px;">
+                <?php esc_html_e('Get BSV', 'bitcoin-sv-payments-for-woocommerce'); ?> ↗
+            </a>
+        </div>
+        <?php endif; ?>
+        
+        <?php 
+        // Show confirmation time estimate
+        $bwwc_settings = BWWC__get_settings();
+        $required_confs = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 4;
+        $estimated_minutes = $required_confs * 10;
+        ?>
+        <div class="bsv-confirmation-notice" style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 12px; color: #856404;">
+            <strong><?php esc_html_e('Note:', 'bitcoin-sv-payments-for-woocommerce'); ?></strong>
+            <?php 
+            printf(
+                esc_html__('Merchant requires %d confirmations (~%d minutes) before order is finalized. You will receive email confirmation once payment is verified.', 'bitcoin-sv-payments-for-woocommerce'),
+                $required_confs,
+                $estimated_minutes
+            );
+            ?>
         </div>
 
     </div>
@@ -310,10 +344,8 @@ function BWWC__ajax_check_payment_status() {
         if (!$last_check || (time() - $last_check) >= $cooldown) {
             update_post_meta($order_id, 'last_manual_check', time());
             
-            // Trigger payment check
-            if (function_exists('BWWC__cron_check_payment_for_order')) {
-                BWWC__cron_check_payment_for_order($order_id);
-            }
+            // Trigger immediate payment check
+            BWWC__check_payment_for_order($order_id);
         }
     }
     
@@ -329,7 +361,7 @@ function BWWC__ajax_check_payment_status() {
     
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = isset($bwwc_settings['confirmations']) ? intval($bwwc_settings['confirmations']) : 1;
-    $explorer_base = 'https://whatsonchain.com/';
+    $explorer_base = 'https://whatsonchain.com';
     
     // Parse txids if string
     if (is_string($txids)) {

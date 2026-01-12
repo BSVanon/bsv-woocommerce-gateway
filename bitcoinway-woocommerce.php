@@ -3,7 +3,7 @@
  * Plugin Name: Bitcoin SV Payments for WooCommerce
  * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
- * Version: 5.3.0
+ * Version: 5.3.1
  * Author: BSVanon
  * Author URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * License: GPL-2.0-or-later
@@ -53,6 +53,9 @@ add_filter('plugin_action_links_' . plugin_basename(__FILE__), 'BWWC__plugin_act
 add_action('admin_notices', 'BWWC__blocks_checkout_notice');
 
 add_action('init', 'BWWC_set_lang_file');
+
+// Add wallet top-up link to checkout page
+add_action('woocommerce_review_order_before_payment', 'BWWC__add_wallet_topup_link');
 //---------------------------------------------------------------------------
 
 //===========================================================================

@@ -239,6 +239,9 @@
 
             // Update explorer link
             this.updateExplorerLink(data);
+            
+            // Update button state
+            this.updateButtonState(data);
 
             // Stop polling if payment is confirmed or expired
             if (data.payment_state === 'confirmed' || data.payment_state === 'expired') {
@@ -257,6 +260,30 @@
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
+            }
+        },
+        
+        updateButtonState: function(data) {
+            const btn = $('.bsv-recheck-btn');
+            if (!btn.length) return;
+            
+            const state = data.payment_state || 'waiting';
+            
+            if (state === 'detected' || state === 'confirmed') {
+                btn.text('Payment Received!');
+                btn.removeClass('bsv-btn-primary').addClass('bsv-btn-success');
+                btn.prop('disabled', true);
+                btn.css('cursor', 'not-allowed');
+            } else if (state === 'underpaid') {
+                btn.text("I've Paid More");
+            } else if (state === 'overpaid') {
+                btn.text('Payment Received!');
+                btn.removeClass('bsv-btn-primary').addClass('bsv-btn-success');
+            } else {
+                btn.text("I've Paid");
+                btn.removeClass('bsv-btn-success').addClass('bsv-btn-primary');
+                btn.prop('disabled', false);
+                btn.css('cursor', 'pointer');
             }
         },
 
@@ -377,12 +404,14 @@
 
             if (data.txids && data.txids.length > 0) {
                 const txid = data.txids[0];
-                const explorerUrl = data.explorer_url || 'https://whatsonchain.com/tx/';
-                explorerEl.html(`<a href="${explorerUrl}${txid}" target="_blank" rel="noopener">View Transaction On BSV Blockchain ↗</a>`);
+                const explorerBase = data.explorer_url || 'https://whatsonchain.com';
+                const explorerUrl = explorerBase + '/tx/' + txid;
+                explorerEl.html(`<a href="${explorerUrl}" target="_blank" rel="noopener">View Transaction On BSV Blockchain ↗</a>`);
                 explorerEl.show();
             } else if (data.address) {
-                const explorerUrl = data.explorer_url || 'https://whatsonchain.com/address/';
-                explorerEl.html(`<a href="${explorerUrl}${data.address}" target="_blank" rel="noopener">View Address On BSV Blockchain ↗</a>`);
+                const explorerBase = data.explorer_url || 'https://whatsonchain.com';
+                const explorerUrl = explorerBase + '/address/' + data.address;
+                explorerEl.html(`<a href="${explorerUrl}" target="_blank" rel="noopener">View Address On BSV Blockchain ↗</a>`);
                 explorerEl.show();
             }
         }

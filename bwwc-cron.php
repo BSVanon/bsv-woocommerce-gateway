@@ -146,6 +146,28 @@ function BWWC_cron_job_worker($hardcron=false)
                     update_post_meta($order_id, 'received_sats', $received_sats);
                     update_post_meta($order_id, 'last_checked_at', time());
                     
+                    // Fetch transaction history to get txids
+                    $tx_history_response = BWWC__file_get_contents(
+                        'https://api.whatsonchain.com/v1/bsv/main/address/' . $row_for_balance_check['btc_address'] . '/history',
+                        false,
+                        $bwwc_settings['blockchain_api_timeout_secs']
+                    );
+                    if ($tx_history_response) {
+                        $tx_history = json_decode(trim($tx_history_response), true);
+                        if (is_array($tx_history) && count($tx_history) > 0) {
+                            $txids = array();
+                            foreach ($tx_history as $tx) {
+                                if (isset($tx['tx_hash'])) {
+                                    $txids[] = $tx['tx_hash'];
+                                }
+                            }
+                            if (!empty($txids)) {
+                                update_post_meta($order_id, 'txids', implode(',', $txids));
+                                BWWC__log_event(__FILE__, __LINE__, "Cron job: Stored " . count($txids) . " transaction ID(s) for order {$order_id}");
+                            }
+                        }
+                    }
+                    
                     // Determine payment state
                     if ($balance_info_array['balance'] < $last_order_info['order_total']) {
                         update_post_meta($order_id, 'payment_state', 'underpaid');

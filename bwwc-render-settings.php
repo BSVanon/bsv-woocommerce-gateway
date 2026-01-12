@@ -177,12 +177,14 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
           <th scope="row">Number of confirmations required before accepting payment:</th>
           <td>
-            <input type="text" name="confs_num" value="<?php echo esc_attr($bwwc_settings['confs_num']); ?>" size="4" />
+            <input type="number" name="confs_num" value="<?php echo esc_attr($bwwc_settings['confs_num']); ?>" min="1" max="100" size="4" />
             <p class="description">
               After a transaction is broadcast to the Bitcoin SV network, it may be included in a block that is published
               to the network. When that happens it is said that one <a href="https://en.bitcoin.it/wiki/Confirmation"><b>confirmation</b></a> has occurred for the transaction.
               With each subsequent block that is found, the number of confirmations is increased by one. To protect against double spending, a transaction should not be considered as confirmed until a certain number of blocks confirm, or verify that transaction.
-              6 is considered very safe number of confirmations, although it takes longer to confirm.
+              <strong>Note:</strong> New BSV blocks are created approximately every 10 minutes. 4 confirmations = ~40 minutes, 6 confirmations = ~60 minutes.
+              Customers will see an estimated confirmation time on the payment page.
+              <br><strong style="color: #d63638;">Minimum: 1 confirmation required.</strong> The blockchain APIs only return confirmed transactions. Setting to 1 provides fast acceptance (~10 min) but has some double-spend risk for high-value orders.
             </p>
           </td>
         </tr>
@@ -387,10 +389,10 @@ function BWWC__render_advanced_settings_page_html()
         <td>
             <select name="soft_cron_job_schedule_name">
                 <option value="minutes_1" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_1'); ?>>Every 1 minute</option>
-                <option value="minutes_2.5" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_2.5'); ?>>Every 2.5 minutes (recommended)</option>
+                <option value="minutes_2.5" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_2.5'); ?>>Every 2.5 minutes (default)</option>
                 <option value="minutes_5" <?php selected($bwwc_settings['soft_cron_job_schedule_name'], 'minutes_5'); ?>>Every 5 minutes</option>
             </select>
-            <span class="description">How often to check for incoming BSV payments. More frequent = faster detection but higher server load.</span>
+            <span class="description">How often to check for incoming BSV payments. Default 2.5 minutes balances detection speed with server load.</span>
         </td>
     </tr>
     

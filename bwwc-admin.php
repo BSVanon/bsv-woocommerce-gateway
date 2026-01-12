@@ -259,6 +259,26 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
     $bwwc_settings['electrum_mpks'] = preg_split("/[\s,]+/", $bwwc_settings['electrum_mpk_saved']);
     // ---------------------------------------
 
+    // ---------------------------------------
+    // Reschedule cron if settings changed
+    $old_settings = get_option(BWWC_SETTINGS_NAME);
+    $cron_settings_changed = (
+        !$old_settings ||
+        $old_settings['enable_soft_cron_job'] != $bwwc_settings['enable_soft_cron_job'] ||
+        $old_settings['soft_cron_job_schedule_name'] != $bwwc_settings['soft_cron_job_schedule_name']
+    );
+    
+    if ($cron_settings_changed) {
+        // Clear existing cron
+        wp_clear_scheduled_hook('BWWC_cron_action');
+        
+        // Reschedule if enabled
+        if ($bwwc_settings['enable_soft_cron_job']) {
+            $cron_job_schedule_name = $bwwc_settings['soft_cron_job_schedule_name'];
+            wp_schedule_event(time(), $cron_job_schedule_name, 'BWWC_cron_action');
+        }
+    }
+    // ---------------------------------------
 
     if ($also_update_persistent_settings) {
         BWWC__update_persistent_settings($bwwc_settings);

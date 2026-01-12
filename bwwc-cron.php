@@ -105,10 +105,11 @@ function BWWC_cron_job_worker($hardcron=false)
 
                 // Refresh 'received_funds_checked_at' field
                 $current_time = time();
+                // Convert sats to BTC for storage (balance_info_array['balance'] is in sats)
+                $balance_btc = $balance_info_array['balance'] / 100000000;
                 $ret_code = $wpdb->query($wpdb->prepare(
-                    "UPDATE `%s` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
-                    $btc_addresses_table_name,
-                    $balance_info_array['balance'],
+                    "UPDATE `$btc_addresses_table_name` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
+                    $balance_btc,
                     $current_time,
                     $row_id
                 ));
@@ -119,16 +120,14 @@ function BWWC_cron_job_worker($hardcron=false)
                         if (!$last_order_info || !@$last_order_info['order_id'] || !@$balance_info_array['balance'] || !@$last_order_info['order_total']) {
                             // No proper metadata present. Mark this address as 'xused' (used by unknown entity outside of this application) and be done with it forever.
                             $ret_code = $wpdb->query($wpdb->prepare(
-                                "UPDATE `%s` SET `status` = 'xused' WHERE `id` = %d",
-                                $btc_addresses_table_name,
+                                "UPDATE `$btc_addresses_table_name` SET `status` = 'xused' WHERE `id` = %d",
                                 $row_id
                             ));
                             continue;
                         } else {
                             // Metadata for this address is present. Mark this address as 'assigned' and treat it like that further down...
                             $ret_code = $wpdb->query($wpdb->prepare(
-                                "UPDATE `%s` SET `status` = 'assigned' WHERE `id` = %d",
-                                $btc_addresses_table_name,
+                                "UPDATE `$btc_addresses_table_name` SET `status` = 'assigned' WHERE `id` = %d",
                                 $row_id
                             ));
                         }
@@ -138,10 +137,11 @@ function BWWC_cron_job_worker($hardcron=false)
 
                     // Update payment state meta for UI
                     $order_id = $last_order_info['order_id'];
-                    $received_btc = floatval($balance_info_array['balance']);
+                    // balance_info_array['balance'] is already in sats from API
+                    $received_sats = intval($balance_info_array['balance']);
                     $expected_btc = floatval($last_order_info['order_total']);
-                    $received_sats = intval(round($received_btc * 100000000));
                     $expected_sats = intval(round($expected_btc * 100000000));
+                    $received_btc = $received_sats / 100000000;
                     
                     update_post_meta($order_id, 'received_sats', $received_sats);
                     update_post_meta($order_id, 'last_checked_at', time());
@@ -168,11 +168,11 @@ function BWWC_cron_job_worker($hardcron=false)
                         }
                     }
                     
-                    // Determine payment state
-                    if ($balance_info_array['balance'] < $last_order_info['order_total']) {
+                    // Determine payment state (compare BTC to BTC)
+                    if ($received_btc < $expected_btc) {
                         update_post_meta($order_id, 'payment_state', 'underpaid');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: balance at address: '{$row_for_balance_check['btc_address']}' (BTC '{$balance_info_array['balance']}') is not yet sufficient to complete it's order (order ID = '{$last_order_info['order_id']}'). Total required: '{$last_order_info['order_total']}'. Will wait for more funds to arrive...");
-                    } elseif ($balance_info_array['balance'] > $last_order_info['order_total']) {
+                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: balance at address: '{$row_for_balance_check['btc_address']}' (BTC '$received_btc') is not yet sufficient to complete it's order (order ID = '{$last_order_info['order_id']}'). Total required: '$expected_btc'. Will wait for more funds to arrive...");
+                    } elseif ($received_btc > $expected_btc) {
                         update_post_meta($order_id, 'payment_state', 'overpaid');
                     } else {
                         update_post_meta($order_id, 'payment_state', 'detected');
@@ -183,7 +183,7 @@ function BWWC_cron_job_worker($hardcron=false)
                 // Note: to be perfectly safe against late-paid orders, we need to:
                 //	Scan '$address_meta['orders']' for first UNPAID order that is exactly matching amount at address.
 
-                if ($balance_info_array['balance'] >= $last_order_info['order_total']) {
+                if ($received_btc >= $expected_btc) {
                     // Process full payment event
 
                     /*
@@ -207,7 +207,7 @@ function BWWC_cron_job_worker($hardcron=false)
                     */
 
                     // Last order was fully paid! Complete it...
-                    BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Full payment for order ID '{$last_order_info['order_id']}' detected at address: '{$row_for_balance_check['btc_address']}' (BTC '{$balance_info_array['balance']}'). Total was required for this order: '{$last_order_info['order_total']}'. Processing order ...");
+                    BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Full payment for order ID '{$last_order_info['order_id']}' detected at address: '{$row_for_balance_check['btc_address']}' (BTC '$received_btc'). Total was required for this order: '$expected_btc'. Processing order ...");
 
                     // Update payment state to confirmed
                     update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
@@ -229,8 +229,7 @@ function BWWC_cron_job_worker($hardcron=false)
                     // Note: `total_received_funds` and `received_funds_checked_at` are already updated above.
                     //
                     $ret_code = $wpdb->query($wpdb->prepare(
-                        "UPDATE `%s` SET `status` = 'used', `address_meta` = %s WHERE `id` = %d",
-                        $btc_addresses_table_name,
+                        "UPDATE `$btc_addresses_table_name` SET `status` = 'used', `address_meta` = %s WHERE `id` = %d",
                         $address_meta_serialized,
                         $row_id
                     ));

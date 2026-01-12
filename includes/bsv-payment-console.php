@@ -72,7 +72,7 @@ function BWWC__render_payment_console($order) {
             <div class="bsv-payment-steps">
                 <?php esc_html_e('1. Scan the QR code or copy the address below', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
                 <?php esc_html_e('2. Send the exact amount shown', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
-                <?php esc_html_e('3. Wait for confirmation (usually a few seconds)', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                <?php esc_html_e('3. Wait for blockchain confirmation', 'bitcoin-sv-payments-for-woocommerce'); ?>
             </div>
         </div>
 
@@ -198,7 +198,7 @@ function BWWC__render_payment_console($order) {
             <strong><?php esc_html_e('Note:', 'bitcoin-sv-payments-for-woocommerce'); ?></strong>
             <?php 
             printf(
-                esc_html__('Merchant requires %d confirmations (~%d minutes) before order is finalized. You will receive email confirmation once payment is verified.', 'bitcoin-sv-payments-for-woocommerce'),
+                esc_html__('Merchant requires %d confirmations (~%d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'bitcoin-sv-payments-for-woocommerce'),
                 $required_confs,
                 $estimated_minutes
             );

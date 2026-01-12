@@ -105,8 +105,8 @@ function BWWC_cron_job_worker($hardcron=false)
 
                 // Refresh 'received_funds_checked_at' field
                 $current_time = time();
-                // Convert sats to BTC for storage (balance_info_array['balance'] is in sats)
-                $balance_btc = $balance_info_array['balance'] / 100000000;
+                // BWWC__getreceivedbyaddress_info() returns BTC (8-decimal string)
+                $balance_btc = floatval($balance_info_array['balance']);
                 $ret_code = $wpdb->query($wpdb->prepare(
                     "UPDATE `$btc_addresses_table_name` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
                     $balance_btc,
@@ -137,11 +137,11 @@ function BWWC_cron_job_worker($hardcron=false)
 
                     // Update payment state meta for UI
                     $order_id = $last_order_info['order_id'];
-                    // balance_info_array['balance'] is already in sats from API
-                    $received_sats = intval($balance_info_array['balance']);
+                    // Convert BTC to sats for meta storage
+                    $received_sats = intval(round($balance_btc * 100000000));
                     $expected_btc = floatval($last_order_info['order_total']);
                     $expected_sats = intval(round($expected_btc * 100000000));
-                    $received_btc = $received_sats / 100000000;
+                    $received_btc = $balance_btc;
                     
                     update_post_meta($order_id, 'received_sats', $received_sats);
                     update_post_meta($order_id, 'last_checked_at', time());

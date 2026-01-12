@@ -541,6 +541,9 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
         $funds_received = BWWC__file_get_contents('https://XXXblockchain.XXXbitcoinway.com/?q=getreceivedbyaddress', true, $api_timeout, false, true, $address_request_array);
     }
 
+    $confirmed_sats = null;
+    $unconfirmed_sats = 0;
+
     if (!is_numeric($funds_received)) {
         // Primary provider: WhatsOnChain (returns sats)
         $whatsonchain_response = BWWC__file_get_contents(
@@ -551,7 +554,11 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
         if ($whatsonchain_response) {
             $whatsonchain_json = json_decode(trim($whatsonchain_response), true);
             if (is_array($whatsonchain_json) && isset($whatsonchain_json['confirmed'])) {
-                $funds_received = $whatsonchain_json['confirmed'];
+                $confirmed_sats = intval($whatsonchain_json['confirmed']);
+                $funds_received = $confirmed_sats;
+                if (isset($whatsonchain_json['unconfirmed'])) {
+                    $unconfirmed_sats = intval($whatsonchain_json['unconfirmed']);
+                }
             }
         }
     }
@@ -566,7 +573,11 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
         if ($bitails_response) {
             $bitails_json = json_decode(trim($bitails_response), true);
             if (is_array($bitails_json) && isset($bitails_json['confirmed'])) {
-                $funds_received = $bitails_json['confirmed'];
+                $confirmed_sats = intval($bitails_json['confirmed']);
+                $funds_received = $confirmed_sats;
+                if (isset($bitails_json['unconfirmed'])) {
+                    $unconfirmed_sats = intval($bitails_json['unconfirmed']);
+                }
             }
         }
     }
@@ -586,7 +597,13 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     }
 
     if (is_numeric($funds_received)) {
-        $funds_received = sprintf("%.8f", $funds_received / 100000000.0);
+        if ($confirmed_sats === null) {
+            $confirmed_sats = intval($funds_received);
+        }
+        $confirmed_btc = sprintf("%.8f", $confirmed_sats / 100000000.0);
+        $total_sats = $confirmed_sats + $unconfirmed_sats;
+        $total_btc = sprintf("%.8f", $total_sats / 100000000.0);
+        $unconfirmed_btc = sprintf("%.8f", $unconfirmed_sats / 100000000.0);
     }
 
     if (is_numeric($funds_received)) {
@@ -594,7 +611,12 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
       'result'                      => 'success',
       'message'                     => "",
       'host_reply_raw'              => "",
-      'balance'                     => $funds_received,
+      'balance'                     => $confirmed_btc,
+      'confirmed_sats'              => $confirmed_sats,
+      'unconfirmed_sats'            => $unconfirmed_sats,
+      'unconfirmed_balance'         => $unconfirmed_btc,
+      'total_balance'               => $total_btc,
+      'total_sats'                  => $total_sats,
       );
     } else {
         $ret_info_array = array(

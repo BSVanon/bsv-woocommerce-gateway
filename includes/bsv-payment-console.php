@@ -20,6 +20,7 @@ function BWWC__render_payment_console($order) {
     $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
     $expected_sats = get_post_meta($order_id, 'expected_sats', true);
     $received_sats = get_post_meta($order_id, 'received_sats', true);
+    $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
     $expires_at = get_post_meta($order_id, 'address_expires_at', true);
     $payment_state = get_post_meta($order_id, 'payment_state', true);
     $txids = get_post_meta($order_id, 'txids', true);
@@ -42,6 +43,10 @@ function BWWC__render_payment_console($order) {
     // Default payment state
     if (!$payment_state) {
         $payment_state = 'waiting';
+    }
+    
+    if (!$confirmed_sats) {
+        $confirmed_sats = 0;
     }
 
     // Get store currency for fiat display
@@ -128,7 +133,7 @@ function BWWC__render_payment_console($order) {
             </div>
         </div>
 
-        <?php if ($payment_state === 'detected' || $payment_state === 'confirmed'): ?>
+        <?php if (in_array($payment_state, array('pending', 'detected', 'confirmed'))): ?>
         <div class="bsv-confirmations">
             <div style="font-size: 14px; opacity: 0.7; margin-bottom: 0.5rem;">
                 <?php esc_html_e('Confirmations:', 'bitcoin-sv-payments-for-woocommerce'); ?>
@@ -143,12 +148,18 @@ function BWWC__render_payment_console($order) {
         </div>
         <?php endif; ?>
 
-        <?php if ($payment_state === 'underpaid' || $payment_state === 'waiting'): ?>
+        <?php if ($payment_state === 'underpaid' || $payment_state === 'waiting' || $payment_state === 'pending' || $payment_state === 'detected'): ?>
         <div class="bsv-payment-details">
             <?php if ($received_sats > 0): ?>
             <div class="bsv-detail-row">
                 <span class="bsv-detail-label"><?php esc_html_e('Received', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
                 <span class="bsv-detail-value bsv-detail-received"><?php echo esc_html(number_format($received_sats, 0, '.', ',')); ?> sats</span>
+            </div>
+            <?php endif; ?>
+            <?php if ($payment_state === 'pending' || $payment_state === 'detected' || $payment_state === 'confirmed'): ?>
+            <div class="bsv-detail-row bsv-detail-confirmed-row">
+                <span class="bsv-detail-label"><?php esc_html_e('Confirmed', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
+                <span class="bsv-detail-value bsv-detail-confirmed"><?php echo esc_html(number_format($confirmed_sats, 0, '.', ',')); ?> sats</span>
             </div>
             <?php endif; ?>
             <div class="bsv-detail-row">
@@ -267,6 +278,7 @@ function BWWC__get_payment_state_label($state) {
         'waiting' => __('Waiting for Payment', 'bitcoin-sv-payments-for-woocommerce'),
         'detected' => __('Payment Detected!', 'bitcoin-sv-payments-for-woocommerce'),
         'confirmed' => __('Payment Confirmed', 'bitcoin-sv-payments-for-woocommerce'),
+        'pending' => __('Awaiting Confirmation', 'bitcoin-sv-payments-for-woocommerce'),
         'expired' => __('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce'),
         'underpaid' => __('Underpaid', 'bitcoin-sv-payments-for-woocommerce'),
         'overpaid' => __('Overpaid (Thank You!)', 'bitcoin-sv-payments-for-woocommerce')
@@ -286,8 +298,9 @@ function BWWC__get_payment_state_message($state, $received_sats = 0, $expected_s
     $messages = array(
         'waiting' => __('Send the exact amount to the address above. Payment will be detected within seconds.', 'bitcoin-sv-payments-for-woocommerce'),
         'detected' => __('Your payment has been detected on the blockchain. Waiting for confirmation...', 'bitcoin-sv-payments-for-woocommerce'),
+        'pending' => __('Payment broadcast detected. Waiting for miners to confirm—no action needed.', 'bitcoin-sv-payments-for-woocommerce'),
         'confirmed' => __('Your payment has been confirmed. Thank you!', 'bitcoin-sv-payments-for-woocommerce'),
-        'expired' => __('The payment window has expired. Please contact support if you already sent payment.', 'bitcoin-sv-payments-for-woocommerce')
+        'expired' => __('The payment window has expired. If you already paid, support will verify and update your order shortly.', 'bitcoin-sv-payments-for-woocommerce')
     );
     
     // Build dynamic messages for underpaid/overpaid states
@@ -373,6 +386,7 @@ function BWWC__ajax_check_payment_status() {
         'expected_sats' => intval($expected_sats),
         'received_sats' => intval($received_sats),
         'payment_state' => $payment_state ?: 'waiting',
+        'confirmed_sats' => intval($confirmed_sats),
         'expires_at' => intval($expires_at),
         'txids' => $txids ?: array(),
         'best_confirmations' => intval($confirmations),

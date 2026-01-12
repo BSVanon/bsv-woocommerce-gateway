@@ -94,27 +94,23 @@ function BWWC_cron_job_worker($hardcron=false)
             $row_id          = $row_for_balance_check['id'];
 
             if ($balance_info_array['result'] == 'success') {
-                /*
-                $balance_info_array = array (
-                        'result'                      => 'success',
-                        'message'                     => "",
-                        'host_reply_raw'              => "",
-                        'balance'                     => $funds_received,
-                        );
-                */
-
-                // Refresh 'received_funds_checked_at' field
                 $current_time = time();
-                // BWWC__getreceivedbyaddress_info() returns BTC (8-decimal string)
-                $balance_btc = floatval($balance_info_array['balance']);
+                // BWWC__getreceivedbyaddress_info() returns confirmed BTC (8-decimal string)
+                $confirmed_btc = floatval($balance_info_array['balance']);
+                $confirmed_sats = isset($balance_info_array['confirmed_sats']) ? intval($balance_info_array['confirmed_sats']) : intval(round($confirmed_btc * 100000000));
+                $unconfirmed_sats = isset($balance_info_array['unconfirmed_sats']) ? intval($balance_info_array['unconfirmed_sats']) : 0;
+                $total_sats = isset($balance_info_array['total_sats']) ? intval($balance_info_array['total_sats']) : ($confirmed_sats + $unconfirmed_sats);
+                $total_btc = $total_sats / 100000000;
+
+                // Refresh 'received_funds_checked_at' field with confirmed balance
                 $ret_code = $wpdb->query($wpdb->prepare(
                     "UPDATE `$btc_addresses_table_name` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
-                    $balance_btc,
+                    $confirmed_btc,
                     $current_time,
                     $row_id
                 ));
 
-                if ($balance_info_array['balance'] > 0) {
+                if ($confirmed_sats > 0 || $unconfirmed_sats > 0) {
                     if ($row_for_balance_check['status'] == 'revalidate') {
                         // Address with suddenly appeared balance. Check if that is matching to previously-placed [likely expired] order
                         if (!$last_order_info || !@$last_order_info['order_id'] || !@$balance_info_array['balance'] || !@$last_order_info['order_total']) {
@@ -133,17 +129,16 @@ function BWWC_cron_job_worker($hardcron=false)
                         }
                     }
 
-                    BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Detected non-zero balance at address: '{$row_for_balance_check['btc_address']}, order ID = '{$last_order_info['order_id']}'. Detected balance ='{$balance_info_array['balance']}'.");
+                    BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Detected balance at address '{$row_for_balance_check['btc_address']}' for order ID {$last_order_info['order_id']}. Confirmed={$confirmed_sats} sats, Total including mempool={$total_sats} sats.");
 
                     // Update payment state meta for UI
                     $order_id = $last_order_info['order_id'];
-                    // Convert BTC to sats for meta storage
-                    $received_sats = intval(round($balance_btc * 100000000));
                     $expected_btc = floatval($last_order_info['order_total']);
                     $expected_sats = intval(round($expected_btc * 100000000));
-                    $received_btc = $balance_btc;
+                    $received_btc = $total_btc;
                     
-                    update_post_meta($order_id, 'received_sats', $received_sats);
+                    update_post_meta($order_id, 'received_sats', $total_sats);
+                    update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
                     update_post_meta($order_id, 'last_checked_at', time());
                     
                     // Fetch transaction history to get txids
@@ -167,23 +162,40 @@ function BWWC_cron_job_worker($hardcron=false)
                             }
                         }
                     }
-                    
-                    // Determine payment state (compare BTC to BTC)
-                    if ($received_btc < $expected_btc) {
-                        update_post_meta($order_id, 'payment_state', 'underpaid');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: balance at address: '{$row_for_balance_check['btc_address']}' (BTC '$received_btc') is not yet sufficient to complete it's order (order ID = '{$last_order_info['order_id']}'). Total required: '$expected_btc'. Will wait for more funds to arrive...");
-                    } elseif ($received_btc > $expected_btc) {
-                        update_post_meta($order_id, 'payment_state', 'overpaid');
-                    } else {
+                    // Extend expiration if funds detected (prevents scary "expired" while awaiting confirmations)
+                    if ($total_sats > 0) {
+                        $expires_at = intval(get_post_meta($order_id, 'address_expires_at', true));
+                        $pending_extension_secs = max($assigned_address_expires_in_secs, $confirmations_required * 10 * 60);
+                        $proposed_expiration = $current_time + $pending_extension_secs;
+                        if ($proposed_expiration > $expires_at) {
+                            update_post_meta($order_id, 'address_expires_at', $proposed_expiration);
+                        }
+                    }
+
+                    // Determine payment state
+                    if ($confirmed_sats >= $expected_sats) {
                         update_post_meta($order_id, 'payment_state', 'detected');
+                    } elseif ($total_sats >= $expected_sats) {
+                        update_post_meta($order_id, 'payment_state', 'pending');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Awaiting confirmations for order {$order_id}. Confirmed: {$confirmed_sats} sats / Expected: {$expected_sats} sats.");
+                    } elseif ($total_sats > 0) {
+                        update_post_meta($order_id, 'payment_state', 'underpaid');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Partial payment at address '{$row_for_balance_check['btc_address']}' ({$total_sats} sats of {$expected_sats}). Waiting for additional funds...");
                     }
                 } else {
+                    // No funds detected - reset to waiting if previously pending/underpaid
+                    update_post_meta($last_order_info['order_id'], 'received_sats', 0);
+                    update_post_meta($last_order_info['order_id'], 'confirmed_sats', 0);
+                    $current_state = get_post_meta($last_order_info['order_id'], 'payment_state', true);
+                    if (in_array($current_state, array('pending', 'underpaid'))) {
+                        update_post_meta($last_order_info['order_id'], 'payment_state', 'waiting');
+                    }
                 }
 
                 // Note: to be perfectly safe against late-paid orders, we need to:
                 //	Scan '$address_meta['orders']' for first UNPAID order that is exactly matching amount at address.
 
-                if ($received_btc >= $expected_btc) {
+                if ($confirmed_sats >= $expected_sats) {
                     // Process full payment event
 
                     /*
@@ -217,7 +229,7 @@ function BWWC_cron_job_worker($hardcron=false)
                     $address_meta['orders'][0]['paid'] = true;
 
                     // Process and complete the order within WooCommerce (send confirmation emails, etc...)
-                    BWWC__process_payment_completed_for_order($last_order_info['order_id'], $balance_info_array['balance']);
+                    BWWC__process_payment_completed_for_order($last_order_info['order_id'], $confirmed_btc);
 
                     // Update address' record
                     $address_meta_serialized = BWWC_serialize_address_meta($address_meta);

@@ -616,6 +616,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // Initialize payment state
             update_post_meta($order_id, 'payment_state', 'waiting');
             update_post_meta($order_id, 'received_sats', 0);
+            update_post_meta($order_id, 'confirmed_sats', 0);
             update_post_meta(
              $order_id, 				// post id ($order_id)
              '_incoming_payments',	// meta key. Starts with '_' - hidden from UI.

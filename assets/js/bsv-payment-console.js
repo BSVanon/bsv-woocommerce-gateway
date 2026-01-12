@@ -243,10 +243,16 @@
             // Update button state
             this.updateButtonState(data);
 
-            // Stop polling if payment is confirmed or expired
-            if (data.payment_state === 'confirmed' || data.payment_state === 'expired') {
-                console.log('BSV: Polling stopped - payment ' + data.payment_state);
+            // Stop polling only when fully confirmed or order complete/processing
+            if (data.payment_state === 'confirmed') {
+                console.log('BSV: Polling stopped - payment confirmed');
                 this.stopPolling();
+            } else if (data.payment_state === 'expired') {
+                const hasFunds = (data.received_sats && data.received_sats > 0);
+                if (!hasFunds) {
+                    console.log('BSV: Polling stopped - payment expired with no funds');
+                    this.stopPolling();
+                }
             }
             
             // Also stop if order is already completed
@@ -269,7 +275,7 @@
             
             const state = data.payment_state || 'waiting';
             
-            if (state === 'detected' || state === 'confirmed') {
+            if (state === 'detected' || state === 'confirmed' || state === 'pending') {
                 btn.text('Payment Received!');
                 btn.removeClass('bsv-btn-primary').addClass('bsv-btn-success');
                 btn.prop('disabled', true);
@@ -301,13 +307,17 @@
                     label: 'Payment Detected!',
                     message: 'Your payment has been detected on the blockchain. Waiting for confirmation...'
                 },
+                pending: {
+                    label: 'Awaiting Confirmation',
+                    message: 'Payment broadcast detected. Waiting for miners to confirm—no action needed.'
+                },
                 confirmed: {
                     label: 'Payment Confirmed',
                     message: 'Your payment has been confirmed. Thank you!'
                 },
                 expired: {
                     label: 'Payment Window Expired',
-                    message: 'The payment window has expired. Please contact support if you already sent payment.'
+                    message: 'The payment window has expired. If you already paid, support will verify and update your order shortly.'
                 },
                 underpaid: {
                     label: 'Underpaid',
@@ -387,14 +397,19 @@
         updatePaymentDetails: function(data) {
             // Update received amount if shown
             const receivedEl = $('.bsv-detail-received');
-            if (receivedEl.length && data.received_sats) {
-                receivedEl.text(data.received_sats + ' sats');
+            if (receivedEl.length && typeof data.received_sats !== 'undefined') {
+                receivedEl.text((data.received_sats || 0).toLocaleString() + ' sats');
+            }
+
+            const confirmedEl = $('.bsv-detail-confirmed');
+            if (confirmedEl.length && typeof data.confirmed_sats !== 'undefined') {
+                confirmedEl.text((data.confirmed_sats || 0).toLocaleString() + ' sats');
             }
 
             // Update expected amount
             const expectedEl = $('.bsv-detail-expected');
-            if (expectedEl.length && data.expected_sats) {
-                expectedEl.text(data.expected_sats + ' sats');
+            if (expectedEl.length && typeof data.expected_sats !== 'undefined') {
+                expectedEl.text((data.expected_sats || 0).toLocaleString() + ' sats');
             }
         },
 

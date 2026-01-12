@@ -61,17 +61,21 @@ function BWWC__check_payment_for_order($order_id) {
         return false;
     }
     
-    $received_btc = floatval($balance_info['balance']);
-    $received_sats = intval(round($received_btc * 100000000));
+    $confirmed_btc = floatval($balance_info['balance']);
+    $confirmed_sats = isset($balance_info['confirmed_sats']) ? intval($balance_info['confirmed_sats']) : intval(round($confirmed_btc * 100000000));
+    $unconfirmed_sats = isset($balance_info['unconfirmed_sats']) ? intval($balance_info['unconfirmed_sats']) : 0;
+    $total_sats = isset($balance_info['total_sats']) ? intval($balance_info['total_sats']) : ($confirmed_sats + $unconfirmed_sats);
+    $total_btc = $total_sats / 100000000;
     
-    BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} - Received: {$received_sats} sats, Expected: {$expected_sats} sats");
+    BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} - Confirmed: {$confirmed_sats} sats, Total (incl. mempool): {$total_sats} sats, Expected: {$expected_sats} sats");
     
     // Update received amount and last checked time
-    update_post_meta($order_id, 'received_sats', $received_sats);
+    update_post_meta($order_id, 'received_sats', $total_sats);
+    update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
     update_post_meta($order_id, 'last_checked_at', time());
     
     // Fetch transaction history if payment detected
-    if ($received_sats > 0) {
+    if ($total_sats > 0) {
         $tx_history_response = BWWC__file_get_contents(
             'https://api.whatsonchain.com/v1/bsv/main/address/' . $bsv_address . '/history',
             false,
@@ -107,19 +111,29 @@ function BWWC__check_payment_for_order($order_id) {
     // Determine payment state
     $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
     
-    if ($received_btc == 0) {
+    // Extend expiration if funds detected
+    if ($total_sats > 0) {
+        $expires_at = intval(get_post_meta($order_id, 'address_expires_at', true));
+        $assigned_address_expires_in_secs = intval($bwwc_settings['assigned_address_expires_in_mins']) * 60;
+        $pending_extension_secs = max($assigned_address_expires_in_secs, intval($bwwc_settings['confs_num']) * 10 * 60);
+        $proposed_expiration = time() + $pending_extension_secs;
+        if ($proposed_expiration > $expires_at) {
+            update_post_meta($order_id, 'address_expires_at', $proposed_expiration);
+        }
+    }
+    
+    if ($total_sats == 0) {
         update_post_meta($order_id, 'payment_state', 'waiting');
         return false;
-    } elseif ($received_btc < $order_total_btc) {
-        update_post_meta($order_id, 'payment_state', 'underpaid');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} underpaid - Received: {$received_btc} BTC, Expected: {$order_total_btc} BTC");
-        return false;
-    } elseif ($received_btc > $order_total_btc) {
-        update_post_meta($order_id, 'payment_state', 'overpaid');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} overpaid - Received: {$received_btc} BTC, Expected: {$order_total_btc} BTC");
-        // Still process as paid
-    } else {
+    } elseif ($confirmed_sats >= $expected_sats) {
         update_post_meta($order_id, 'payment_state', 'detected');
+    } elseif ($total_sats >= $expected_sats) {
+        update_post_meta($order_id, 'payment_state', 'pending');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} awaiting confirmations - Confirmed {$confirmed_sats} sats / Expected {$expected_sats} sats");
+    } else {
+        update_post_meta($order_id, 'payment_state', 'underpaid');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} underpaid - Received: {$total_btc} BTC, Expected: {$order_total_btc} BTC");
+        return false;
     }
     
     // Payment detected - check if order needs to be completed
@@ -145,19 +159,19 @@ function BWWC__check_payment_for_order($order_id) {
             // Mark address as used and update balance
             $wpdb->query($wpdb->prepare(
                 "UPDATE `{$btc_addresses_table_name}` SET `status` = 'used', `total_received_funds` = %s, `received_funds_checked_at` = %d, `address_meta` = %s WHERE `btc_address` = %s",
-                $received_btc,
+                $confirmed_btc,
                 time(),
                 $address_meta_serialized,
                 $bsv_address
             ));
             
             // Process payment completion
-            BWWC__process_payment_completed_for_order($order_id, $received_btc);
+            BWWC__process_payment_completed_for_order($order_id, $confirmed_btc);
             
             BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} payment confirmed and processed");
             return true;
         }
     }
     
-    return $received_sats > 0;
+    return $total_sats > 0;
 }

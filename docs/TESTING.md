@@ -1,9 +1,9 @@
-# Testing Guide - Bitcoin SV Payments for WooCommerce v5.0.0
+# Testing Guide - Bitcoin SV Payments for WooCommerce v5.3.0
 
-## Test Results Summary (v5.0.0-beta)
+## Test Results Summary (v5.3.0)
 
-### ✅ Completed Tests (January 10, 2026)
-**Environment**: WordPress 6.7 + WooCommerce 9.x + PHP 8.2 (Docker)
+### ✅ Completed Tests (January 11, 2026)
+**Environment**: WordPress 6.9 + WooCommerce 10.4+ + PHP 8.2 (Docker)
 
 - **Plugin Activation**: ✅ PASS - No fatal errors, activates cleanly
 - **Gateway Configuration**: ✅ PASS - Settings save correctly, xpub validation works
@@ -14,22 +14,28 @@
 - **PHP 8.2 Compatibility**: ✅ PASS - No deprecation warnings in checkout flow
 - **Order Creation**: ✅ PASS - Orders created with "on-hold" status
 
+- **WooCommerce Blocks Checkout**: ✅ PASS - BSV gateway appears in Blocks checkout
+- **Modern Payment Console**: ✅ PASS - QR code, copy buttons, countdown display correctly
+- **BSV/Sats Toggle**: ✅ PASS - Amount toggles between BSV and sats on click
+- **Live Status Updates**: ✅ PASS - AJAX polling works, UI updates in real-time
+- **Email Instructions**: ✅ PASS - Payment details with QR code appear in order emails
+- **Admin Settings UI**: ✅ PASS - All 4 new settings visible and functional
+
 ### ⏳ Pending Tests (Not Yet Completed)
-- **Exchange Rate Conversion**: Not tested (store set to EUR, but conversion not verified)
 - **Actual BSV Payment**: Not tested (no on-chain transaction sent)
 - **Payment Detection (Cron)**: Not tested (requires real payment)
-- **HPOS Compatibility**: Not tested (HPOS not enabled in test environment)
-- **Multi-Currency**: Not tested beyond EUR display
-- **Address Reuse Settings**: Not tested
-- **WooCommerce Blocks**: Known limitation - not supported in v5.0.0
+- **Confirmation Tracking**: Not tested (requires blockchain confirmations)
+- **Under/Overpayment Scenarios**: Not tested (requires real payments)
+- **2-Hour Polling Timeout**: Not tested (requires long observation)
+- **Exchange Rate Conversion**: Not fully verified across all currencies
 
 ### 📸 Test Evidence
 - Checkout screenshot: `docs/assets/checkout-bsv-modern.png`
 - Thank-you page screenshot: `docs/assets/thankyou-bsv-modern.png`
 
-### 🔧 Known Issues Found
-- **WooCommerce Blocks**: Gateway does not appear in Blocks checkout (workaround: use classic checkout with `[woocommerce_checkout]` shortcode)
-- **Order Property Access**: Fixed deprecation notice for `$order->id` → `$order->get_id()`
+### 🔧 Known Issues (Fixed in v5.3.0)
+- ~~**WooCommerce Blocks**: Gateway does not appear in Blocks checkout~~ ✅ FIXED in v5.2.0
+- ~~**Order Property Access**: Deprecation notice for `$order->id`~~ ✅ FIXED in v5.0.0
 
 ---
 

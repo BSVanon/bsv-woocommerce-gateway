@@ -1,10 +1,57 @@
-# Release Notes - v5.0.0
+# Release Notes
+
+## v5.3.0 - Modern Payment Experience
+
+**Release Date**: January 11, 2026  
+**Status**: Production Ready  
+**Repository**: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
+
+### Summary
+
+Version 5.3.0 transforms the payment experience with a modern, professional UI featuring real-time status updates, interactive payment console, and enhanced email instructions. This release makes BSV payments as polished and user-friendly as any major payment gateway.
+
+**Key Achievement**: World-class payment UX with live updates, BSV/sats toggle, beautiful emails, and full admin control.
+
+### 🎨 New Features
+
+- **Modern Payment Console**: Professional QR code display with copy buttons and live countdown
+- **BSV/Sats Toggle**: Click amount to switch between BSV and satoshis display
+- **Real-Time Updates**: AJAX polling with automatic status refresh every 10 seconds
+- **Enhanced Emails**: Beautiful payment instructions with QR codes in order emails
+- **Admin Controls**: 4 new settings for email instructions and polling behavior
+- **"I've Paid" Button**: Force immediate payment check with smart feedback
+- **Rate Limiting**: 2-hour maximum polling to prevent resource waste
+- **Dark Mode**: Full support for dark theme browsers
+
+### 🔧 Improvements
+
+- Payment state tracking (waiting/detected/confirmed/expired/underpaid/overpaid)
+- Mobile-responsive payment interface
+- Explorer links to BSV blockchain
+- Nonce-protected AJAX endpoints
+- Type-safe number formatting
+- Cooldown protection on manual checks
+
+### 🐛 Bug Fixes
+
+- Fixed undefined array key warnings in admin settings
+- Fixed number_format() type errors in payment console
+- Added default values for new settings
+
+### 📚 Documentation
+
+- Added donation links (BSV address and paymail)
+- Updated TESTING.md for v5.3.0
+- Created comprehensive feature documentation
+
+---
+
+## v5.0.0 - Platform Modernization
 
 **Release Date**: January 9, 2026  
 **Status**: Beta - Ready for Testing  
-**Repository**: https://github.com/BSVanon/bitcoin-sv-payments-for-woocommerce
 
-## Summary
+### Summary
 
 Version 5.0.0 represents a complete modernization of the Bitcoin SV Payments for WooCommerce plugin. This release brings the plugin from legacy PHP 5.3/WordPress 3.x compatibility up to modern PHP 8.3/WordPress 6.7/WooCommerce 9.x standards.
 

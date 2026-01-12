@@ -13,7 +13,8 @@ sitemap.xml.gz
 wp-content/cache/
 wp-content/backups/
 
-# Docker WordPress installations
+# Docker WordPress installations (full WP installs, not part of plugin)
+docker/wp/
 docker/wp-modern/
 docker/wp-legacy/
 
@@ -27,6 +28,9 @@ docker/wp-legacy/
 
 # Plugin debug log
 __log.php
+
+# Build artifacts (large zip files for distribution)
+*.zip
 
 # IDE and OS files
 .vscode/

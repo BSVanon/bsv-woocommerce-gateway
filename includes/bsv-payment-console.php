@@ -90,7 +90,7 @@ function BWWC__render_payment_console($order) {
 
         <div class="bsv-qr-container">
             <div class="bsv-qr-card">
-                <?php echo $qr_code_svg; ?>
+                <?php echo wp_kses_post($qr_code_svg); ?>
             </div>
         </div>
 
@@ -178,7 +178,7 @@ function BWWC__render_payment_console($order) {
                         $dot_class = ($i < $confirmations) ? 'confirmed' : '';
                     }
                 ?>
-                    <div class="bsv-conf-dot <?php echo esc_attr($dot_class); ?>" data-index="<?php echo $i; ?>"></div>
+                    <div class="bsv-conf-dot <?php echo esc_attr($dot_class); ?>" data-index="<?php echo esc_attr($i); ?>"></div>
                 <?php endfor; ?>
             </div>
         </div>
@@ -244,10 +244,11 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-confirmation-notice" style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 12px; color: #856404;">
             <strong><?php esc_html_e('Note:', 'bitcoin-sv-payments-for-woocommerce'); ?></strong>
             <?php 
+            /* translators: 1: number of confirmations required, 2: estimated minutes */
             printf(
-                esc_html__('Merchant requires %d confirmations (~%d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'bitcoin-sv-payments-for-woocommerce'),
-                $required_confs,
-                $estimated_minutes
+                esc_html__('Merchant requires %1$d confirmations (~%2$d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'bitcoin-sv-payments-for-woocommerce'),
+                esc_html($required_confs),
+                esc_html($estimated_minutes)
             );
             ?>
         </div>
@@ -341,14 +342,16 @@ function BWWC__get_payment_state_message($state, $received_sats = 0, $expected_s
     
     // Build dynamic messages for underpaid/overpaid states
     if ($state === 'underpaid' && $expected_sats > 0) {
+        /* translators: 1: received satoshis, 2: expected satoshis */
         $messages['underpaid'] = sprintf(
-            __('Received %s sats but expected %s sats. Please send the remaining amount.', 'bitcoin-sv-payments-for-woocommerce'),
+            __('Received %1$s sats but expected %2$s sats. Please send the remaining amount.', 'bitcoin-sv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($expected_sats, 0, '.', ',')
         );
     } elseif ($state === 'overpaid' && $expected_sats > 0) {
+        /* translators: 1: received satoshis, 2: extra satoshis */
         $messages['overpaid'] = sprintf(
-            __('Received %s sats (%s sats extra). Payment accepted!', 'bitcoin-sv-payments-for-woocommerce'),
+            __('Received %1$s sats (%2$s sats extra). Payment accepted!', 'bitcoin-sv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($received_sats - $expected_sats, 0, '.', ',')
         );
@@ -363,9 +366,9 @@ function BWWC__get_payment_state_message($state, $received_sats = 0, $expected_s
 function BWWC__ajax_check_payment_status() {
     // Verify nonce
     $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
-    $order_key = isset($_POST['order_key']) ? sanitize_text_field($_POST['order_key']) : '';
+    $order_key = isset($_POST['order_key']) ? sanitize_text_field(wp_unslash($_POST['order_key'])) : '';
     $force = isset($_POST['force']) && $_POST['force'] === '1';
-    $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
+    $nonce = isset($_POST['nonce']) ? sanitize_text_field(wp_unslash($_POST['nonce'])) : '';
     
     if (!$order_id || !$order_key) {
         BWWC__log_event(

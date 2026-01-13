@@ -33,21 +33,21 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(__('Security check failed. Please try again.', 'woocommerce'));
+            wp_die(__('Security check failed. Please try again.', 'bitcoin-sv-payments-for-woocommerce'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
             BWWC__update_settings("", false);
-            $action_message = __('Settings updated!', 'woocommerce');
+            $action_message = __('Settings updated!', 'bitcoin-sv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_bwwc_settings'])) {
             BWWC__reset_all_settings(false);
-            $action_message = __('All settings reverted to defaults.', 'woocommerce');
+            $action_message = __('All settings reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
             BWWC__reset_partial_settings(false);
-            $action_message = __('Settings on this page reverted to defaults.', 'woocommerce');
+            $action_message = __('Settings on this page reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
         } elseif (isset($_POST['validate_bwwc-license'])) {
             BWWC__update_settings("", false);
-            $action_message = __('License validated.', 'woocommerce');
+            $action_message = __('License validated.', 'bitcoin-sv-payments-for-woocommerce');
         }
     }
 
@@ -118,8 +118,8 @@ function BWWC__render_general_settings_page_html()
     <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
       <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes'); ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'woocommerce')); ?>');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'bitcoin-sv-payments-for-woocommerce')); ?>');" />
       </p>
       <table class="form-table">
 

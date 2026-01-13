@@ -57,7 +57,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $this->id				= 'bitcoin';
             $this->icon 			= plugins_url('/images/bsv_buyitnow_32x.png', __FILE__);	// 32 pixels high
             $this->has_fields 		= false;
-            $this->method_title     = __('Bitcoin SV', 'woocommerce');
+            $this->method_title     = __('Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce');
 
             // Load BWWC settings.
             $bwwc_settings = BWWC__get_settings();
@@ -68,13 +68,13 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $this->init_settings();
 
             // Define user set variables
-            $this->title = $this->get_option('title', __('Bitcoin SV Payment', 'woocommerce'));
+            $this->title = $this->get_option('title', __('Bitcoin SV Payment', 'bitcoin-sv-payments-for-woocommerce'));
             $this->bitcoin_addr_merchant = $this->get_option('bitcoin_addr_merchant', '');
             $this->confs_num = $bwwc_settings['confs_num'];  //$this->settings['confirmations'];
-            $this->description = $this->get_option('description', __('Please proceed to the next screen to see necessary payment details.', 'woocommerce'));	// Short description about the gateway which is shown on checkout.
+            $this->description = $this->get_option('description', __('Please proceed to the next screen to see necessary payment details.', 'bitcoin-sv-payments-for-woocommerce'));	// Short description about the gateway which is shown on checkout.
             $this->instructions = $this->get_option('instructions', ''); // Detailed payment instructions for the buyer.
-            $this->instructions_multi_payment_str  = __('You may send payments from multiple accounts to reach the total required.', 'woocommerce');
-            $this->instructions_single_payment_str = __('You must pay in a single payment in full.', 'woocommerce');
+            $this->instructions_multi_payment_str  = __('You may send payments from multiple accounts to reach the total required.', 'bitcoin-sv-payments-for-woocommerce');
+            $this->instructions_single_payment_str = __('You must pay in a single payment in full.', 'bitcoin-sv-payments-for-woocommerce');
              if (isset($bwwc_settings['selected_checkout_icon']) && $bwwc_settings['selected_checkout_icon'] != "") {
                  $this->icon = plugins_url($bwwc_settings['selected_checkout_icon'], __FILE__);
              }
@@ -119,26 +119,26 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             //----------------------------------
             // Validate settings
             if (!$this->service_provider) {
-                $reason_message = __("Bitcoin SV Service Provider is not selected", 'woocommerce');
+                $reason_message = __("Bitcoin SV Service Provider is not selected", 'bitcoin-sv-payments-for-woocommerce');
                 $valid = false;
             } elseif ($this->service_provider=='blockchain_info') {
                 if ($this->bitcoin_addr_merchant == '') {
-                    $reason_message = __("Your personal Bitcoin SV address is not selected", 'woocommerce');
+                    $reason_message = __("Your personal Bitcoin SV address is not selected", 'bitcoin-sv-payments-for-woocommerce');
                     $valid = false;
                 } elseif ($this->bitcoin_addr_merchant == '18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj') {
-                    $reason_message = __("Your personal Bitcoin SV address is invalid. The address specified is the donation address :)", 'woocommerce');
+                    $reason_message = __("Your personal Bitcoin SV address is invalid. The address specified is the donation address :)", 'bitcoin-sv-payments-for-woocommerce');
                     $valid = false;
                 }
             } elseif ($this->service_provider=='electrum_wallet') {
                 $mpk = BWWC__get_next_available_mpk();
                 if (!$mpk) {
-                    $reason_message = __("Please specify ElectrumSV Master Public Key (MPK) in Bitcoin SV plugin settings. <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information", 'woocommerce');
+                    $reason_message = __("Please specify ElectrumSV Master Public Key (MPK) in Bitcoin SV plugin settings. <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information", 'bitcoin-sv-payments-for-woocommerce');
                     $valid = false;
                 } elseif (!preg_match('/^[a-f0-9]{128}$/', $mpk) && !preg_match('/^xpub[a-zA-Z0-9]{107}$/', $mpk)) {
-                    $reason_message = __("ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.", 'woocommerce');
+                    $reason_message = __("ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.", 'bitcoin-sv-payments-for-woocommerce');
                     $valid = false;
                 } elseif (!extension_loaded('gmp') && !extension_loaded('bcmath')) {
-                    $reason_message = __("ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)! \nAlternatively you may choose another 'Bitcoin SV Service Provider' option.", 'woocommerce');
+                    $reason_message = __("ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)! \nAlternatively you may choose another 'Bitcoin SV Service Provider' option.", 'bitcoin-sv-payments-for-woocommerce');
                     $valid = false;
                 }
             }
@@ -191,7 +191,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             // if ($currency_code != 'BTC' && !@in_array($currency_code, $supported_currencies_arr))
             // {
-            //  $reason_message = __("Store currency is set to unsupported value", 'woocommerce') . "('{$currency_code}'). " . __("Valid currencies: ", 'woocommerce') . implode ($supported_currencies_arr, ", ");
+            //  $reason_message = __("Store currency is set to unsupported value", 'bitcoin-sv-payments-for-woocommerce') . "('{$currency_code}'). " . __("Valid currencies: ", 'bitcoin-sv-payments-for-woocommerce') . implode ($supported_currencies_arr, ", ");
             // 	if ($ret_reason_message !== NULL)
             // 		$ret_reason_message = $reason_message;
             // return false;
@@ -231,9 +231,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $exchange_rate_display = '';
             if ($currency_ticker && is_numeric($currency_ticker) && $currency_ticker > 0) {
                 $exchange_rate_display = '<div style="padding: 10px; background: #e7f7e7; border-left: 4px solid #46b450; margin: 10px 0;">';
-                $exchange_rate_display .= '<strong>' . __('Current Exchange Rate:', 'woocommerce') . '</strong> ';
+                $exchange_rate_display .= '<strong>' . __('Current Exchange Rate:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
                 $exchange_rate_display .= '1 BSV = ' . number_format((float)$currency_ticker, 2) . ' ' . esc_html($currency_code);
-                $exchange_rate_display .= ' <span style="color: #666; font-size: 12px;">(' . __('via CoinGecko', 'woocommerce') . ')</span>';
+                $exchange_rate_display .= ' <span style="color: #666; font-size: 12px;">(' . __('via CoinGecko', 'bitcoin-sv-payments-for-woocommerce') . ')</span>';
                 $exchange_rate_display .= '</div>';
             }
             // Note: If rate fetch fails, we simply don't display anything rather than showing an error
@@ -252,11 +252,11 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $payment_instructions = '
 <table class="bwwc-payment-instructions-table" id="bwwc-payment-instructions-table">
   <tr class="bpit-table-row">
-    <td colspan="2">' . __('Please send your Bitcoin SV payment as follows:', 'woocommerce') . '</td>
+    <td colspan="2">' . __('Please send your Bitcoin SV payment as follows:', 'bitcoin-sv-payments-for-woocommerce') . '</td>
   </tr>
   <tr class="bpit-table-row">
     <td style="vertical-align:middle;" class="bpit-td-name bpit-td-name-amount">
-      ' . __('Amount', 'woocommerce') . ' (<strong>BSV</strong>):
+      ' . __('Amount', 'bitcoin-sv-payments-for-woocommerce') . ' (<strong>BSV</strong>):
     </td>
     <td class="bpit-td-value bpit-td-value-amount">
       <div style="border:1px solid #FCCA09;padding:2px 6px;margin:2px;background-color:#FCF8E3;border-radius:4px;color:#CC0000;font-weight: bold;font-size: 120%;">
@@ -286,12 +286,12 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
   </tr>
 </table>
 
-' . __('Please note:', 'woocommerce') . '
+' . __('Please note:', 'bitcoin-sv-payments-for-woocommerce') . '
 <ol class="bpit-instructions">
-    <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'woocommerce') . '</li>
-    <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'woocommerce') . '</li>
-    <li>' . sprintf(__('You must make a payment within %s hours, or your order may be cancelled', 'woocommerce'), $payment_timeout_display) . '</li>
-    <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'woocommerce') . '</li>
+    <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'bitcoin-sv-payments-for-woocommerce') . '</li>
+    <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'bitcoin-sv-payments-for-woocommerce') . '</li>
+    <li>' . sprintf(__('You must make a payment within %s hours, or your order may be cancelled', 'bitcoin-sv-payments-for-woocommerce'), $payment_timeout_display) . '</li>
+    <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'bitcoin-sv-payments-for-woocommerce') . '</li>
     <li>{{{EXTRA_INSTRUCTIONS}}}</li>
 </ol>
 ';
@@ -299,7 +299,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             $payment_instructions_description = '
 						  <p class="description" style="width:50%;float:left;width:49%;">
-					    	' . __('Specific instructions given to the customer to complete Bitcoins payment.<br />You may change it, but make sure these tags will be present: <b>{{{BITCOINS_AMOUNT}}}</b>, <b>{{{BITCOINS_ADDRESS}}}</b> and <b>{{{EXTRA_INSTRUCTIONS}}}</b> as these tags will be replaced with customer - specific payment details.', 'woocommerce') . '
+					    	' . __('Specific instructions given to the customer to complete Bitcoins payment.<br />You may change it, but make sure these tags will be present: <b>{{{BITCOINS_AMOUNT}}}</b>, <b>{{{BITCOINS_ADDRESS}}}</b> and <b>{{{EXTRA_INSTRUCTIONS}}}</b> as these tags will be replaced with customer - specific payment details.', 'bitcoin-sv-payments-for-woocommerce') . '
 						  </p>
 						  <p class="description" style="width:50%;float:left;width:49%;">
 					    	Payment Instructions, original template (for reference):<br />
@@ -311,41 +311,41 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             $this->form_fields = array(
                 'enabled' => array(
-                                'title' => __('Enable/Disable', 'woocommerce'),
+                                'title' => __('Enable/Disable', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'checkbox',
-                                'label' => __('Enable Bitcoin SV Payments', 'woocommerce'),
+                                'label' => __('Enable Bitcoin SV Payments', 'bitcoin-sv-payments-for-woocommerce'),
                                 'default' => 'yes'
                             ),
                 'exchange_rate_info' => array(
-                                'title' => __('Exchange Rate Status', 'woocommerce'),
+                                'title' => __('Exchange Rate Status', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'title',
                                 'description' => $exchange_rate_display,
                             ),
                 'title' => array(
-                                'title' => __('Title', 'woocommerce'),
+                                'title' => __('Title', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'text',
-                                'description' => __('This controls the title which the user sees during checkout.', 'woocommerce'),
-                                'default' => __('Bitcoin SV Payment', 'woocommerce')
+                                'description' => __('This controls the title which the user sees during checkout.', 'bitcoin-sv-payments-for-woocommerce'),
+                                'default' => __('Bitcoin SV Payment', 'bitcoin-sv-payments-for-woocommerce')
                             ),
 
                 'bitcoin_addr_merchant' => array(
-                                'title' => __('Your personal Bitcoin SV address', 'woocommerce'),
+                                'title' => __('Your personal Bitcoin SV address', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'text',
                                 'css'     => $this->service_provider!='blockchain_info'?'display:none;':'',
                                 'disabled' => $this->service_provider!='blockchain_info'?true:false,
-                                'description' => $this->service_provider!='blockchain_info'?__('Not used with current address generation method. This plugin uses BIP32/BIP44 HD Wallet (xPub) for secure per-order address derivation. Configure your Master Public Key in the BSV Plugin settings page.', 'woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'woocommerce'),
+                                'description' => $this->service_provider!='blockchain_info'?__('Not used with current address generation method. This plugin uses BIP32/BIP44 HD Wallet (xPub) for secure per-order address derivation. Configure your Master Public Key in the BSV Plugin settings page.', 'bitcoin-sv-payments-for-woocommerce'):__('Your own bitcoin address (such as: 18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj) - where you would like the payment to be sent. When customer sends you payment for the product - it will be automatically forwarded to this address by blockchain.info APIs.', 'bitcoin-sv-payments-for-woocommerce'),
                                 'default' => '',
                             ),
 
 
                 'description' => array(
-                                'title' => __('Customer Message', 'woocommerce'),
+                                'title' => __('Customer Message', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'text',
-                                'description' => __('Initial instructions for the customer at checkout screen', 'woocommerce'),
-                                'default' => __('Please proceed to the next screen to see necessary payment details.', 'woocommerce')
+                                'description' => __('Initial instructions for the customer at checkout screen', 'bitcoin-sv-payments-for-woocommerce'),
+                                'default' => __('Please proceed to the next screen to see necessary payment details.', 'bitcoin-sv-payments-for-woocommerce')
                             ),
                 'instructions' => array(
-                                'title' => __('Payment Instructions (HTML)', 'woocommerce'),
+                                'title' => __('Payment Instructions (HTML)', 'bitcoin-sv-payments-for-woocommerce'),
                                 'type' => 'textarea',
                                 'description' => $payment_instructions_description,
                                 'default' => $payment_instructions,
@@ -356,14 +356,14 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
         /*
         ///!!!
                                             '<table>' .
-                                            '	<tr><td colspan="2">' . __('Please send your Bitcoin SV  payment as follows:', 'woocommerce' ) . '</td></tr>' .
+                                            '	<tr><td colspan="2">' . __('Please send your Bitcoin SV  payment as follows:', 'bitcoin-sv-payments-for-woocommerce' ) . '</td></tr>' .
                                             '	<tr><td>Amount (฿): </td><td><div style="border:1px solid #CCC;padding:2px 6px;margin:2px;background-color:#FEFEF0;border-radius:4px;color:#CC0000;">{{{BITCOINS_AMOUNT}}}</div></td></tr>' .
                                             '	<tr><td>Address: </td><td><div style="border:1px solid #CCC;padding:2px 6px;margin:2px;background-color:#FEFEF0;border-radius:4px;color:blue;">{{{BITCOINS_ADDRESS}}}</div></td></tr>' .
                                             '</table>' .
-                                            __('Please note:', 'woocommerce' ) .
+                                            __('Please note:', 'bitcoin-sv-payments-for-woocommerce' ) .
                                             '<ol>' .
-                                            '   <li>' . __('You must make a payment within 8 hours, or your order will be cancelled', 'woocommerce' ) . '</li>' .
-                                            '   <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'woocommerce' ) . '</li>' .
+                                            '   <li>' . __('You must make a payment within 8 hours, or your order will be cancelled', 'bitcoin-sv-payments-for-woocommerce' ) . '</li>' .
+                                            '   <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'bitcoin-sv-payments-for-woocommerce' ) . '</li>' .
                                             '   <li>{{{EXTRA_INSTRUCTIONS}}}</li>' .
                                             '</ol>'
         
@@ -383,7 +383,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $store_valid    = BWWC__is_gateway_valid_for_use($validation_msg);
 
             // After defining the options, we need to display them too; thats where this next function comes into play: ?>
-	    	<h3><?php _e('Bitcoin SV Payment', 'woocommerce'); ?></h3>
+	    	<h3><?php _e('Bitcoin SV Payment', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
 	    	<p>
 	    		<?php _e(
                 'Allows to accept payments in Bitcoin SV. <a href="https://bitcoinsv.io" target="_blank">Bitcoin SV</a> is peer-to-peer electronic cash that enables instant payments from anyone to anyone, anywhere in the world',
@@ -392,9 +392,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 	    	</p>
 	    	<?php
                 echo $store_valid ? ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#004400;background-color:#CCFFCC;">' .
-            __('Bitcoin SV payment gateway is operational', 'woocommerce') .
+            __('Bitcoin SV payment gateway is operational', 'bitcoin-sv-payments-for-woocommerce') .
             '</p>') : ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#EE0000;background-color:#FFFFAA;">' .
-            __('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): ', 'woocommerce') . $validation_msg . '</p>'); ?>
+            __('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): ', 'bitcoin-sv-payments-for-woocommerce') . $validation_msg . '</p>'); ?>
 	    	<table class="form-table">
 	    	<?php
                 // Generate the HTML For the settings form.
@@ -421,7 +421,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // if (!isset($bwwc_settings['gateway_settings']) || !is_array($bwwc_settings['gateway_settings']))
             // 	$bwwc_settings['gateway_settings'] = array();
 
-     //    // Born from __(..., 'woocommerce') + '$this->id'
+     //    // Born from __(..., 'bitcoin-sv-payments-for-woocommerce') + '$this->id'
         // 	$prefix        = 'woocommerce_bitcoin_';
         // 	$prefix_length = strlen($prefix);
 
@@ -481,15 +481,15 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 
                 // User-friendly error message
                 $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Processing Error', 'woocommerce') . '</h2>';
-                $user_msg .= '<p>' . __('We\'re unable to process Bitcoin SV payments at this time due to a temporary issue fetching exchange rates.', 'woocommerce') . '</p>';
-                $user_msg .= '<p><strong>' . __('What you can do:', 'woocommerce') . '</strong></p>';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Processing Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
+                $user_msg .= '<p>' . __('We\'re unable to process Bitcoin SV payments at this time due to a temporary issue fetching exchange rates.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . __('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
                 $user_msg .= '<ul>';
-                $user_msg .= '<li>' . __('Try again in a few minutes', 'woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Choose an alternative payment method', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Try again in a few minutes', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
                 $user_msg .= '</ul>';
-                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'woocommerce') . '</a></p>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
                 $user_msg .= '</div>';
                 exit($user_msg);
             }
@@ -555,15 +555,15 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 
                 // User-friendly error message
                 $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Address Generation Error', 'woocommerce') . '</h2>';
-                $user_msg .= '<p>' . __('We\'re unable to generate a payment address for your order at this time.', 'woocommerce') . '</p>';
-                $user_msg .= '<p><strong>' . __('What you can do:', 'woocommerce') . '</strong></p>';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Address Generation Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
+                $user_msg .= '<p>' . __('We\'re unable to generate a payment address for your order at this time.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . __('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
                 $user_msg .= '<ul>';
-                $user_msg .= '<li>' . __('Try placing your order again', 'woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Choose an alternative payment method', 'woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Try placing your order again', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . __('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
                 $user_msg .= '</ul>';
-                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'woocommerce') . '</a></p>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
                 $user_msg .= '</div>';
                 exit($user_msg);
             }
@@ -639,7 +639,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             //	Updating the order status:
 
             // Mark as on-hold (we're awaiting for bitcoins payment to arrive)
-            $order->update_status('on-hold', __('Awaiting Bitcoin SV payment to arrive', 'woocommerce'));
+            $order->update_status('on-hold', __('Awaiting Bitcoin SV payment to arrive', 'bitcoin-sv-payments-for-woocommerce'));
 
             /*
                         ///////////////////////////////////////
@@ -648,7 +648,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                         // Mark as pending (we're awaiting for bitcoins payment to arrive), not 'on-hold' since
                   // woocommerce does not automatically cancel expired on-hold orders. Woocommerce handles holding the stock
                   // for pending orders until order payment is complete.
-                        $order->update_status('pending', __('Awaiting bitcoin payment to arrive', 'woocommerce'));
+                        $order->update_status('pending', __('Awaiting bitcoin payment to arrive', 'bitcoin-sv-payments-for-woocommerce'));
             
                         // Me: 'pending' does not trigger "Thank you" page and neither email sending. Not sure why.
                         //			Also - I think cancellation of unpaid orders needs to be initiated from cron job, as only we know when order needs to be cancelled,
@@ -702,7 +702,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
             $order->add_order_note(
                 sprintf(
-                    __('Order instructions: price=&#3647;%s, incoming account:%s', 'woocommerce'),
+                    __('Order instructions: price=&#3647;%s, incoming account:%s', 'bitcoin-sv-payments-for-woocommerce'),
                     $order_total_in_btc,
                     $bitcoins_address
                 )
@@ -989,7 +989,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
     //=======================================================================
     function BWWC__add_btc_currency($currencies)
     {
-        $currencies['BSV'] = __('Bitcoin SV (฿)', 'woocommerce');
+        $currencies['BSV'] = __('Bitcoin SV (฿)', 'bitcoin-sv-payments-for-woocommerce');
         return $currencies;
     }
     //=======================================================================
@@ -1032,14 +1032,14 @@ function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=fal
 
         // Instantiate order object.
         $order = new WC_Order($order_id);
-        $order->add_order_note(__('Order paid in full', 'woocommerce'));
+        $order->add_order_note(__('Order paid in full', 'bitcoin-sv-payments-for-woocommerce'));
 
         $order->payment_complete();
 
         $bwwc_settings = BWWC__get_settings();
         if ($bwwc_settings['autocomplete_paid_orders']) {
             // Ensure order is completed.
-            $order->update_status('completed', __('Order marked as completed according to Bitcoin SV plugin settings', 'woocommerce'));
+            $order->update_status('completed', __('Order marked as completed according to Bitcoin SV plugin settings', 'bitcoin-sv-payments-for-woocommerce'));
         }
 
         // Notify admin about payment processed

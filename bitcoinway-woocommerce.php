@@ -94,10 +94,10 @@ function BWWC_activate()
 // Cron Subfunctions
 function BWWC__add_custom_scheduled_intervals($schedules)
 {
-    $schedules['seconds_30']     = array('interval'=>30,     'display'=>__('Once every 30 seconds'));     // For testing only.
-    $schedules['minutes_1']      = array('interval'=>1*60,   'display'=>__('Once every 1 minute'));
-    $schedules['minutes_2.5']    = array('interval'=>2.5*60, 'display'=>__('Once every 2.5 minutes'));
-    $schedules['minutes_5']      = array('interval'=>5*60,   'display'=>__('Once every 5 minutes'));
+    $schedules['seconds_30']     = array('interval'=>30,     'display'=>__('Once every 30 seconds', 'bitcoin-sv-payments-for-woocommerce'));     // For testing only.
+    $schedules['minutes_1']      = array('interval'=>1*60,   'display'=>__('Once every 1 minute', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['minutes_2.5']    = array('interval'=>2.5*60, 'display'=>__('Once every 2.5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['minutes_5']      = array('interval'=>5*60,   'display'=>__('Once every 5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
 
     return $schedules;
 }
@@ -139,9 +139,9 @@ function BWWC__blocks_checkout_notice()
         $checkout_page = get_post($checkout_page_id);
         if ($checkout_page && has_block('woocommerce/checkout', $checkout_page)) {
             echo '<div class="notice notice-warning is-dismissible">';
-            echo '<p><strong>' . __('Bitcoin SV Gateway:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
-            echo __('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-payments-for-woocommerce');
-            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . __('Learn more', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
+            echo '<p><strong>' . esc_html__('Bitcoin SV Gateway:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
+            echo esc_html__('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-payments-for-woocommerce');
+            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . esc_html__('Learn more', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
             echo '</div>';
         }
     }

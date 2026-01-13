@@ -1,5 +1,10 @@
-
+<?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+?>
 // 127.0.0.1() -> 2026-01-12, 19:13:50 UTC|5.3.1/BSV|bwwc-cron.php(131)|: Cron job: NOTE: Detected balance at address '1Eyee9WdkCq6iaxgvzUM3dXfvNcgtVjgC' for order ID . Confirmed=51743 sats, Total including mempool=51743 sats.
+
 // 127.0.0.1() -> 2026-01-12, 19:13:51 UTC|5.3.1/BSV|bwwc-cron.php(160)|: Cron job: Stored 2 transaction ID(s) for order 
 // 127.0.0.1() -> 2026-01-12, 19:13:51 UTC|5.3.1/BSV|bwwc-cron.php(221)|: Cron job: NOTE: Full payment for order ID '' detected at address: '1Eyee9WdkCq6iaxgvzUM3dXfvNcgtVjgC' (BTC '0.00051743'). Total was required for this order: '0'. Processing order ...
 // 127.0.0.1() -> 2026-01-12, 19:13:51 UTC|5.3.1/BSV|bwwc-bitcoin-gateway.php(1026)|: Success: order '' paid in full. Processing and notifying customer ...

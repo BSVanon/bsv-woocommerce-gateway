@@ -22,7 +22,8 @@ function BWWC__check_payment_for_order($order_id) {
     
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = max(1, intval($bwwc_settings['confs_num']));
-    $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
+    $btc_addresses_table_name = esc_sql($wpdb->prefix . 'bwwc_btc_addresses');
+    $address_cache_group = 'bwwc_btc_addresses';
     
     // Get the Bitcoin address for this order
     $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
@@ -160,10 +161,20 @@ function BWWC__check_payment_for_order($order_id) {
     $order = wc_get_order($order_id);
     if ($order && $order->get_status() === 'on-hold') {
         // Get address record from database
-        $address_record = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM `{$btc_addresses_table_name}` WHERE `btc_address` = %s",
-            $bsv_address
-        ), ARRAY_A);
+        $address_cache_key = 'bsv_addr_' . md5($bsv_address);
+        $address_record = wp_cache_get($address_cache_key, $address_cache_group);
+
+        if (false === $address_record) {
+            $select_sql = $wpdb->prepare(
+                "SELECT * FROM `{$btc_addresses_table_name}` WHERE `btc_address` = %s",
+                $bsv_address
+            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $address_record = $wpdb->get_row($select_sql, ARRAY_A);
+            if ($address_record) {
+                wp_cache_set($address_cache_key, $address_record, $address_cache_group, MINUTE_IN_SECONDS * 5);
+            }
+        }
         
         if ($address_record && $address_record['status'] !== 'used') {
             // Update payment state to confirmed
@@ -177,13 +188,18 @@ function BWWC__check_payment_for_order($order_id) {
             $address_meta_serialized = BWWC_serialize_address_meta($address_meta);
             
             // Mark address as used and update balance
-            $wpdb->query($wpdb->prepare(
+            $update_sql = $wpdb->prepare(
                 "UPDATE `{$btc_addresses_table_name}` SET `status` = 'used', `total_received_funds` = %s, `received_funds_checked_at` = %d, `address_meta` = %s WHERE `btc_address` = %s",
                 $confirmed_btc,
                 time(),
                 $address_meta_serialized,
                 $bsv_address
-            ));
+            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+            $wpdb->query($update_sql);
+            if (!empty($address_cache_key)) {
+                wp_cache_delete($address_cache_key, $address_cache_group);
+            }
             
             // Process payment completion
             BWWC__process_payment_completed_for_order($order_id, $confirmed_btc);

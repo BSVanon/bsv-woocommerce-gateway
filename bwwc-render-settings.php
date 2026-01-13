@@ -90,14 +90,14 @@ function BWWC__render_settings_page($menu_page_name)
 
     switch ($menu_page_name) {
       case 'general':
-        echo  BWWC__GetPluginNameVersionEdition(true);
-        echo  $gateway_status_message . $exchange_rate_message;
+        echo wp_kses_post(BWWC__GetPluginNameVersionEdition(true));
+        echo wp_kses_post($gateway_status_message . $exchange_rate_message);
         BWWC__render_general_settings_page_html();
         break;
 
       case 'advanced':
-        echo  BWWC__GetPluginNameVersionEdition(false);
-        echo  $gateway_status_message . $exchange_rate_message;
+        echo wp_kses_post(BWWC__GetPluginNameVersionEdition(false));
+        echo wp_kses_post($gateway_status_message . $exchange_rate_message);
         BWWC__render_advanced_settings_page_html();
         break;
 
@@ -328,11 +328,7 @@ function BWWC__render_general_settings_page_html()
                     }
                     $icon_rel_path = $icon_dir . $icon;
                     $icon_url = plugins_url($icon_rel_path, __FILE__);
-                    $checked = "";
-                    if ($bwwc_settings['selected_checkout_icon'] == $icon_rel_path) {
-                        $checked = 'checked';
-                    }
-                    echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . $checked . '/>';
+                    echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . checked($bwwc_settings['selected_checkout_icon'], $icon_rel_path, false) . '/>';
                     echo '<label for="' . esc_attr($icon) . '"><img src="' . esc_url($icon_url) . '" height="32" alt="Checkout icon" /></label><br />';
                 }
                 ?>

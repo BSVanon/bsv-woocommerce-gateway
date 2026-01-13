@@ -290,7 +290,11 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 <ol class="bpit-instructions">
     <li>' . __('We ONLY accept Bitcoin SV (BSV). Any other payments (BTC/BCH) will not process and the money will be lost!', 'bitcoin-sv-payments-for-woocommerce') . '</li>
     <li>' . __('We are not responsible for lost funds if you send BTC or BCH instead of BSV', 'bitcoin-sv-payments-for-woocommerce') . '</li>
-    <li>' . sprintf(__('You must make a payment within %s hours, or your order may be cancelled', 'bitcoin-sv-payments-for-woocommerce'), $payment_timeout_display) . '</li>
+    <li>' . sprintf(
+        /* translators: %s: payment timeout in hours */
+        __('You must make a payment within %s hours, or your order may be cancelled', 'bitcoin-sv-payments-for-woocommerce'), 
+        $payment_timeout_display
+    ) . '</li>
     <li>' . __('As soon as your payment is received in full you will receive email confirmation with order delivery details.', 'bitcoin-sv-payments-for-woocommerce') . '</li>
     <li>{{{EXTRA_INSTRUCTIONS}}}</li>
 </ol>
@@ -702,7 +706,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
             $order->add_order_note(
                 sprintf(
-                    __('Order instructions: price=&#3647;%s, incoming account:%s', 'bitcoin-sv-payments-for-woocommerce'),
+                    /* translators: 1: price in BSV, 2: Bitcoin address */
+                    __('Order instructions: price=&#3647;%1$s, incoming account:%2$s', 'bitcoin-sv-payments-for-woocommerce'),
                     $order_total_in_btc,
                     $bitcoins_address
                 )
@@ -809,6 +814,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 $payment_timeout_hours = $payment_timeout_mins / 60;
                 $payment_timeout_display = ($payment_timeout_hours == floor($payment_timeout_hours)) ? (int)$payment_timeout_hours : number_format($payment_timeout_hours, 1);
                 echo '<p style="font-size: 12px; color: #888; text-align: center; margin: 15px 0 0 0;">';
+                /* translators: %s: payment timeout in hours */
                 echo esc_html(sprintf(__('⏱ Please complete payment within %s hours', 'bitcoin-sv-payments-for-woocommerce'), $payment_timeout_display));
                 echo '</p>';
             }

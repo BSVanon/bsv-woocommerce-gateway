@@ -259,8 +259,13 @@
             }
 
             // Reload page if order is completed (only once)
-            if ((data.order_status === 'completed' || data.order_status === 'processing') && !this.reloadScheduled) {
+            // Use sessionStorage to persist flag across reloads
+            const reloadKey = 'bsv_reload_scheduled_' + data.order_id;
+            const alreadyReloaded = sessionStorage.getItem(reloadKey);
+            
+            if ((data.order_status === 'completed' || data.order_status === 'processing') && !alreadyReloaded && !this.reloadScheduled) {
                 this.reloadScheduled = true;
+                sessionStorage.setItem(reloadKey, '1');
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);

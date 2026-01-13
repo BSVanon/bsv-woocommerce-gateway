@@ -511,3 +511,88 @@ function BWWC__delete_database_tables()
     $wpdb->query("DROP TABLE IF EXISTS `$btc_addresses_table_name`");
 }
 //===========================================================================
+
+//===========================================================================
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+    WP_CLI::add_command( 'bsv-fix-metadata', 'BWWC_Fix_Legacy_Metadata_Command' );
+}
+
+//===========================================================================
+class BWWC_Fix_Legacy_Metadata_Command {
+    /**
+     * Fix legacy address metadata by adding missing order_id
+     *
+     * ## EXAMPLES
+     *
+     *     wp bsv-fix-metadata
+     *
+     * @when after_wp_load
+     */
+    public function __invoke( $args, $assoc_args ) {
+        global $wpdb;
+
+        $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
+
+        // Get all addresses with status assigned or used
+        $addresses = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, btc_address, address_meta FROM `$btc_addresses_table_name` WHERE status IN ('assigned', 'used')"
+            ),
+            ARRAY_A
+        );
+
+        if ( empty( $addresses ) ) {
+            WP_CLI::success( 'No addresses found to check.' );
+            return;
+        }
+
+        $updated = 0;
+        foreach ( $addresses as $address ) {
+            $address_meta = BWWC_unserialize_address_meta( $address['address_meta'] );
+
+            // Check if orders array exists and has order_id
+            if ( isset( $address_meta['orders'][0]['order_id'] ) && !empty( $address_meta['orders'][0]['order_id'] ) ) {
+                continue; // Already has order_id
+            }
+
+            // Look up order_id from post meta
+            $order_id = $wpdb->get_var( $wpdb->prepare(
+                "SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = 'bitcoins_address' AND meta_value = %s LIMIT 1",
+                $address['btc_address']
+            ) );
+
+            if ( $order_id ) {
+                // Get order details
+                $order_total = floatval( get_post_meta( $order_id, 'order_total_in_btc', true ) );
+                $order_datetime = date( 'Y-m-d H:i:s T' );
+
+                // Build normalized entry
+                $normalized_order_entry = array(
+                    'order_id' => intval( $order_id ),
+                    'order_total' => $order_total,
+                    'order_datetime' => $order_datetime,
+                    'requested_by_ip' => '',
+                    'paid' => isset( $address_meta['orders'][0]['paid'] ) ? $address_meta['orders'][0]['paid'] : false,
+                );
+
+                // Update address_meta
+                $address_meta['orders'] = array( $normalized_order_entry );
+                $serialized = BWWC_serialize_address_meta( $address_meta );
+
+                $wpdb->update(
+                    $btc_addresses_table_name,
+                    array( 'address_meta' => $serialized ),
+                    array( 'id' => $address['id'] ),
+                    array( '%s' ),
+                    array( '%d' )
+                );
+
+                $updated++;
+                WP_CLI::log( "Updated address {$address['btc_address']} with order_id {$order_id}" );
+            }
+        }
+
+        WP_CLI::success( "Updated {$updated} legacy addresses." );
+    }
+}
+//===========================================================================

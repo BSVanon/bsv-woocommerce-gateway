@@ -14,14 +14,15 @@
         pollingStartTime: 0,
         maxPollingDuration: 7200000, // 2 hours in milliseconds
         pollCount: 0,
+        reloadScheduled: false,
 
         init: function() {
             // Get order data from DOM
             const consoleEl = $('.bsv-payment-console');
             if (!consoleEl.length) return;
 
-            this.orderId = consoleEl.data('order-id');
-            this.orderKey = consoleEl.data('order-key');
+            this.orderId = consoleEl.data('order-id') || bsvPaymentData.orderId || null;
+            this.orderKey = consoleEl.data('order-key') || bsvPaymentData.orderKey || null;
             this.pollingDelay = (consoleEl.data('polling-interval') || 10) * 1000;
 
             if (!this.orderId || !this.orderKey) {
@@ -243,30 +244,61 @@
             // Update button state
             this.updateButtonState(data);
 
-            // Stop polling only when fully confirmed or order complete/processing
-            if (data.payment_state === 'confirmed') {
-                console.log('BSV: Polling stopped - payment confirmed');
-                this.stopPolling();
-            } else if (data.payment_state === 'expired') {
-                const hasFunds = (data.received_sats && data.received_sats > 0);
-                if (!hasFunds) {
-                    console.log('BSV: Polling stopped - payment expired with no funds');
-                    this.stopPolling();
-                }
-            }
-            
-            // Also stop if order is already completed
-            if (data.order_status === 'completed' || data.order_status === 'processing') {
-                console.log('BSV: Polling stopped - order ' + data.order_status);
+            // Stop polling on final states
+            const shouldStopPolling = this.shouldStopPolling(data);
+            if (shouldStopPolling.stop) {
+                console.log('BSV: Polling stopped - ' + shouldStopPolling.reason);
                 this.stopPolling();
             }
 
-            // Reload page if order is completed
-            if (data.order_status === 'completed' || data.order_status === 'processing') {
+            // Reload page if order is completed (only once)
+            if ((data.order_status === 'completed' || data.order_status === 'processing') && !this.reloadScheduled) {
+                this.reloadScheduled = true;
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
             }
+        },
+        
+        shouldStopPolling: function(data) {
+            // Stop if order is completed or processing
+            if (data.order_status === 'completed' || data.order_status === 'processing') {
+                return { stop: true, reason: 'order ' + data.order_status };
+            }
+            
+            // Stop if payment is confirmed
+            if (data.payment_state === 'confirmed') {
+                return { stop: true, reason: 'payment confirmed' };
+            }
+            
+            // Stop if payment is pending with sufficient funds (awaiting confirmations only)
+            if (data.payment_state === 'pending') {
+                const received = parseInt(data.received_sats) || 0;
+                const expected = parseInt(data.expected_sats) || 0;
+                if (received >= expected) {
+                    return { stop: true, reason: 'payment received, awaiting confirmations' };
+                }
+            }
+            
+            // Stop if payment is detected with sufficient funds
+            if (data.payment_state === 'detected') {
+                const received = parseInt(data.received_sats) || 0;
+                const expected = parseInt(data.expected_sats) || 0;
+                if (received >= expected) {
+                    return { stop: true, reason: 'payment detected with sufficient funds' };
+                }
+            }
+            
+            // Stop if expired with no funds received
+            if (data.payment_state === 'expired') {
+                const hasFunds = (data.received_sats && data.received_sats > 0);
+                if (!hasFunds) {
+                    return { stop: true, reason: 'payment window expired with no payment' };
+                }
+                // Keep polling if funds received after expiration (waiting for confirmations)
+            }
+            
+            return { stop: false };
         },
         
         updateButtonState: function(data) {
@@ -308,16 +340,18 @@
                     message: 'Your payment has been detected on the blockchain. Waiting for confirmation...'
                 },
                 pending: {
-                    label: 'Awaiting Confirmation',
-                    message: 'Payment broadcast detected. Waiting for miners to confirm—no action needed.'
+                    label: 'Payment Received',
+                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). This usually takes a few minutes—no action needed.`
                 },
                 confirmed: {
                     label: 'Payment Confirmed',
                     message: 'Your payment has been confirmed. Thank you!'
                 },
                 expired: {
-                    label: 'Payment Window Expired',
-                    message: 'The payment window has expired. If you already paid, support will verify and update your order shortly.'
+                    label: data.received_sats > 0 ? 'Late Payment Received' : 'Payment Window Expired',
+                    message: data.received_sats > 0 
+                        ? 'Payment received after the window expired. Awaiting confirmations—your order will be processed.'
+                        : 'The payment window has expired. Please create a new order to continue.'
                 },
                 underpaid: {
                     label: 'Underpaid',
@@ -346,17 +380,54 @@
 
             const current = parseInt(data.best_confirmations) || 0;
             const required = parseInt(data.required_confirmations) || 1;
+            const state = data.payment_state || 'waiting';
+            const received = parseInt(data.received_sats) || 0;
+            const expected = parseInt(data.expected_sats) || 0;
 
-            confEl.find('.bsv-conf-current').text(current);
-            confEl.find('.bsv-conf-required').text(required);
+            // Update state attribute
+            confEl.attr('data-state', state);
+
+            // Show/hide stepper based on state
+            if (state === 'waiting') {
+                confEl.hide();
+                return;
+            } else {
+                confEl.show();
+            }
+
+            // Update text
+            const labelEl = confEl.find('div').first();
+            if (state === 'expired' && received === 0) {
+                labelEl.html('Payment Window Expired');
+            } else if (state === 'underpaid') {
+                labelEl.html('Partial Payment Received');
+            } else {
+                confEl.find('.bsv-conf-current').text(current);
+                confEl.find('.bsv-conf-required').text(required);
+            }
 
             // Update progress dots
             const dots = confEl.find('.bsv-conf-dot');
             dots.each(function(index) {
-                if (index < current) {
-                    $(this).addClass('confirmed');
-                } else {
-                    $(this).removeClass('confirmed');
+                const dot = $(this);
+                dot.removeClass('confirmed pending partial failed');
+                
+                if (state === 'expired' && received === 0) {
+                    dot.addClass('failed');
+                } else if (state === 'underpaid') {
+                    if (index === 0) {
+                        dot.addClass('partial');
+                    }
+                } else if (state === 'detected' || state === 'pending') {
+                    if (index < current) {
+                        dot.addClass('confirmed');
+                    } else if (index === 0 && received >= expected) {
+                        dot.addClass('pending');
+                    }
+                } else if (state === 'confirmed') {
+                    if (index < current) {
+                        dot.addClass('confirmed');
+                    }
                 }
             });
         },

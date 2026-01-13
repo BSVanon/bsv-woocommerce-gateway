@@ -80,7 +80,6 @@ function BWWC_cron_job_worker($hardcron=false)
             // Prepare 'address_meta' for use.
             $address_meta    = BWWC_unserialize_address_meta(@$row_for_balance_check['address_meta']);
             $address_request_array = array();
-            $address_request_array['dcontext1'] = strlen(@$row_for_balance_check['address_meta']) . ":" . strlen($address_meta); // Arr test, delete it.
             $address_request_array['address_meta'] = $address_meta;
 
 
@@ -92,6 +91,19 @@ function BWWC_cron_job_worker($hardcron=false)
 
             $last_order_info = @$address_request_array['address_meta']['orders'][0];
             $row_id          = $row_for_balance_check['id'];
+            
+            // Skip if order is already completed or processing
+            if ($last_order_info && isset($last_order_info['order_id'])) {
+                $order = wc_get_order($last_order_info['order_id']);
+                if ($order && in_array($order->get_status(), array('completed', 'processing', 'cancelled', 'refunded', 'failed'))) {
+                    // Mark address as used and skip further processing
+                    $wpdb->query($wpdb->prepare(
+                        "UPDATE `$btc_addresses_table_name` SET `status` = 'used' WHERE `id` = %d",
+                        $row_id
+                    ));
+                    continue;
+                }
+            }
 
             if ($balance_info_array['result'] == 'success') {
                 $current_time = time();

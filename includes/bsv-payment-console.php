@@ -57,8 +57,15 @@ function BWWC__render_payment_console($order) {
     $qr_code_svg = BWWC__generate_qr_code($bsv_address, $bsv_amount);
 
     // Enqueue assets
+    $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
+    $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
+    $script_version = BWWC_VERSION;
+    if (file_exists($script_file_path)) {
+        $script_version .= '.' . filemtime($script_file_path);
+    }
+
     wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), BWWC_VERSION);
-    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery'), BWWC_VERSION, true);
+    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery'), $script_version, true);
     
     // Localize script
     wp_localize_script('bsv-payment-console', 'bsvPaymentData', array(
@@ -133,16 +140,45 @@ function BWWC__render_payment_console($order) {
             </div>
         </div>
 
-        <?php if (in_array($payment_state, array('pending', 'detected', 'confirmed'))): ?>
-        <div class="bsv-confirmations">
+        <?php 
+        // Show stepper for all states except initial waiting
+        $show_stepper = !in_array($payment_state, array('waiting'));
+        if ($show_stepper): 
+        ?>
+        <div class="bsv-confirmations" data-state="<?php echo esc_attr($payment_state); ?>">
             <div style="font-size: 14px; opacity: 0.7; margin-bottom: 0.5rem;">
-                <?php esc_html_e('Confirmations:', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                <strong class="bsv-conf-current"><?php echo esc_html($confirmations ?: 0); ?></strong> / 
-                <span class="bsv-conf-required"><?php echo esc_html($required_confirmations); ?></span>
+                <?php 
+                if ($payment_state === 'expired' && $received_sats == 0) {
+                    esc_html_e('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce');
+                } elseif ($payment_state === 'underpaid') {
+                    esc_html_e('Partial Payment Received', 'bitcoin-sv-payments-for-woocommerce');
+                } else {
+                    esc_html_e('Confirmations:', 'bitcoin-sv-payments-for-woocommerce');
+                    echo ' <strong class="bsv-conf-current">' . esc_html($confirmations ?: 0) . '</strong> / ';
+                    echo '<span class="bsv-conf-required">' . esc_html($required_confirmations) . '</span>';
+                }
+                ?>
             </div>
             <div class="bsv-conf-progress">
-                <?php for ($i = 0; $i < max($required_confirmations, 6); $i++): ?>
-                    <div class="bsv-conf-dot <?php echo ($i < $confirmations) ? 'confirmed' : ''; ?>"></div>
+                <?php 
+                $max_dots = max($required_confirmations, 3);
+                for ($i = 0; $i < $max_dots; $i++): 
+                    $dot_class = '';
+                    if ($payment_state === 'expired' && $received_sats == 0) {
+                        $dot_class = 'failed';
+                    } elseif ($payment_state === 'underpaid') {
+                        $dot_class = ($i == 0) ? 'partial' : '';
+                    } elseif ($payment_state === 'detected' || $payment_state === 'pending') {
+                        if ($i < $confirmations) {
+                            $dot_class = 'confirmed';
+                        } elseif ($i == 0 && $received_sats >= $expected_sats) {
+                            $dot_class = 'pending';
+                        }
+                    } elseif ($payment_state === 'confirmed') {
+                        $dot_class = ($i < $confirmations) ? 'confirmed' : '';
+                    }
+                ?>
+                    <div class="bsv-conf-dot <?php echo esc_attr($dot_class); ?>" data-index="<?php echo $i; ?>"></div>
                 <?php endfor; ?>
             </div>
         </div>
@@ -332,19 +368,46 @@ function BWWC__ajax_check_payment_status() {
     $nonce = isset($_POST['nonce']) ? sanitize_text_field($_POST['nonce']) : '';
     
     if (!$order_id || !$order_key) {
+        BWWC__log_event(
+            __FILE__,
+            __LINE__,
+            sprintf('AJAX status error: Missing order_id (%d) or order_key (%s)', $order_id, $order_key)
+        );
         wp_send_json_error(array('message' => 'Invalid request'));
         return;
     }
     
     // Verify nonce
     if (!wp_verify_nonce($nonce, 'bsv_payment_status_' . $order_id)) {
+        BWWC__log_event(
+            __FILE__,
+            __LINE__,
+            sprintf('AJAX status error: Nonce validation failed for order %d', $order_id)
+        );
         wp_send_json_error(array('message' => 'Invalid nonce'));
         return;
     }
     
     // Get order
     $order = wc_get_order($order_id);
-    if (!$order || $order->get_order_key() !== $order_key) {
+    if (!$order) {
+        BWWC__log_event(__FILE__, __LINE__, sprintf('AJAX status error: Order %d not found (key %s)', $order_id, $order_key));
+        wp_send_json_error(array('message' => 'Invalid order'));
+        return;
+    }
+
+    $expected_order_key = $order->get_order_key();
+    if ($expected_order_key !== $order_key) {
+        BWWC__log_event(
+            __FILE__,
+            __LINE__,
+            sprintf(
+                'AJAX status error: Order %d key mismatch (expected %s got %s)',
+                $order_id,
+                $expected_order_key,
+                $order_key
+            )
+        );
         wp_send_json_error(array('message' => 'Invalid order'));
         return;
     }
@@ -367,6 +430,7 @@ function BWWC__ajax_check_payment_status() {
     $expected_sats = get_post_meta($order_id, 'expected_sats', true);
     $received_sats = get_post_meta($order_id, 'received_sats', true);
     $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
     $expires_at = get_post_meta($order_id, 'address_expires_at', true);
     $txids = get_post_meta($order_id, 'txids', true);
     $confirmations = get_post_meta($order_id, 'best_confirmations', true);
@@ -381,7 +445,7 @@ function BWWC__ajax_check_payment_status() {
         $txids = array_filter(explode(',', $txids));
     }
     
-    wp_send_json_success(array(
+    $response_payload = array(
         'address' => $bsv_address,
         'expected_sats' => intval($expected_sats),
         'received_sats' => intval($received_sats),
@@ -394,7 +458,24 @@ function BWWC__ajax_check_payment_status() {
         'last_checked_at' => intval($last_checked),
         'order_status' => $order->get_status(),
         'explorer_url' => $explorer_base
-    ));
+    );
+
+    BWWC__log_event(
+        __FILE__,
+        __LINE__,
+        sprintf(
+            'AJAX status ping order %d → state=%s received=%d confirmed=%d best_conf=%d expires_at=%d force=%s',
+            $order_id,
+            $response_payload['payment_state'],
+            $response_payload['received_sats'],
+            $response_payload['confirmed_sats'],
+            $response_payload['best_confirmations'],
+            $response_payload['expires_at'],
+            $force ? 'yes' : 'no'
+        )
+    );
+
+    wp_send_json_success($response_payload);
 }
 add_action('wp_ajax_bsv_check_payment_status', 'BWWC__ajax_check_payment_status');
 add_action('wp_ajax_nopriv_bsv_check_payment_status', 'BWWC__ajax_check_payment_status');

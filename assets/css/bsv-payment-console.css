@@ -417,3 +417,29 @@
     background: #46b450;
     transform: scale(1.1);
 }
+
+.bsv-conf-dot.pending {
+    background: #f0ad4e;
+    animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.bsv-conf-dot.partial {
+    background: #ff9800;
+    transform: scale(1.1);
+}
+
+.bsv-conf-dot.failed {
+    background: #dc3545;
+    transform: scale(1.1);
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.6;
+        transform: scale(1.15);
+    }
+}

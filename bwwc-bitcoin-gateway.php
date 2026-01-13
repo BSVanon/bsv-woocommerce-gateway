@@ -629,7 +629,6 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
              );
             //-----------------------------------
 
-
             // The bitcoin gateway does not take payment immediately, but it does need to change the orders status to on-hold
             // (so the store owner knows that bitcoin payment is pending).
             // We also need to tell WooCommerce that it needs to redirect to the thankyou page – this is done with the returned array

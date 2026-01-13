@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.3.1
+Stable tag: 5.3.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -77,6 +77,17 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 5.3.2 - 2026-01-13 =
+* FIXED: AJAX polling now stops on final payment states (no more screen flickering)
+* FIXED: Cron job skips completed/cancelled orders to reduce API calls
+* ENHANCED: Stepper UI now works across all payment states with visual feedback
+* ADDED: Pending state shows pulsing yellow dot while awaiting confirmations
+* ADDED: Underpaid state shows orange dot for partial payments
+* ADDED: Expired/failed state shows red dots
+* IMPROVED: Payment console messaging for all scenarios (success, late payment, expiration, failure)
+* IMPROVED: Page reload only triggers once when order completes
+* DOCUMENTED: WP-Cron Docker networking fix in DOCKER RULE.md
 
 = 5.3.1 - 2026-01-12 =
 * CRITICAL FIX: Payment detection now works correctly

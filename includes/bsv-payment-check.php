@@ -21,6 +21,7 @@ function BWWC__check_payment_for_order($order_id) {
     }
     
     $bwwc_settings = BWWC__get_settings();
+    $required_confirmations = max(1, intval($bwwc_settings['confs_num']));
     $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
     
     // Get the Bitcoin address for this order
@@ -75,6 +76,7 @@ function BWWC__check_payment_for_order($order_id) {
     update_post_meta($order_id, 'last_checked_at', time());
     
     // Fetch transaction history if payment detected
+    $best_confirmations = intval(get_post_meta($order_id, 'best_confirmations', true));
     if ($total_sats > 0) {
         $tx_history_response = BWWC__file_get_contents(
             'https://api.whatsonchain.com/v1/bsv/main/address/' . $bsv_address . '/history',
@@ -87,25 +89,34 @@ function BWWC__check_payment_for_order($order_id) {
             if (is_array($tx_history) && count($tx_history) > 0) {
                 $txids = array();
                 $max_confirmations = 0;
+                $chain_height = BWWC__get_current_chain_height($bwwc_settings['blockchain_api_timeout_secs']);
                 
                 foreach ($tx_history as $tx) {
                     if (isset($tx['tx_hash'])) {
                         $txids[] = $tx['tx_hash'];
                     }
                     if (isset($tx['height']) && $tx['height'] > 0) {
-                        // Estimate confirmations (rough - would need current block height for accuracy)
-                        $confirmations = 1; // At least 1 if it has a height
+                        $confirmations = 1;
+                        if ($chain_height && $tx['height'] > 0) {
+                            $confirmations = max(1, ($chain_height - intval($tx['height'])) + 1);
+                        }
                         $max_confirmations = max($max_confirmations, $confirmations);
                     }
                 }
                 
                 if (!empty($txids)) {
                     update_post_meta($order_id, 'txids', implode(',', $txids));
-                    update_post_meta($order_id, 'best_confirmations', $max_confirmations);
+                    $best_confirmations = $max_confirmations;
+                    update_post_meta($order_id, 'best_confirmations', $best_confirmations);
                     BWWC__log_event(__FILE__, __LINE__, "Payment check: Stored " . count($txids) . " transaction ID(s) for order {$order_id}");
                 }
             }
         }
+    }
+    
+    if ($best_confirmations === 0 && $confirmed_sats >= $expected_sats) {
+        $best_confirmations = 1;
+        update_post_meta($order_id, 'best_confirmations', $best_confirmations);
     }
     
     // Determine payment state
@@ -125,16 +136,25 @@ function BWWC__check_payment_for_order($order_id) {
     if ($total_sats == 0) {
         update_post_meta($order_id, 'payment_state', 'waiting');
         return false;
-    } elseif ($confirmed_sats >= $expected_sats) {
-        update_post_meta($order_id, 'payment_state', 'detected');
-    } elseif ($total_sats >= $expected_sats) {
-        update_post_meta($order_id, 'payment_state', 'pending');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} awaiting confirmations - Confirmed {$confirmed_sats} sats / Expected {$expected_sats} sats");
-    } else {
+    }
+
+    if ($total_sats < $expected_sats) {
         update_post_meta($order_id, 'payment_state', 'underpaid');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} underpaid - Received: {$total_btc} BTC, Expected: {$order_total_btc} BTC");
         return false;
     }
+
+    if ($confirmed_sats < $expected_sats || $best_confirmations < $required_confirmations) {
+        update_post_meta($order_id, 'payment_state', 'pending');
+        BWWC__log_event(
+            __FILE__,
+            __LINE__,
+            "Payment check: Order {$order_id} awaiting confirmations - Confirmed {$confirmed_sats} sats / Expected {$expected_sats} sats / Best confirmations {$best_confirmations} of {$required_confirmations}"
+        );
+        return true;
+    }
+    
+    update_post_meta($order_id, 'payment_state', 'confirmed');
     
     // Payment detected - check if order needs to be completed
     $order = wc_get_order($order_id);

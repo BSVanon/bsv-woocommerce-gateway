@@ -260,7 +260,8 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
             $address_meta['orders'] = array();
         }
 
-        array_unshift($address_meta['orders'], $order_info);    // Prepend new order to array of orders
+        $normalized_order_entry = BWWC__prepare_address_order_entry($order_info);
+        array_unshift($address_meta['orders'], $normalized_order_entry);    // Prepend new order to array of orders
         if (count($address_meta['orders']) > 10) {
             array_pop($address_meta['orders']);
         }   // Do not keep history of more than 10 unfullfilled orders per address.
@@ -481,7 +482,8 @@ function BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings=f
 // Function makes sure that returned value is valid array
 function BWWC_unserialize_address_meta($flat_address_meta)
 {
-    $unserialized = @unserialize($flat_address_meta);
+    // Strip escapes added by BWWC__safe_string_escape before unserializing
+    $unserialized = @unserialize(stripslashes($flat_address_meta));
     if (is_array($unserialized)) {
         return $unserialized;
     }
@@ -494,6 +496,36 @@ function BWWC_unserialize_address_meta($flat_address_meta)
 function BWWC_serialize_address_meta($address_meta_arr)
 {
     return BWWC__safe_string_escape(serialize($address_meta_arr));
+}
+//===========================================================================
+
+//===========================================================================
+/**
+ * Normalize order metadata structure stored inside address_meta so cron jobs
+ * can always rely on the presence of order_id / totals.
+ *
+ * @param array $order_info Raw order info captured during assignment.
+ * @return array Normalized structure.
+ */
+function BWWC__prepare_address_order_entry($order_info)
+{
+    $normalized = array(
+        'order_id'        => isset($order_info['order_id']) ? intval($order_info['order_id']) : 0,
+        'order_total'     => isset($order_info['order_total']) ? floatval($order_info['order_total']) : 0,
+        'order_datetime'  => isset($order_info['order_datetime']) ? $order_info['order_datetime'] : date('Y-m-d H:i:s T'),
+        'requested_by_ip' => isset($order_info['requested_by_ip']) ? $order_info['requested_by_ip'] : '',
+        'paid'            => false,
+    );
+
+    if (isset($order_info['expected_sats'])) {
+        $normalized['expected_sats'] = intval($order_info['expected_sats']);
+    }
+
+    if (isset($order_info['order_meta']['bw_currency'])) {
+        $normalized['currency'] = sanitize_text_field($order_info['order_meta']['bw_currency']);
+    }
+
+    return $normalized;
 }
 //===========================================================================
 
@@ -996,15 +1028,41 @@ function BWWC__file_get_contents($url, $return_content_on_error=false, $timeout=
         }
     }
 }
-//===========================================================================
-
-//===========================================================================
 function BWWC__object_to_array($object)
 {
     if (!is_object($object) && !is_array($object)) {
         return $object;
     }
     return array_map('BWWC__object_to_array', (array) $object);
+}
+//===========================================================================
+// Fetch and cache current chain height (WhatsOnChain)
+function BWWC__get_current_chain_height($timeout_secs = 30)
+{
+    static $cached_height = null;
+    static $cached_at = 0;
+
+    if ($cached_height !== null && (time() - $cached_at) < 60) {
+        return $cached_height;
+    }
+
+    $timeout_secs = intval($timeout_secs) > 0 ? intval($timeout_secs) : 20;
+    $response = BWWC__file_get_contents(
+        'https://api.whatsonchain.com/v1/bsv/main/chain/info',
+        false,
+        $timeout_secs
+    );
+
+    if ($response) {
+        $data = json_decode(trim($response), true);
+        if (is_array($data) && isset($data['blocks'])) {
+            $cached_height = intval($data['blocks']);
+            $cached_at = time();
+            return $cached_height;
+        }
+    }
+
+    return false;
 }
 //===========================================================================
 

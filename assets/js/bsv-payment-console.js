@@ -278,6 +278,16 @@
                 }
             }
             
+            // Defensive check: Stop if confirmations are sufficient regardless of payment_state
+            // This handles cases where cron hasn't updated payment_state yet
+            const current = parseInt(data.best_confirmations) || 0;
+            const required = parseInt(data.required_confirmations) || 1;
+            const receivedSats = parseInt(data.received_sats) || 0;
+            const expectedSats = parseInt(data.expected_sats) || 0;
+            if (current >= required && receivedSats >= expectedSats && expectedSats > 0) {
+                return { stop: true, reason: 'payment has sufficient confirmations (' + current + '/' + required + ') and amount' };
+            }
+            
             // Stop if order is completed or processing (normal success path)
             if (data.order_status === 'completed' || data.order_status === 'processing') {
                 return { stop: true, reason: 'order ' + data.order_status };

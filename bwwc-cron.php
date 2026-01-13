@@ -96,6 +96,13 @@ function BWWC_cron_job_worker($hardcron=false)
             if ($last_order_info && isset($last_order_info['order_id'])) {
                 $order = wc_get_order($last_order_info['order_id']);
                 if ($order && in_array($order->get_status(), array('completed', 'processing', 'cancelled', 'refunded', 'failed'))) {
+                    // Ensure payment_state reflects final status to stop frontend polling
+                    $current_payment_state = get_post_meta($last_order_info['order_id'], 'payment_state', true);
+                    if (($order->get_status() === 'completed' || $order->get_status() === 'processing') && $current_payment_state !== 'confirmed') {
+                        update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Updated payment_state to 'confirmed' for order {$last_order_info['order_id']} (status: {$order->get_status()})");
+                    }
+                    
                     // Mark address as used and skip further processing
                     $wpdb->query($wpdb->prepare(
                         "UPDATE `$btc_addresses_table_name` SET `status` = 'used' WHERE `id` = %d",
@@ -187,12 +194,13 @@ function BWWC_cron_job_worker($hardcron=false)
                     // Determine payment state
                     if ($confirmed_sats >= $expected_sats) {
                         update_post_meta($order_id, 'payment_state', 'detected');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'detected' for order {$order_id}");
                     } elseif ($total_sats >= $expected_sats) {
                         update_post_meta($order_id, 'payment_state', 'pending');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Awaiting confirmations for order {$order_id}. Confirmed: {$confirmed_sats} sats / Expected: {$expected_sats} sats.");
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'pending' for order {$order_id}. Awaiting confirmations. Confirmed: {$confirmed_sats} sats / Expected: {$expected_sats} sats.");
                     } elseif ($total_sats > 0) {
                         update_post_meta($order_id, 'payment_state', 'underpaid');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Partial payment at address '{$row_for_balance_check['btc_address']}' ({$total_sats} sats of {$expected_sats}). Waiting for additional funds...");
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'underpaid' for order {$order_id}. Partial payment at address '{$row_for_balance_check['btc_address']}' ({$total_sats} sats of {$expected_sats}). Waiting for additional funds...");
                     }
                 } else {
                     // No funds detected - reset to waiting if previously pending/underpaid
@@ -236,6 +244,7 @@ function BWWC_cron_job_worker($hardcron=false)
                     // Update payment state to confirmed
                     update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
                     update_post_meta($last_order_info['order_id'], 'best_confirmations', 1); // Will be updated by blockchain check
+                    BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$last_order_info['order_id']} - processing payment completion");
 
                     // Update order' meta info
                     $address_meta['orders'][0]['paid'] = true;

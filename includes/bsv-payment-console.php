@@ -464,13 +464,14 @@ function BWWC__ajax_check_payment_status() {
         __FILE__,
         __LINE__,
         sprintf(
-            'AJAX status ping order %d → state=%s received=%d confirmed=%d best_conf=%d expires_at=%d force=%s',
+            'AJAX status ping order %d → state=%s received=%d confirmed=%d best_conf=%d/%d order_status=%s force=%s',
             $order_id,
             $response_payload['payment_state'],
             $response_payload['received_sats'],
             $response_payload['confirmed_sats'],
             $response_payload['best_confirmations'],
-            $response_payload['expires_at'],
+            $response_payload['required_confirmations'],
+            $response_payload['order_status'],
             $force ? 'yes' : 'no'
         )
     );

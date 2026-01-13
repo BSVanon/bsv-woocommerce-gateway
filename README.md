@@ -90,12 +90,10 @@ These guides live inside the `docs/` directory of this repository:
 
 ## 🗺️ Roadmap
 
-### v5.3 (Planned)
+### v6.0 (Future)
 - Provider configuration UI (custom API endpoints)
 - Webhook support for instant payment notifications
 - Enhanced address pool management
-
-### v6.0 (Future)
 - Multi-currency support improvements
 - Admin diagnostics dashboard enhancements
 - Performance optimizations

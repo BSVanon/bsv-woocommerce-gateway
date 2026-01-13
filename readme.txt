@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.3.2
+Stable tag: 5.3.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -77,6 +77,13 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 5.3.3 - 2026-01-13 =
+* CRITICAL FIX: Infinite page reload loop eliminated using sessionStorage persistence
+* FIXED: Stepper UI now appears immediately when payment detected (dynamic creation)
+* FIXED: Polling correctly stops when order status reaches completed/processing
+* IMPROVED: Frontend/backend state synchronization for payment confirmation flow
+* IMPROVED: Console logging for debugging payment state transitions
 
 = 5.3.2 - 2026-01-13 =
 * FIXED: AJAX polling now stops on final payment states (no more screen flickering)

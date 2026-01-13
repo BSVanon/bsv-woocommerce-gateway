@@ -1,7 +1,7 @@
 # Bitcoin SV Payments for WooCommerce
 
-**Version:** 5.3.2  
-**Status:** Production Ready - UI/UX Polished  
+**Version:** 5.3.3  
+**Status:** Production Ready - Stable Release  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 
 Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.

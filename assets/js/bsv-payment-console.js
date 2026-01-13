@@ -268,18 +268,19 @@
         },
         
         shouldStopPolling: function(data) {
-            // Stop if order is completed or processing
-            if (data.order_status === 'completed' || data.order_status === 'processing') {
-                return { stop: true, reason: 'order ' + data.order_status };
-            }
-            
             // Stop if payment is fully confirmed (has required confirmations)
+            // Check this FIRST before order status, handles edge cases where order status is stuck
             if (data.payment_state === 'confirmed') {
                 const current = parseInt(data.best_confirmations) || 0;
                 const required = parseInt(data.required_confirmations) || 1;
                 if (current >= required) {
-                    return { stop: true, reason: 'payment confirmed with ' + current + ' confirmations' };
+                    return { stop: true, reason: 'payment confirmed with ' + current + '/' + required + ' confirmations' };
                 }
+            }
+            
+            // Stop if order is completed or processing (normal success path)
+            if (data.order_status === 'completed' || data.order_status === 'processing') {
+                return { stop: true, reason: 'order ' + data.order_status };
             }
             
             // Continue polling for pending/detected states to detect confirmations

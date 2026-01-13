@@ -184,8 +184,8 @@ function BWWC_create_menu()
     // create new top-level menu
     // http://www.fileformat.info/info/unicode/char/e3f/index.htm
     add_menu_page(
-        __('Woo Bitcoin SV', BWWC_I18N_DOMAIN),                    // Page title
-        __('Bitcoin SV', BWWC_I18N_DOMAIN),                        // Menu Title - lower corner of admin menu
+        __('Woo Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'),                    // Page title
+        __('Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'),                        // Menu Title - lower corner of admin menu
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page',                   // Function
@@ -195,8 +195,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __("WooCommerce Bitcoin SV Payments Gateway", BWWC_I18N_DOMAIN),                   // Page title
-        __("General Settings", BWWC_I18N_DOMAIN),               // Menu Title
+        __('WooCommerce Bitcoin SV Payments Gateway', 'bitcoin-sv-payments-for-woocommerce'),                   // Page title
+        __('General Settings', 'bitcoin-sv-payments-for-woocommerce'),               // Menu Title
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page'                    // Function
@@ -204,8 +204,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __("Bitcoin SV Plugin Advanced Settings", BWWC_I18N_DOMAIN),       // Page title
-        __("Advanced Settings", BWWC_I18N_DOMAIN),                // Menu title
+        __('Bitcoin SV Plugin Advanced Settings', 'bitcoin-sv-payments-for-woocommerce'),       // Page title
+        __('Advanced Settings', 'bitcoin-sv-payments-for-woocommerce'),                // Menu title
         'manage_options',                                        // Capability
         'BWWC-settings-advanced',                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_advanced_settings_page'            // Function
@@ -222,7 +222,7 @@ function BWWC_set_lang_file()
     if (!empty($currentLocale)) {
         $moFile = dirname(__FILE__) . "/lang/" . $currentLocale . ".mo";
         if (@file_exists($moFile) && is_readable($moFile)) {
-            load_textdomain(BWWC_I18N_DOMAIN, $moFile);
+            load_textdomain('bitcoin-sv-payments-for-woocommerce', $moFile);
         }
     }
 }

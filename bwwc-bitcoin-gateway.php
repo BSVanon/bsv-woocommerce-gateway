@@ -700,7 +700,13 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // Add order note
             $order_total_in_btc = get_post_meta($order->get_id(), 'order_total_in_btc', true);
             $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
-            $order->add_order_note(__("Order instructions: price=&#3647;{$order_total_in_btc}, incoming account:{$bitcoins_address}", 'woocommerce'));
+            $order->add_order_note(
+                sprintf(
+                    __('Order instructions: price=&#3647;%s, incoming account:%s', 'woocommerce'),
+                    $order_total_in_btc,
+                    $bitcoins_address
+                )
+            );
         }
         //-------------------------------------------------------------------
 
@@ -886,7 +892,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                     if ($paid_total_so_far >= $order_total_in_btc) {
                         BWWC__process_payment_completed_for_order($order_id, false);
                     } else {
-                        BWWC__log_event(__FILE__, __LINE__, "NOTE: Payment received (for BSV {$value_in_btc}), but not enough yet to cover the required total. Will be waiting for more. Bitcoin SV: now/total received/needed = {$value_in_btc}/{$paid_total_so_far}/{$order_total_in_btc}");
+                        BWWC__log_event(__FILE__, __LINE__, sprintf("NOTE: Payment received (for BSV %s), but not enough yet to cover the required total. Will be waiting for more. Bitcoin SV: now/total received/needed = %s/%s/%s", $value_in_btc, $value_in_btc, $paid_total_so_far, $order_total_in_btc));
                     }
 
                     // Reply '*ok*' so no more notifications are sent

@@ -268,34 +268,40 @@
         },
         
         shouldStopPolling: function(data) {
-            // Stop if order is completed or processing (highest priority)
+            // CRITICAL: Check order_status FIRST - this is the source of truth
+            // WooCommerce order status indicates actual order state
             if (data.order_status === 'completed' || data.order_status === 'processing') {
+                console.log('BSV: Stopping - order status is ' + data.order_status);
                 return { stop: true, reason: 'order ' + data.order_status };
             }
             
-            // Parse all values
+            // Parse all values for additional checks
             const current = parseInt(data.best_confirmations) || 0;
             const required = parseInt(data.required_confirmations) || 1;
             const receivedSats = parseInt(data.received_sats) || 0;
             const expectedSats = parseInt(data.expected_sats) || 0;
             const confirmedSats = parseInt(data.confirmed_sats) || 0;
             
-            // Stop if payment is confirmed with sufficient confirmations
-            // Must check ALL conditions: state, confirmed amount, and confirmation count
+            // Log current state for debugging
+            console.log('BSV: Poll check - state=' + data.payment_state + ' confirmed=' + confirmedSats + '/' + expectedSats + ' confs=' + current + '/' + required + ' order_status=' + data.order_status);
+            
+            // Stop if payment is confirmed AND order should be completed
+            // This catches cases where payment is confirmed but order status hasn't updated yet
             if (data.payment_state === 'confirmed' && 
                 confirmedSats >= expectedSats && 
                 current >= required && 
                 expectedSats > 0) {
+                console.log('BSV: Stopping - payment fully confirmed');
                 return { stop: true, reason: 'payment confirmed (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
             }
             
             // Stop if expired with no funds received
             if (data.payment_state === 'expired' && receivedSats == 0) {
+                console.log('BSV: Stopping - expired with no payment');
                 return { stop: true, reason: 'payment window expired with no payment' };
             }
             
             // Continue polling for waiting, pending, underpaid states
-            // These need to keep checking for payment/confirmations
             return { stop: false };
         },
         
@@ -372,40 +378,68 @@
             statusBox.find('.bsv-status-message').text(statusInfo.message);
         },
 
+        createStepper: function(requiredConfs) {
+            const statusBox = $('.bsv-status-box');
+            if (!statusBox.length) return;
+            
+            const maxDots = Math.max(requiredConfs, 3);
+            let dotsHtml = '';
+            for (let i = 0; i < maxDots; i++) {
+                dotsHtml += '<div class="bsv-conf-dot" data-index="' + i + '"></div>';
+            }
+            
+            const stepperHtml = '<div class="bsv-confirmations" style="margin-top: 20px;">' +
+                '<div style="font-size: 14px; opacity: 0.7; margin-bottom: 0.5rem;">' +
+                'Confirmations: <strong class="bsv-conf-current">0</strong> / <span class="bsv-conf-required">' + requiredConfs + '</span>' +
+                '</div>' +
+                '<div class="bsv-conf-progress">' + dotsHtml + '</div>' +
+                '</div>';
+            
+            statusBox.after(stepperHtml);
+            console.log('BSV: Stepper created with ' + maxDots + ' dots');
+        },
+        
         updateConfirmations: function(data) {
             const confEl = $('.bsv-confirmations');
-            if (!confEl.length) return;
-
+            
             const current = parseInt(data.best_confirmations) || 0;
             const required = parseInt(data.required_confirmations) || 1;
             const state = data.payment_state || 'waiting';
             const received = parseInt(data.received_sats) || 0;
             const expected = parseInt(data.expected_sats) || 0;
 
-            // Update state attribute
-            confEl.attr('data-state', state);
-
-            // Show/hide stepper based on state
+            // Show/hide stepper based on state - ALWAYS show for non-waiting states
             if (state === 'waiting') {
-                confEl.hide();
+                if (confEl.length) confEl.hide();
                 return;
-            } else {
-                confEl.show();
             }
+            
+            // If stepper doesn't exist but should show, create it
+            if (!confEl.length && state !== 'waiting') {
+                console.log('BSV: Creating stepper dynamically for state: ' + state);
+                this.createStepper(required);
+            }
+            
+            // Now get the element again (might have just been created)
+            const stepperEl = $('.bsv-confirmations');
+            if (!stepperEl.length) return;
+            
+            stepperEl.show();
+            stepperEl.attr('data-state', state);
 
             // Update text
-            const labelEl = confEl.find('div').first();
+            const labelEl = stepperEl.find('div').first();
             if (state === 'expired' && received === 0) {
                 labelEl.html('Payment Window Expired');
             } else if (state === 'underpaid') {
                 labelEl.html('Partial Payment Received');
             } else {
-                confEl.find('.bsv-conf-current').text(current);
-                confEl.find('.bsv-conf-required').text(required);
+                stepperEl.find('.bsv-conf-current').text(current);
+                stepperEl.find('.bsv-conf-required').text(required);
             }
 
             // Update progress dots
-            const dots = confEl.find('.bsv-conf-dot');
+            const dots = stepperEl.find('.bsv-conf-dot');
             dots.each(function(index) {
                 const dot = $(this);
                 dot.removeClass('confirmed pending partial failed');

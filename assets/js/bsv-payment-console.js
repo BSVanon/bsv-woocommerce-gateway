@@ -266,28 +266,17 @@
                 return { stop: true, reason: 'order ' + data.order_status };
             }
             
-            // Stop if payment is confirmed
+            // Stop if payment is fully confirmed (has required confirmations)
             if (data.payment_state === 'confirmed') {
-                return { stop: true, reason: 'payment confirmed' };
-            }
-            
-            // Stop if payment is pending with sufficient funds (awaiting confirmations only)
-            if (data.payment_state === 'pending') {
-                const received = parseInt(data.received_sats) || 0;
-                const expected = parseInt(data.expected_sats) || 0;
-                if (received >= expected) {
-                    return { stop: true, reason: 'payment received, awaiting confirmations' };
+                const current = parseInt(data.best_confirmations) || 0;
+                const required = parseInt(data.required_confirmations) || 1;
+                if (current >= required) {
+                    return { stop: true, reason: 'payment confirmed with ' + current + ' confirmations' };
                 }
             }
             
-            // Stop if payment is detected with sufficient funds
-            if (data.payment_state === 'detected') {
-                const received = parseInt(data.received_sats) || 0;
-                const expected = parseInt(data.expected_sats) || 0;
-                if (received >= expected) {
-                    return { stop: true, reason: 'payment detected with sufficient funds' };
-                }
-            }
+            // Continue polling for pending/detected states to detect confirmations
+            // These states mean payment received but awaiting confirmations
             
             // Stop if expired with no funds received
             if (data.payment_state === 'expired') {

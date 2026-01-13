@@ -33,12 +33,19 @@
             // Bind event handlers
             this.bindEvents();
 
-            // Start polling
-            this.pollingStartTime = Date.now();
-            this.startPolling();
-
-            // Initial status check
-            this.checkStatus();
+            // Initial status check to determine if we should poll
+            this.checkStatus().done((response) => {
+                if (response.success && response.data) {
+                    const shouldStop = this.shouldStopPolling(response.data);
+                    if (!shouldStop.stop) {
+                        // Only start polling if order is not in final state
+                        this.pollingStartTime = Date.now();
+                        this.startPolling();
+                    } else {
+                        console.log('BSV: Order in final state, polling not started - ' + shouldStop.reason);
+                    }
+                }
+            });
         },
 
         bindEvents: function() {

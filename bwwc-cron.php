@@ -160,7 +160,8 @@ function BWWC_cron_job_worker($hardcron=false)
                     update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
                     update_post_meta($order_id, 'last_checked_at', time());
                     
-                    // Fetch transaction history to get txids
+                    // Fetch transaction history to get txids and confirmations
+                    $max_confirmations = 0;
                     $tx_history_response = BWWC__file_get_contents(
                         'https://api.whatsonchain.com/v1/bsv/main/address/' . $row_for_balance_check['btc_address'] . '/history',
                         false,
@@ -170,14 +171,25 @@ function BWWC_cron_job_worker($hardcron=false)
                         $tx_history = json_decode(trim($tx_history_response), true);
                         if (is_array($tx_history) && count($tx_history) > 0) {
                             $txids = array();
+                            $chain_height = BWWC__get_current_chain_height($bwwc_settings['blockchain_api_timeout_secs']);
+                            
                             foreach ($tx_history as $tx) {
                                 if (isset($tx['tx_hash'])) {
                                     $txids[] = $tx['tx_hash'];
                                 }
+                                if (isset($tx['height']) && $tx['height'] > 0) {
+                                    $confirmations = 1;
+                                    if ($chain_height && $tx['height'] > 0) {
+                                        $confirmations = max(1, ($chain_height - intval($tx['height'])) + 1);
+                                    }
+                                    $max_confirmations = max($max_confirmations, $confirmations);
+                                }
                             }
+                            
                             if (!empty($txids)) {
                                 update_post_meta($order_id, 'txids', implode(',', $txids));
-                                BWWC__log_event(__FILE__, __LINE__, "Cron job: Stored " . count($txids) . " transaction ID(s) for order {$order_id}");
+                                update_post_meta($order_id, 'best_confirmations', $max_confirmations);
+                                BWWC__log_event(__FILE__, __LINE__, "Cron job: Stored " . count($txids) . " transaction ID(s) for order {$order_id}, best confirmations: {$max_confirmations}");
                             }
                         }
                     }
@@ -191,16 +203,16 @@ function BWWC_cron_job_worker($hardcron=false)
                         }
                     }
 
-                    // Determine payment state
-                    if ($confirmed_sats >= $expected_sats) {
-                        update_post_meta($order_id, 'payment_state', 'detected');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'detected' for order {$order_id}");
-                    } elseif ($total_sats >= $expected_sats) {
-                        update_post_meta($order_id, 'payment_state', 'pending');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'pending' for order {$order_id}. Awaiting confirmations. Confirmed: {$confirmed_sats} sats / Expected: {$expected_sats} sats.");
-                    } elseif ($total_sats > 0) {
+                    // Determine payment state using consistent logic
+                    if ($total_sats < $expected_sats) {
                         update_post_meta($order_id, 'payment_state', 'underpaid');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'underpaid' for order {$order_id}. Partial payment at address '{$row_for_balance_check['btc_address']}' ({$total_sats} sats of {$expected_sats}). Waiting for additional funds...");
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'underpaid' for order {$order_id} (received {$total_sats} of {$expected_sats} sats)");
+                    } elseif ($confirmed_sats >= $expected_sats && $max_confirmations >= $confirmations_required) {
+                        update_post_meta($order_id, 'payment_state', 'confirmed');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$order_id} (confirmed {$confirmed_sats} sats, {$max_confirmations} confirmations)");
+                    } else {
+                        update_post_meta($order_id, 'payment_state', 'pending');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'pending' for order {$order_id} (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$max_confirmations}/{$confirmations_required} confirmations)");
                     }
                 } else {
                     // No funds detected - reset to waiting if previously pending/underpaid
@@ -215,7 +227,8 @@ function BWWC_cron_job_worker($hardcron=false)
                 // Note: to be perfectly safe against late-paid orders, we need to:
                 //	Scan '$address_meta['orders']' for first UNPAID order that is exactly matching amount at address.
 
-                if ($confirmed_sats >= $expected_sats) {
+                // Check if payment is fully confirmed and ready to process
+                if ($confirmed_sats >= $expected_sats && $max_confirmations >= $confirmations_required) {
                     // Process full payment event
 
                     /*

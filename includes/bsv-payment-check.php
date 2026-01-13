@@ -115,12 +115,7 @@ function BWWC__check_payment_for_order($order_id) {
         }
     }
     
-    if ($best_confirmations === 0 && $confirmed_sats >= $expected_sats) {
-        $best_confirmations = 1;
-        update_post_meta($order_id, 'best_confirmations', $best_confirmations);
-    }
-    
-    // Determine payment state
+    // Determine payment state using consistent logic
     $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
     
     // Extend expiration if funds detected
@@ -134,28 +129,28 @@ function BWWC__check_payment_for_order($order_id) {
         }
     }
     
+    // Consistent state machine logic
     if ($total_sats == 0) {
         update_post_meta($order_id, 'payment_state', 'waiting');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = waiting (no payment detected)");
         return false;
     }
 
     if ($total_sats < $expected_sats) {
         update_post_meta($order_id, 'payment_state', 'underpaid');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} underpaid - Received: {$total_btc} BTC, Expected: {$order_total_btc} BTC");
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = underpaid (received {$total_sats} of {$expected_sats} sats)");
         return false;
     }
 
-    if ($confirmed_sats < $expected_sats || $best_confirmations < $required_confirmations) {
+    // Full amount received - check if confirmed
+    if ($confirmed_sats >= $expected_sats && $best_confirmations >= $required_confirmations) {
+        update_post_meta($order_id, 'payment_state', 'confirmed');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = confirmed (confirmed {$confirmed_sats} sats, {$best_confirmations} confirmations)");
+    } else {
         update_post_meta($order_id, 'payment_state', 'pending');
-        BWWC__log_event(
-            __FILE__,
-            __LINE__,
-            "Payment check: Order {$order_id} awaiting confirmations - Confirmed {$confirmed_sats} sats / Expected {$expected_sats} sats / Best confirmations {$best_confirmations} of {$required_confirmations}"
-        );
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = pending (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$best_confirmations}/{$required_confirmations} confirmations)");
         return true;
     }
-    
-    update_post_meta($order_id, 'payment_state', 'confirmed');
     
     // Payment detected - check if order needs to be completed
     $order = wc_get_order($order_id);

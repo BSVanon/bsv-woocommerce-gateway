@@ -268,43 +268,34 @@
         },
         
         shouldStopPolling: function(data) {
-            // Stop if payment is fully confirmed (has required confirmations)
-            // Check this FIRST before order status, handles edge cases where order status is stuck
-            if (data.payment_state === 'confirmed') {
-                const current = parseInt(data.best_confirmations) || 0;
-                const required = parseInt(data.required_confirmations) || 1;
-                if (current >= required) {
-                    return { stop: true, reason: 'payment confirmed with ' + current + '/' + required + ' confirmations' };
-                }
-            }
-            
-            // Defensive check: Stop if confirmations are sufficient regardless of payment_state
-            // This handles cases where cron hasn't updated payment_state yet
-            const current = parseInt(data.best_confirmations) || 0;
-            const required = parseInt(data.required_confirmations) || 1;
-            const receivedSats = parseInt(data.received_sats) || 0;
-            const expectedSats = parseInt(data.expected_sats) || 0;
-            if (current >= required && receivedSats >= expectedSats && expectedSats > 0) {
-                return { stop: true, reason: 'payment has sufficient confirmations (' + current + '/' + required + ') and amount' };
-            }
-            
-            // Stop if order is completed or processing (normal success path)
+            // Stop if order is completed or processing (highest priority)
             if (data.order_status === 'completed' || data.order_status === 'processing') {
                 return { stop: true, reason: 'order ' + data.order_status };
             }
             
-            // Continue polling for pending/detected states to detect confirmations
-            // These states mean payment received but awaiting confirmations
+            // Parse all values
+            const current = parseInt(data.best_confirmations) || 0;
+            const required = parseInt(data.required_confirmations) || 1;
+            const receivedSats = parseInt(data.received_sats) || 0;
+            const expectedSats = parseInt(data.expected_sats) || 0;
+            const confirmedSats = parseInt(data.confirmed_sats) || 0;
             
-            // Stop if expired with no funds received
-            if (data.payment_state === 'expired') {
-                const hasFunds = (data.received_sats && data.received_sats > 0);
-                if (!hasFunds) {
-                    return { stop: true, reason: 'payment window expired with no payment' };
-                }
-                // Keep polling if funds received after expiration (waiting for confirmations)
+            // Stop if payment is confirmed with sufficient confirmations
+            // Must check ALL conditions: state, confirmed amount, and confirmation count
+            if (data.payment_state === 'confirmed' && 
+                confirmedSats >= expectedSats && 
+                current >= required && 
+                expectedSats > 0) {
+                return { stop: true, reason: 'payment confirmed (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
             }
             
+            // Stop if expired with no funds received
+            if (data.payment_state === 'expired' && receivedSats == 0) {
+                return { stop: true, reason: 'payment window expired with no payment' };
+            }
+            
+            // Continue polling for waiting, pending, underpaid states
+            // These need to keep checking for payment/confirmations
             return { stop: false };
         },
         

@@ -5,7 +5,7 @@
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
  * Version: 5.3.2
  * Author: BSVanon
- * Author URI: https://github.com/BSVanon/bsv-woocommerce-gateway
+ * Author URI: https://plugins.svn.wordpress.org/bitcoin-sv-payments-for-woocommerce/
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: bitcoin-sv-payments-for-woocommerce

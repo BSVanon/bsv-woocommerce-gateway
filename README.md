@@ -1,6 +1,6 @@
 # Bitcoin SV Payments for WooCommerce
 
-**Version:** 5.3.3  
+**Version:** 5.3.4  
 **Status:** Production Ready - Stable Release  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 

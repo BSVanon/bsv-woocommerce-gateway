@@ -69,16 +69,20 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 4. Confirm payment detection and order status update
 5. Verify order completion email is sent
 
-## ✅ Recent Fixes (v5.3.1)
+## ✅ Recent Fixes (v5.3.3)
 
 - **CRITICAL**: Fixed payment detection - now works correctly
+- **CRITICAL**: Fixed infinite page reload bug with sessionStorage
+- **CRITICAL**: Fixed stepper UI dynamic creation
 - **Fixed**: Blockchain explorer URLs (was missing /address/ path)
 - **Fixed**: Transaction IDs now stored and displayed
 - **Fixed**: "I've Paid" button triggers immediate check
+- **Fixed**: WordPress.org submission compliance (i18n, escaping, sanitization)
 - **Added**: Bitails API fallback for reliability
 - **Added**: Wallet top-up links for customer convenience
 - **Improved**: Underpaid/overpaid payment handling with clear UI feedback
 - **Improved**: Confirmation time estimates shown to customers
+- **Improved**: Modern payment console UI with QR codes
 
 ## ⚠️ Known Limitations
 

@@ -245,7 +245,7 @@ class NumberTheory
                 $jac = self::jacobi($a, $p);
 
                 if ($jac == -1) {
-                    throw new SquareRootException($a . " has no square root modulo " . $p);
+                    throw new SquareRootException(esc_html($a) . " has no square root modulo " . esc_html($p));
                 }
 
                 if (gmp_strval(gmp_Utils::gmp_mod2($p, 4)) == 3) {
@@ -287,7 +287,7 @@ class NumberTheory
                 $jac = self::jacobi($a, $p);
 
                 if ($jac == -1) {
-                    throw new SquareRootException($a . " has no square root modulo " . $p);
+                    throw new SquareRootException(esc_html($a) . " has no square root modulo " . esc_html($p));
                 }
 
                 if (bcmod($p, 4) == 3) {
@@ -368,7 +368,7 @@ class NumberTheory
                     $result = bcadd($ud, $m);
                 }
             } else {
-                throw new ErrorException("ERROR: $a and $m are NOT relatively prime.");
+                throw new ErrorException("ERROR: " . esc_html($a) . " and " . esc_html($m) . " are NOT relatively prime.");
             }
 
             return $result;

@@ -246,7 +246,7 @@ class bcmath_Utils
     {
         if (extension_loaded('bcmath')) {
             if ($base < 2 or $base > 256) {
-                die("Invalid Base: " . $base);
+                die("Invalid Base: " . esc_html($base));
             }
             bcscale(0);
             $value = "";
@@ -269,7 +269,7 @@ class bcmath_Utils
     {
         if (extension_loaded('bcmath')) {
             if ($base < 2 or $base > 256) {
-                die("Invalid Base: " . $base);
+                die("Invalid Base: " . esc_html($base));
             }
             bcscale(0);
             if ($base < 37) {

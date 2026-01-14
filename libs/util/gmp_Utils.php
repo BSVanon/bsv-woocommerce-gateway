@@ -71,7 +71,7 @@ class gmp_Utils
     {
         if (extension_loaded('gmp')) {
             if ($base < 2 or $base > 256) {
-                die("Invalid Base: " . $base);
+                die("Invalid Base: " . esc_html($base));
             }
             $value = "";
             if (!$digits) {
@@ -95,7 +95,7 @@ class gmp_Utils
     {
         if (extension_loaded('gmp')) {
             if ($base < 2 or $base > 256) {
-                die("Invalid Base: " . $base);
+                die("Invalid Base: " . esc_html($base));
             }
             if ($base < 37) {
                 $value = strtolower($value);

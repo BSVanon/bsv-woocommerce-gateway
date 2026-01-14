@@ -387,18 +387,18 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $store_valid    = BWWC__is_gateway_valid_for_use($validation_msg);
 
             // After defining the options, we need to display them too; thats where this next function comes into play: ?>
-	    	<h3><?php _e('Bitcoin SV Payment', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
+	    	<h3><?php esc_html_e('Bitcoin SV Payment', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
 	    	<p>
-	    		<?php _e(
-                'Allows to accept payments in Bitcoin SV. <a href="https://bitcoinsv.io" target="_blank">Bitcoin SV</a> is peer-to-peer electronic cash that enables instant payments from anyone to anyone, anywhere in the world',
-                        'woocommerce'
+	    		<?php esc_html_e(
+                'Allows to accept payments in Bitcoin SV. Bitcoin SV is peer-to-peer electronic cash that enables instant payments from anyone to anyone, anywhere in the world',
+                        'bitcoin-sv-payments-for-woocommerce'
             ); ?>
 	    	</p>
 	    	<?php
                 echo $store_valid ? ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#004400;background-color:#CCFFCC;">' .
-            __('Bitcoin SV payment gateway is operational', 'bitcoin-sv-payments-for-woocommerce') .
+            esc_html__('Bitcoin SV payment gateway is operational', 'bitcoin-sv-payments-for-woocommerce') .
             '</p>') : ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#EE0000;background-color:#FFFFAA;">' .
-            __('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): ', 'bitcoin-sv-payments-for-woocommerce') . $validation_msg . '</p>'); ?>
+            esc_html__('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): ', 'bitcoin-sv-payments-for-woocommerce') . esc_html($validation_msg) . '</p>'); ?>
 	    	<table class="form-table">
 	    	<?php
                 // Generate the HTML For the settings form.
@@ -485,16 +485,17 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 
                 // User-friendly error message
                 $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Processing Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
-                $user_msg .= '<p>' . __('We\'re unable to process Bitcoin SV payments at this time due to a temporary issue fetching exchange rates.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
-                $user_msg .= '<p><strong>' . __('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Processing Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
+                $user_msg .= '<p>' . esc_html__('We\'re unable to process Bitcoin SV payments at this time due to a temporary issue fetching exchange rates.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . esc_html__('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
                 $user_msg .= '<ul>';
-                $user_msg .= '<li>' . __('Try again in a few minutes', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Try again in a few minutes', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
                 $user_msg .= '</ul>';
-                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
                 $user_msg .= '</div>';
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                 exit($user_msg);
             }
 
@@ -513,9 +514,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 'order_meta'							=> $order_meta,
                 'order_id'								=> $order_id,
                 'order_total'			    	 	=> $order_total_in_btc,  // Order total in BTC
-                'order_datetime'  				=> date('Y-m-d H:i:s T'),
-                'requested_by_ip'					=> isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '',
-                'requested_by_ua'					=> isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '',
+                'order_datetime'  				=> gmdate('Y-m-d H:i:s T'),
+                'requested_by_ip'					=> isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
+                'requested_by_ua'					=> isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '',
                 'requested_by_srv'				=> BWWC__base64_encode(serialize($_SERVER)),
                 );
 
@@ -559,16 +560,17 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 
                 // User-friendly error message
                 $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . __('Payment Address Generation Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
-                $user_msg .= '<p>' . __('We\'re unable to generate a payment address for your order at this time.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
-                $user_msg .= '<p><strong>' . __('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
+                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Address Generation Error', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
+                $user_msg .= '<p>' . esc_html__('We\'re unable to generate a payment address for your order at this time.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+                $user_msg .= '<p><strong>' . esc_html__('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
                 $user_msg .= '<ul>';
-                $user_msg .= '<li>' . __('Try placing your order again', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
-                $user_msg .= '<li>' . __('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Try placing your order again', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Contact the store owner for assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+                $user_msg .= '<li>' . esc_html__('Choose an alternative payment method', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
                 $user_msg .= '</ul>';
-                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . __('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
+                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Checkout', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
                 $user_msg .= '</div>';
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
                 exit($user_msg);
             }
 
@@ -876,9 +878,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                     $incoming_payments[$txn_hash] =
                         array(
                             'txn_value' 		=> $value_in_btc,
-                            'dest_address' 		=> isset($_GET['address']) ? sanitize_text_field($_GET['address']) : '',
+                            'dest_address' 		=> isset($_GET['address']) ? sanitize_text_field(wp_unslash($_GET['address'])) : '',
                             'confirmations' 	=> $txn_confirmations,
-                            'datetime'			=> date("Y-m-d, G:i:s T"),
+                            'datetime'			=> gmdate("Y-m-d, G:i:s T"),
                             );
 
                     update_post_meta($order_id, '_incoming_payments', $incoming_payments);
@@ -1049,10 +1051,7 @@ function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=fal
         }
 
         // Notify admin about payment processed
-        $email = get_settings('admin_email');
-        if (!$email) {
-            $email = get_option('admin_email');
-        }
+        $email = get_option('admin_email');
         if ($email) {
             // Send email from admin to admin
             BWWC__send_email(

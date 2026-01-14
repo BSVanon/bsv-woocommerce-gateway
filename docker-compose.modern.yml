@@ -12,6 +12,9 @@ services:
       - db_data_modern:/var/lib/mysql
     ports:
       - "3307:3306"
+    networks:
+      default:
+        ipv4_address: 172.19.0.2
 
   wordpress-modern:
     image: wordpress:6.7-php8.2-apache
@@ -28,6 +31,14 @@ services:
     volumes:
       - ./docker/wp-modern:/var/www/html
       - ./:/var/www/html/wp-content/plugins/bitcoin-sv-payments-for-woocommerce
+    networks:
+      default:
+        ipv4_address: 172.19.0.3
+
+networks:
+  default:
+    external: true
+    name: bsv-woocommerce_default
 
 volumes:
   db_data_modern:

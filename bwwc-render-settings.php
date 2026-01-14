@@ -33,7 +33,7 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(__('Security check failed. Please try again.', 'bitcoin-sv-payments-for-woocommerce'));
+            wp_die(esc_html__('Security check failed. Please try again.', 'bitcoin-sv-payments-for-woocommerce'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
@@ -345,8 +345,8 @@ function BWWC__render_general_settings_page_html()
       </table>
 
       <p class="submit">
-          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php _e('Save Changes') ?>"             />
-          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php _e('Reset settings') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>"             />
+          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
       </p>
     </form>
 <?php
@@ -422,7 +422,7 @@ function BWWC__render_advanced_settings_page_html()
  </p>
  
  <p class="submit">
-    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php _e('Save Changes') ?>" />
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>" />
  </p>
  </form>
 <?php

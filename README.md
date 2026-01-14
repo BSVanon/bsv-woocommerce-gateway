@@ -55,8 +55,6 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 
 ## 🧪 Testing
 
-See `docs/TESTING.md` for comprehensive test procedures.
-
 **Quick Test:**
 1. Add a product to cart
 2. Proceed to your checkout page (Blocks or classic shortcode)
@@ -64,14 +62,12 @@ See `docs/TESTING.md` for comprehensive test procedures.
 4. Complete order
 5. Verify payment instructions with QR code appear
 
-## 📚 Documentation
-
-These guides live inside the `docs/` directory of this repository:
-
-- **[TESTING.md](docs/TESTING.md)** - Test suite and procedures
-- **[RELEASE_NOTES.md](docs/RELEASE_NOTES.md)** - Latest release details
-- **[DEV_NOTES.md](docs/DEV_NOTES.md)** - Development environment setup
-- **[CAPABILITIES.md](docs/CAPABILITIES.md)** - Feature specification
+**Full Testing:**
+1. Test with different product prices
+2. Verify exchange rate conversion (if not using BTC as store currency)
+3. Send actual BSV payment to generated address
+4. Confirm payment detection and order status update
+5. Verify order completion email is sent
 
 ## ✅ Recent Fixes (v5.3.1)
 
@@ -119,8 +115,8 @@ These guides live inside the `docs/` directory of this repository:
 ## 🤝 Support
 
 - **Issues**: [GitHub Issues](https://github.com/BSVanon/bsv-woocommerce-gateway/issues)
-- **Documentation**: See `docs/` folder
-- **Testing**: Follow `docs/TESTING.md`
+- **Questions**: Open a GitHub issue with your question
+- **Testing**: See Testing section above
 
 ## 📜 License
 

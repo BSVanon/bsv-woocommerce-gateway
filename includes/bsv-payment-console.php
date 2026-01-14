@@ -91,12 +91,38 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-qr-container">
             <div class="bsv-qr-card">
                 <?php 
+                // Allow all necessary SVG elements and attributes for QR code display
                 $allowed_svg = array(
-                    'svg' => array('xmlns' => true, 'width' => true, 'height' => true, 'viewBox' => true, 'version' => true),
-                    'rect' => array('x' => true, 'y' => true, 'width' => true, 'height' => true, 'fill' => true, 'stroke' => true),
-                    'path' => array('d' => true, 'fill' => true, 'stroke' => true),
-                    'g' => array('fill' => true, 'stroke' => true),
-                    'img' => array('src' => true, 'alt' => true, 'style' => true)
+                    'svg' => array(
+                        'xmlns' => true, 'width' => true, 'height' => true, 'viewBox' => true, 
+                        'version' => true, 'class' => true, 'id' => true, 'style' => true,
+                        'preserveAspectRatio' => true, 'x' => true, 'y' => true
+                    ),
+                    'rect' => array(
+                        'x' => true, 'y' => true, 'width' => true, 'height' => true, 
+                        'fill' => true, 'stroke' => true, 'stroke-width' => true,
+                        'class' => true, 'id' => true, 'style' => true, 'rx' => true, 'ry' => true
+                    ),
+                    'path' => array(
+                        'd' => true, 'fill' => true, 'stroke' => true, 'stroke-width' => true,
+                        'class' => true, 'id' => true, 'style' => true, 'transform' => true
+                    ),
+                    'g' => array(
+                        'fill' => true, 'stroke' => true, 'stroke-width' => true,
+                        'class' => true, 'id' => true, 'style' => true, 'transform' => true
+                    ),
+                    'title' => array(),
+                    'desc' => array(),
+                    'defs' => array(),
+                    'circle' => array(
+                        'cx' => true, 'cy' => true, 'r' => true, 'fill' => true, 
+                        'stroke' => true, 'stroke-width' => true, 'class' => true, 'id' => true
+                    ),
+                    'polygon' => array(
+                        'points' => true, 'fill' => true, 'stroke' => true, 
+                        'stroke-width' => true, 'class' => true, 'id' => true
+                    ),
+                    'img' => array('src' => true, 'alt' => true, 'style' => true, 'width' => true, 'height' => true)
                 );
                 echo wp_kses($qr_code_svg, $allowed_svg); 
                 ?>

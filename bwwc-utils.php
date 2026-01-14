@@ -512,7 +512,7 @@ function BWWC__prepare_address_order_entry($order_info)
     $normalized = array(
         'order_id'        => isset($order_info['order_id']) ? intval($order_info['order_id']) : 0,
         'order_total'     => isset($order_info['order_total']) ? floatval($order_info['order_total']) : 0,
-        'order_datetime'  => isset($order_info['order_datetime']) ? $order_info['order_datetime'] : date('Y-m-d H:i:s T'),
+        'order_datetime'  => isset($order_info['order_datetime']) ? $order_info['order_datetime'] : gmdate('Y-m-d H:i:s T'),
         'requested_by_ip' => isset($order_info['requested_by_ip']) ? $order_info['requested_by_ip'] : '',
         'paid'            => false,
     );
@@ -1135,7 +1135,9 @@ function BWWC__log_event($filename, $linenum, $message, $prepend_path="", $log_f
     }
 
     if ($fhandle) {
-        @fwrite($fhandle, "\r\n// " . $_SERVER['REMOTE_ADDR'] . '(' . $_SERVER['REMOTE_PORT'] . ')' . ' -> ' . date("Y-m-d, G:i:s T") . "|" . BWWC_VERSION . "/" . BWWC_EDITION . "|$filename($linenum)|: " . $message . $logfile_tail);
+        $remote_addr = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
+        $remote_port = isset($_SERVER['REMOTE_PORT']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_PORT'])) : '0';
+        @fwrite($fhandle, "\r\n// " . $remote_addr . '(' . $remote_port . ')' . ' -> ' . gmdate("Y-m-d, G:i:s T") . "|" . BWWC_VERSION . "/" . BWWC_EDITION . "|$filename($linenum)|: " . $message . $logfile_tail);
         @fclose($fhandle);
     }
 }
@@ -1150,10 +1152,7 @@ function BWWC__SubIns()
         $elists = array();
     }
 
-    $email = get_settings('admin_email');
-    if (!$email) {
-        $email = get_option('admin_email');
-    }
+    $email = get_option('admin_email');
 
     if (!$email) {
         return;

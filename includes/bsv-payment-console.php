@@ -90,7 +90,16 @@ function BWWC__render_payment_console($order) {
 
         <div class="bsv-qr-container">
             <div class="bsv-qr-card">
-                <?php echo wp_kses_post($qr_code_svg); ?>
+                <?php 
+                $allowed_svg = array(
+                    'svg' => array('xmlns' => true, 'width' => true, 'height' => true, 'viewBox' => true, 'version' => true),
+                    'rect' => array('x' => true, 'y' => true, 'width' => true, 'height' => true, 'fill' => true, 'stroke' => true),
+                    'path' => array('d' => true, 'fill' => true, 'stroke' => true),
+                    'g' => array('fill' => true, 'stroke' => true),
+                    'img' => array('src' => true, 'alt' => true, 'style' => true)
+                );
+                echo wp_kses($qr_code_svg, $allowed_svg); 
+                ?>
             </div>
         </div>
 

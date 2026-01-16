@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.3.4
+Stable tag: 6.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -52,7 +52,39 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 
 **Checkout Compatibility**: This plugin supports both classic shortcode checkout `[woocommerce_checkout]` and modern WooCommerce Blocks checkout. No special configuration needed.
 
+== External Services ==
 
+This plugin connects to the following external services to function properly:
+
+**CoinGecko API** (https://www.coingecko.com)
+- Purpose: Fetches BSV exchange rates for currency conversion
+- Data transmitted: None (public API, no personal data sent)
+- Privacy policy: https://www.coingecko.com/en/privacy
+- Terms of service: https://www.coingecko.com/en/terms
+
+**CoinPaprika API** (https://coinpaprika.com)
+- Purpose: Fallback exchange rate provider if CoinGecko is unavailable
+- Data transmitted: None (public API, no personal data sent)
+- Privacy policy: https://coinpaprika.com/privacy-policy
+- Terms of service: https://coinpaprika.com/terms-of-use
+
+**WhatsOnChain API** (https://whatsonchain.com)
+- Purpose: Primary blockchain data provider for transaction verification
+- Data transmitted: Your server IP address and BSV addresses/transaction IDs for lookup
+- Privacy policy: https://whatsonchain.com/privacy
+- Terms of service: https://whatsonchain.com/terms
+
+**Bitails API** (https://bitails.io)
+- Purpose: Backup blockchain data provider for transaction verification
+- Data transmitted: Your server IP address and BSV addresses/transaction IDs for lookup
+- Privacy policy: https://bitails.io/privacy
+- Terms of service: https://bitails.io/terms
+
+**Important Notes:**
+- All API calls are made server-side only (your server to the API)
+- No customer personal information is transmitted to these services
+- Only your server IP address and BSV payment addresses are sent for blockchain lookups
+- No tracking or analytics data is collected by this plugin
 
 == Screenshots ==
 
@@ -77,6 +109,44 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 6.0.0 - 2026-01-16 =
+**Major security and architecture update**
+
+**SECURITY FIXES:**
+* CRITICAL: Enabled TLS verification for all external API calls (fixes MITM vulnerability)
+* CRITICAL: Removed public hardcron trigger (DoS vulnerability)
+* CRITICAL: Disabled legacy IPN callback (security risk - logged secrets)
+* Hardened unserialize() calls with allowed_classes restriction
+* Removed insecure HTTP fallbacks (bchsvexplorer.com)
+
+**ARCHITECTURE:**
+* New modular provider system with failover support
+* Secure HTTP wrapper using WordPress HTTP API
+* WooCommerce logger integration with proper log levels and redaction
+* Canonical payment state machine (waiting/detected/verified/expired/underpaid/overpaid/conflict)
+* Payment check module with transaction aggregation
+* Expiry enforcement and late payment monitoring
+
+**RATE PROVIDERS:**
+* Replaced broken Blockchair with CoinPaprika fallback
+* Removed legacy providers (CoinMarketCap, BitPay placeholders)
+* CoinGecko primary, CoinPaprika fallback with caching
+
+**SETTINGS:**
+* Unified settings keys (confirmations → confs_num)
+* Safe defaults: autocomplete OFF, delete expired OFF, reuse addresses OFF
+* Added External Services disclosure section
+
+**REMOVED:**
+* Legacy XXXbitcoinway.com dead code
+* Public unauthenticated endpoints
+* Insecure cURL with disabled TLS verification
+
+= 5.3.4 - 2026-01-14 =
+* WordPress.org submission fixes
+* All escaping, sanitization, and security issues resolved
+* Plugin-check compliant
 
 = 5.3.3 - 2026-01-13 =
 * CRITICAL FIX: Infinite page reload loop eliminated using sessionStorage persistence

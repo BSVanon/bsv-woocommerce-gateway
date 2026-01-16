@@ -11,13 +11,12 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 define('BWWC_MUST_LOAD_WP', '1');
 include(dirname(__FILE__) . '/bwwc-include-all.php');
 
-// Cpanel-scheduled cron job call
-if (@$_REQUEST['hardcron']=='1') {
-    BWWC_cron_job_worker(true);
-}
+// REMOVED: Public hardcron trigger (DoS vulnerability - A0.6)
+// This file is now only called by WP-Cron scheduled events
+// For reliable cron, configure server cron to call wp-cron.php directly
 
 //===========================================================================
-// '$hardcron' == true if job is ran by Cpanel's cron job.
+// Cron job worker - called by WP-Cron scheduled events
 
 function BWWC_cron_job_worker($hardcron=false)
 {

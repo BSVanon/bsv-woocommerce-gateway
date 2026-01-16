@@ -839,78 +839,17 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
          */
         public function BWWC__maybe_bitcoin_ipn_callback()
         {
-            // If example.com/?bitcoinway=1 is present - it is callback URL.
+            // DISABLED: Legacy blockchain.info IPN callback (security vulnerability A0.6)
+            // This callback path is no longer used as the plugin uses direct blockchain monitoring
+            // Reasons for removal:
+            // - Logs full $_REQUEST including secrets (catastrophic if logs accessible)
+            // - Uses non-constant-time secret comparison (timing attack)
+            // - No rate limiting (DoS vector)
+            // - Legacy blockchain.info service no longer relevant for BSV
+            
             if (isset($_REQUEST['bitcoinway']) && $_REQUEST['bitcoinway'] == '1') {
-                BWWC__log_event(__FILE__, __LINE__, "BWWC__maybe_bitcoin_ipn_callback () called and 'bitcoinway=1' detected. REQUEST  =  " . serialize(@$_REQUEST));
-
-                if (!isset($_GET['src']) || $_GET['src'] != 'bcinfo') {
-                    $src = isset($_GET['src']) ? $_GET['src'] : 'unknown';
-                    BWWC__log_event(__FILE__, __LINE__, "Warning: received IPN notification with 'src'= '{$src}', which is not matching expected: 'bcinfo'. Ignoring ...");
-                    exit();
-                }
-
-                // Processing IPN callback from blockchain.info ('bcinfo')
-
-
-                $order_id = isset($_GET['order_id']) ? intval($_GET['order_id']) : 0;
-
-                $secret_key = get_post_meta($order_id, 'secret_key', true);
-                $secret_key_sent = isset($_GET['secret_key']) ? sanitize_text_field($_GET['secret_key']) : '';
-                // Check the Request secret_key matches the original one (blockchain.info sends all params back)
-                if ($secret_key_sent != $secret_key) {
-                    BWWC__log_event(__FILE__, __LINE__, "Warning: secret_key does not match! secret_key sent: '{$secret_key_sent}'. Expected: '{$secret_key}'. Processing aborted.");
-                    exit('Invalid secret_key');
-                }
-
-                $confirmations = isset($_GET['confirmations']) ? intval($_GET['confirmations']) : 0;
-
-
-                if ($confirmations >= $this->confs_num) {
-
-                    // The value of the payment received in satoshi (not including fees). Divide by 100000000 to get the value in BTC.
-                    $value_in_btc 		= isset($_GET['value']) ? intval($_GET['value']) / 100000000 : 0;
-                    $txn_hash 			= isset($_GET['transaction_hash']) ? sanitize_text_field($_GET['transaction_hash']) : '';
-                    $txn_confirmations 	= isset($_GET['confirmations']) ? intval($_GET['confirmations']) : 0;
-
-                    //---------------------------
-                    // Update incoming payments array stats
-                    $incoming_payments = get_post_meta($order_id, '_incoming_payments', true);
-                    $incoming_payments[$txn_hash] =
-                        array(
-                            'txn_value' 		=> $value_in_btc,
-                            'dest_address' 		=> isset($_GET['address']) ? sanitize_text_field(wp_unslash($_GET['address'])) : '',
-                            'confirmations' 	=> $txn_confirmations,
-                            'datetime'			=> gmdate("Y-m-d, G:i:s T"),
-                            );
-
-                    update_post_meta($order_id, '_incoming_payments', $incoming_payments);
-                    //---------------------------
-
-                    //---------------------------
-                    // Recalc total amount received for this order by adding totals from uniquely hashed txn's ...
-                    $paid_total_so_far = 0;
-                    foreach ($incoming_payments as $k => $txn_data) {
-                        $paid_total_so_far += $txn_data['txn_value'];
-                    }
-
-                    update_post_meta($order_id, 'bitcoins_paid_total', $paid_total_so_far);
-                    //---------------------------
-
-                    $order_total_in_btc = get_post_meta($order_id, 'order_total_in_btc', true);
-                    if ($paid_total_so_far >= $order_total_in_btc) {
-                        BWWC__process_payment_completed_for_order($order_id, false);
-                    } else {
-                        BWWC__log_event(__FILE__, __LINE__, sprintf("NOTE: Payment received (for BSV %s), but not enough yet to cover the required total. Will be waiting for more. Bitcoin SV: now/total received/needed = %s/%s/%s", $value_in_btc, $value_in_btc, $paid_total_so_far, $order_total_in_btc));
-                    }
-
-                    // Reply '*ok*' so no more notifications are sent
-                    exit('*ok*');
-                } else {
-                    // Number of confirmations are not there yet... Skip it this time ...
-                    // Don't print *ok* so the notification resent again on next confirmation
-                    BWWC__log_event(__FILE__, __LINE__, "NOTE: Payment notification received (for BSV {$value_in_btc}), but number of confirmations is not enough yet. Confirmations received/required: {$confirmations}/{$this->confs_num}");
-                    exit();
-                }
+                BWWC__log_event(__FILE__, __LINE__, "Legacy IPN callback disabled. Plugin now uses direct blockchain monitoring.", 'warning');
+                exit('Legacy IPN callback disabled');
             }
         }
         //-------------------------------------------------------------------

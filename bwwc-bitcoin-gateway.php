@@ -1005,25 +1005,7 @@ function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=fal
 //===========================================================================
 
 //===========================================================================
-/**
- * Add wallet top-up link to checkout page
- */
-function BWWC__add_wallet_topup_link() {
-    // Check if BSV gateway is available in the current checkout
-    $available_gateways = WC()->payment_gateways->get_available_payment_gateways();
-    if (!isset($available_gateways['bitcoin'])) {
-        return;
-    }
-    
-    ?>
-    <div class="bsv-wallet-topup-notice" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 12px 15px; margin-bottom: 24px; text-align: center;">
-        <p style="margin: 0 0 8px 0; font-size: 14px; color: #495057;">
-            <?php esc_html_e('Need BSV to complete your purchase?', 'bitcoin-sv-payments-for-woocommerce'); ?>
-        </p>
-        <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" class="button" style="display: inline-block; padding: 8px 20px; background: #FCCA09; color: #000; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px;">
-            <?php esc_html_e('Top up your BitcoinSV wallet balance', 'bitcoin-sv-payments-for-woocommerce'); ?> ↗
-        </a>
-    </div>
-    <?php
-}
+// v6.0.0: Removed BWWC__add_wallet_topup_link() function (A0.3)
+// Top-up link now only appears on payment console page, not checkout
+// This addresses merchant trust concerns and WP.org promotional content guidelines
 //===========================================================================

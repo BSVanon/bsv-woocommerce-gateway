@@ -54,8 +54,8 @@ add_action('admin_notices', 'BWWC__blocks_checkout_notice');
 
 add_action('init', 'BWWC_set_lang_file');
 
-// Add wallet top-up link to checkout page
-add_action('woocommerce_review_order_before_payment', 'BWWC__add_wallet_topup_link');
+// v6.0.0: Removed top-up link from checkout (A0.3 - merchant trust + WP.org concerns)
+// Top-up link now only appears on payment console page after checkout
 //---------------------------------------------------------------------------
 
 //===========================================================================

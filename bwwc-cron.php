@@ -239,8 +239,8 @@ function BWWC_cron_job_worker($hardcron=false)
                                 array (
                                    'order_id'     => $order_id,
                                    'order_total'  => $order_total_in_btc,
-                                   'order_datetime'  => date('Y-m-d H:i:s T'),
-                                   'requested_by_ip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '',
+                                   'order_datetime'  => gmdate('Y-m-d H:i:s T'),
+                                   'requested_by_ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
                                 ),
                                 array (
                                    ...

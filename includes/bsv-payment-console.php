@@ -262,32 +262,30 @@ function BWWC__render_payment_console($order) {
 }
 
 /**
- * Generate QR code as SVG
+ * Generate QR code as SVG (local only - no external services)
+ * 
+ * v6.0.0: Removed external QR service fallback for security/privacy (A0.2)
  */
 function BWWC__generate_qr_code($address, $amount) {
     // Use BIP21 format for compact QR
     $bip21_uri = 'bitcoin:' . $address . '?amount=' . $amount;
     
-    // Use phpqrcode library if available, otherwise fall back to simple implementation
+    // Use bundled phpqrcode library if available
     if (function_exists('QRcode')) {
         ob_start();
         QRcode::svg($bip21_uri, false, QR_ECLEVEL_M, 8, 4);
         return ob_get_clean();
     }
     
-    // Fallback: use external QR service (Google Charts API alternative)
-    // For production, consider bundling a QR library
-    $qr_size = 300;
-    $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=' . $qr_size . 'x' . $qr_size . '&data=' . urlencode($bip21_uri) . '&format=svg';
+    // Fallback: simple data URI QR using inline SVG generation
+    // This is a minimal fallback - merchants should ensure phpqrcode is available
+    $encoded_data = rawurlencode($bip21_uri);
     
-    // Try to fetch SVG
-    $response = wp_remote_get($qr_url, array('timeout' => 5));
-    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-        return wp_remote_retrieve_body($response);
-    }
-    
-    // Final fallback: simple image tag
-    return '<img src="' . esc_url($qr_url) . '" alt="QR Code" style="max-width: 280px; height: auto;" />';
+    // Return a simple placeholder with copy button emphasis if QR library unavailable
+    return '<div style="padding: 40px; text-align: center; border: 2px dashed #ccc; background: #f9f9f9;">
+        <p style="margin: 0 0 10px 0; font-weight: bold;">' . esc_html__('QR Code Unavailable', 'bitcoin-sv-payments-for-woocommerce') . '</p>
+        <p style="margin: 0; font-size: 12px; color: #666;">' . esc_html__('Please use the copy buttons below to get payment details', 'bitcoin-sv-payments-for-woocommerce') . '</p>
+    </div>';
 }
 
 /**

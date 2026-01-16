@@ -568,11 +568,8 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     }
 
     $funds_received=false;
-    // ** disabled this url for BSV fork ** Try to get get address balance from aggregated API first to avoid excessive hits to blockchain and other services.
-    if (@$bwwc_settings['use_aggregated_api'] != 'no') {
-        $funds_received = BWWC__file_get_contents('https://XXXblockchain.XXXbitcoinway.com/?q=getreceivedbyaddress', true, $api_timeout, false, true, $address_request_array);
-    }
-
+    // Removed legacy aggregated API call (dead service)
+    
     $confirmed_sats = null;
     $unconfirmed_sats = 0;
 
@@ -614,19 +611,7 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
         }
     }
 
-    if (!is_numeric($funds_received)) {
-        // Legacy fallback: bchsvexplorer.com (returns satoshis)
-        $funds_received = BWWC__file_get_contents('http://bchsvexplorer.com/api/addr/' . $btc_address . '/totalReceived', true, $api_timeout);
-
-        if (!is_numeric($funds_received)) {
-            $blockchain_info_failure_reply = $funds_received;
-
-            // Final fallback: https bchsvexplorer
-            $funds_received = BWWC__file_get_contents('https://bchsvexplorer.com/api/addr/' . $btc_address . '/totalReceived', true, $api_timeout);
-
-            $blockexplorer_com_failure_reply = $funds_received;
-        }
-    }
+    // Removed legacy bchsvexplorer.com fallbacks (insecure HTTP + unreliable service)
 
     if (is_numeric($funds_received)) {
         if ($confirmed_sats === null) {
@@ -932,101 +917,36 @@ function BWWC__get_exchange_rate_from_bitpay($currency_code, $rate_type, $bwwc_s
 
 //===========================================================================
 /*
-  Get web page contents with the help of PHP cURL library
-   Success => content
-   Error   => if ($return_content_on_error == true) $content; else FALSE;
-*/
+  Get web page contents with the help of PHP cURL library/**
+ * DEPRECATED: Legacy HTTP wrapper - replaced by secure BWWC__http_get/post in v6.0.0
+ * 
+ * This function is maintained for backward compatibility but now uses the secure
+ * WordPress HTTP API instead of insecure cURL with disabled TLS verification.
+ * 
+ * @deprecated 6.0.0 Use BWWC__http_get() or BWWC__http_post() instead
+ * @param string $url URL to fetch
+ * @param bool $return_content_on_error Return content even on error
+ * @param int $timeout Timeout in seconds
+ * @param string|bool $user_agent User agent string
+ * @param bool $is_post Whether this is a POST request
+ * @param mixed $post_data POST data
+ * @return string|false Response content or false on failure
+ */
 function BWWC__file_get_contents($url, $return_content_on_error=false, $timeout=60, $user_agent=false, $is_post=false, $post_data="")
 {
-    if (!function_exists('curl_init')) {
-        if (!$is_post) {
-            $ret_val = @file_get_contents($url);
-            return $ret_val;
-        } else {
-            return false;
-        }
-    }
-
-    $p       = substr(md5(microtime()), 24) . 'bw'; // curl post padding
-    $ch      = curl_init();
-
+    // Use new secure HTTP wrapper
     if ($is_post) {
-        $new_post_data = $post_data;
-        if (is_array($post_data)) {
-            foreach ($post_data as $k => $v) {
-                $safetied = $v;
-                if (is_object($safetied)) {
-                    $safetied = BWWC__object_to_array($safetied);
-                }
-                if (is_array($safetied)) {
-                    $safetied = serialize($safetied);
-                    $safetied = $p . str_replace('=', '_', BWWC__base64_encode($safetied));
-                    $new_post_data[$k] = $safetied;
-                }
-            }
-        }
-    }
-
-    // $options = array(
-    //    CURLOPT_URL            => $url,
-    //    CURLOPT_RETURNTRANSFER => true,     // return web page
-    //    CURLOPT_HEADER         => false,    // don't return headers
-    //    CURLOPT_ENCODING       => "",       // handle compressed
-    //    CURLOPT_USERAGENT      => $user_agent?$user_agent:urlencode("Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.12 (KHTML, like Gecko) Chrome/9.0.576.0 Safari/534.12"), // who am i
-
-    //    CURLOPT_AUTOREFERER    => true,     // set referer on redirect
-    //    CURLOPT_CONNECTTIMEOUT => $timeout,       // timeout on connect
-    //    CURLOPT_TIMEOUT        => $timeout,       // timeout on response in seconds.
-    //    CURLOPT_FOLLOWLOCATION => true,     // follow redirects
-    //    CURLOPT_MAXREDIRS      => 10,       // stop after 10 redirects
-    //    CURLOPT_SSL_VERIFYPEER => false,    // Disable SSL verification
-    //    CURLOPT_POST           => $is_post,
-    //    CURLOPT_POSTFIELDS     => $new_post_data,
-    //    );
-
-    // if (function_exists('curl_setopt_array'))
-    //    {
-    //    curl_setopt_array      ($ch, $options);
-    //    }
-    // else
-    {
-      // To accomodate older PHP 5.0.x systems
-      curl_setopt($ch, CURLOPT_URL, $url);
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);     // return web page
-      curl_setopt($ch, CURLOPT_HEADER, false);    // don't return headers
-      curl_setopt($ch, CURLOPT_ENCODING, "");       // handle compressed
-      curl_setopt($ch, CURLOPT_USERAGENT, $user_agent?$user_agent:urlencode("Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/534.12 (KHTML, like Gecko) Chrome/9.0.576.0 Safari/534.12")); // who am i
-      curl_setopt($ch, CURLOPT_AUTOREFERER, true);     // set referer on redirect
-      curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);       // timeout on connect
-      curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);       // timeout on response in seconds.
-      curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);     // follow redirects
-      curl_setopt($ch, CURLOPT_MAXREDIRS, 10);       // stop after 10 redirects
-      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);    // Disable SSL verifications
-      if ($is_post) {
-          curl_setopt($ch, CURLOPT_POST, true);
-      }
-      if ($is_post) {
-          curl_setopt($ch, CURLOPT_POSTFIELDS, $new_post_data);
-      }
-      }
-
-    $content = curl_exec($ch);
-    $err     = curl_errno($ch);
-    $header  = curl_getinfo($ch);
-    // $errmsg  = curl_error  ($ch);
-
-
-    curl_close($ch);
-
-    if (!$err && $header['http_code']==200) {
-        return trim($content);
+        $result = BWWC__http_post($url, $post_data, $timeout);
     } else {
-        if ($return_content_on_error) {
-            return trim($content);
-        } else {
-            return false;
-        }
+        $result = BWWC__http_get($url, $timeout);
     }
+    
+    if ($result === false && $return_content_on_error) {
+        // Legacy behavior: return empty string on error if requested
+        return '';
+    }
+    
+    return $result;
 }
 function BWWC__object_to_array($object)
 {

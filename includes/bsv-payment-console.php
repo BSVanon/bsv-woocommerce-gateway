@@ -98,6 +98,25 @@ function BWWC__render_payment_console($order) {
             </div>
         </div>
 
+        <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+        <div class="bsv-gateway-button-container" style="margin: 20px 0; text-align: center;">
+            <button 
+                class="gateway-paybutton gateway-paybutton-variable" 
+                data-variable="true"
+                data-address="<?php echo esc_attr($bsv_address); ?>"
+                data-amount="<?php echo esc_attr($bsv_amount); ?>"
+                data-currency="BSV"
+                data-order-id="<?php echo esc_attr($order_id); ?>"
+            >
+                <span class="gateway-button-icon">⚡</span>
+                <?php esc_html_e('Pay with BSV Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            </button>
+            <p class="description" style="margin-top: 10px; font-size: 12px; color: #666;">
+                <?php esc_html_e('Click to pay with HandCash, RelayX, or other BSV wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            </p>
+        </div>
+        <?php endif; ?>
+
         <div class="bsv-amount-section">
             <div class="bsv-amount" 
                  data-bsv="<?php echo esc_attr($bsv_amount); ?>" 

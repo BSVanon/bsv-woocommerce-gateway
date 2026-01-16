@@ -443,3 +443,69 @@
         transform: scale(1.15);
     }
 }
+
+/* Gateway.cash Payment Button */
+.bsv-gateway-button-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.gateway-paybutton-variable {
+    border-radius: 2em;
+    border: none;
+    padding: 0.9em 2em;
+    min-width: 12em;
+    background: linear-gradient(145deg, #FCCA09, #F7931A);
+    color: #000000;
+    box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.15);
+    user-select: none;
+    transition: all 0.3s ease;
+    font-weight: bold;
+    font-size: 16px;
+    text-align: center;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.gateway-paybutton-variable:hover {
+    box-shadow: 4px 8px 12px rgba(0, 0, 0, 0.25);
+    background: linear-gradient(145deg, #FFD700, #FCCA09);
+    transform: translateY(-2px);
+}
+
+.gateway-paybutton-variable:active {
+    transform: translateY(0);
+    box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.15);
+}
+
+.gateway-paybutton-variable.disabled {
+    opacity: 0.4;
+    background: #cccccc;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.gateway-button-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Dark theme support for Gateway button */
+@media (prefers-color-scheme: dark) {
+    .bsv-gateway-button-container {
+        background: #2c2c2c;
+    }
+    
+    .gateway-paybutton-variable {
+        background: linear-gradient(145deg, #FCCA09, #E6B800);
+    }
+    
+    .gateway-paybutton-variable:hover {
+        background: linear-gradient(145deg, #FFD700, #FCCA09);
+    }
+}

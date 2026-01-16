@@ -775,22 +775,17 @@ function BWWC__get_exchange_rate_per_bitcoin($currency_code, $rate_retrieval_met
     $rates = array();
 
 
-    // Try CoinGecko first (free, no API key required)
-    $rates[] = BWWC__get_exchange_rate_from_coingecko($currency_code, $exchange_rate_type, $bwwc_settings);
+    // Use new modular provider system with failover (v6.0.0)
+    $exchange_rate = BWWC__get_exchange_rate($currency_code, 'coingecko');
     
-    // If CoinGecko fails, try Blockchair
-    if (!$rates[0]) {
-        $rates[] = BWWC__get_exchange_rate_from_blockchair($currency_code, $exchange_rate_type, $bwwc_settings);
+    // If CoinGecko fails, try CoinPaprika fallback
+    if (!$exchange_rate) {
+        $exchange_rate = BWWC__get_exchange_rate($currency_code, 'coinpaprika');
     }
     
-    // Filter out false values and get the rate
-    $rates = array_filter($rates);
-    if (count($rates) && $rates[0]) {
-        $exchange_rate = min($rates);
+    if ($exchange_rate) {
         // Save new currency exchange rate info in cache
         BWWC__update_exchange_rate_cache($currency_code, $requested_cache_method_type, $exchange_rate);
-    } else {
-        $exchange_rate = false;
     }
 
 
@@ -833,86 +828,14 @@ function BWWC__update_exchange_rate_cache($currency_code, $requested_cache_metho
 //===========================================================================
 
 //===========================================================================
-// $rate_type: 'vwap' | 'realtime' | 'bestrate'
-// CoinGecko API - free, no API key required
-function BWWC__get_exchange_rate_from_coingecko($currency_code, $rate_type, $bwwc_settings)
-{
-    $currency_code_lower = strtolower($currency_code);
-    $source_url = "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin-cash-sv&vs_currencies={$currency_code_lower}";
-    $result = @BWWC__file_get_contents($source_url, false, $bwwc_settings['exchange_rate_api_timeout_secs']);
-
-    $rate_obj = @json_decode(trim($result), true);
-
-    if (!is_array($rate_obj) || !isset($rate_obj['bitcoin-cash-sv'][$currency_code_lower])) {
-        return false;
-    }
-
-    // CoinGecko returns current market price
-    return $rate_obj['bitcoin-cash-sv'][$currency_code_lower];
-}
-//===========================================================================
-
-//===========================================================================
-// $rate_type: 'vwap' | 'realtime' | 'bestrate'
-function BWWC__get_exchange_rate_from_blockchair($currency_code, $rate_type, $bwwc_settings)
-{
-    $source_url =       "https://api.blockchair.com/bitcoin-sv/stats";
-    $result = @BWWC__file_get_contents($source_url, false, $bwwc_settings['exchange_rate_api_timeout_secs']);
-
-    $rate_obj = @json_decode(trim($result), true);
-
-    if (!is_array($rate_obj)) {
-        return false;
-    }
-
-    $currency_code_tolower = strtolower($currency_code);
-
-    // Only vwap rate is available
-    return @$rate_obj['data']['market_price_' . $currency_code_tolower];
-}
-//===========================================================================
-
-//===========================================================================
-// $rate_type: 'vwap' | 'realtime' | 'bestrate'
-function BWWC__get_exchange_rate_from_coinmarketcap($currency_code, $rate_type, $bwwc_settings)
-{
-    $source_url	=	"https://api.coinmarketcap.com/v1/ticker/bitcoin-sv/?convert={$currency_code}";
-    $result = @BWWC__file_get_contents($source_url, false, $bwwc_settings['exchange_rate_api_timeout_secs']);
-
-    $rate_obj = @json_decode(trim($result), true);
-
-    if (!is_array($rate_obj)) {
-        return false;
-    }
-
-    $currency_code_tolower = strtolower($currency_code);
-
-    // Only vwap rate is available
-    return @$rate_obj['0']['price_' . $currency_code_tolower];
-}
-//===========================================================================
-
-//===========================================================================
-// $rate_type: 'vwap' | 'realtime' | 'bestrate'
-function BWWC__get_exchange_rate_from_bitpay($currency_code, $rate_type, $bwwc_settings)
-{
-    $source_url	=	"https://XXXbitpay.com/api/rates";
-    $result = @BWWC__file_get_contents($source_url, false, $bwwc_settings['exchange_rate_api_timeout_secs']);
-
-    $rate_objs = @json_decode(trim($result), true);
-    if (!is_array($rate_objs)) {
-        return false;
-    }
-
-    foreach ($rate_objs as $rate_obj) {
-        if (@$rate_obj['code'] == $currency_code) {
-            return @$rate_obj['rate'];	// Only realtime rate is available
-        }
-    }
-
-
-    return false;
-}
+// REMOVED: Legacy rate provider functions (v6.0.0)
+// - BWWC__get_exchange_rate_from_coingecko() - replaced by includes/providers/coingecko.php
+// - BWWC__get_exchange_rate_from_blockchair() - removed (broken API, replaced with CoinPaprika)
+// - BWWC__get_exchange_rate_from_coinmarketcap() - removed (legacy, unused)
+// - BWWC__get_exchange_rate_from_bitpay() - removed (dead XXX placeholder URL)
+//
+// Use new modular providers: BWWC__get_exchange_rate($currency, $provider)
+// Available providers: 'coingecko' (primary), 'coinpaprika' (fallback)
 //===========================================================================
 
 //===========================================================================

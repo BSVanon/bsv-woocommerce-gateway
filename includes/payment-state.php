@@ -1,0 +1,256 @@
+<?php
+/**
+ * Payment State Machine - Canonical payment state management
+ * 
+ * Manages payment state transitions with idempotent operations.
+ * All state changes go through this module.
+ * 
+ * @package BSV_WooCommerce_Gateway
+ * @since 6.0.0
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+/**
+ * Get current payment state for an order
+ * 
+ * @param int $order_id Order ID
+ * @return string Current payment state (defaults to 'waiting')
+ */
+function BWWC__get_payment_state($order_id)
+{
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        return BWWC_PAYMENT_STATE_WAITING;
+    }
+    
+    $state = $order->get_meta('_bwwc_payment_state', true);
+    
+    // Default to 'waiting' if not set
+    if (empty($state)) {
+        $state = BWWC_PAYMENT_STATE_WAITING;
+    }
+    
+    // Validate state
+    if (!BWWC__is_valid_payment_state($state)) {
+        BWWC__log_error('Invalid payment state detected for order #' . $order_id . ': ' . $state);
+        $state = BWWC_PAYMENT_STATE_WAITING;
+    }
+    
+    return $state;
+}
+
+/**
+ * Set payment state for an order (idempotent)
+ * 
+ * @param int $order_id Order ID
+ * @param string $new_state New payment state
+ * @param string $reason Optional reason for state change
+ * @return bool True on success, false on failure
+ */
+function BWWC__set_payment_state($order_id, $new_state, $reason = '')
+{
+    // Validate new state
+    if (!BWWC__is_valid_payment_state($new_state)) {
+        BWWC__log_error('Attempted to set invalid payment state: ' . $new_state);
+        return false;
+    }
+    
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        BWWC__log_error('Order not found: #' . $order_id);
+        return false;
+    }
+    
+    $old_state = BWWC__get_payment_state($order_id);
+    
+    // Idempotent: if already in this state, do nothing
+    if ($old_state === $new_state) {
+        return true;
+    }
+    
+    // Validate transition is allowed
+    if (!BWWC__is_valid_state_transition($old_state, $new_state)) {
+        BWWC__log_error('Invalid state transition: ' . $old_state . ' → ' . $new_state . ' for order #' . $order_id);
+        return false;
+    }
+    
+    // Update state
+    $order->update_meta_data('_bwwc_payment_state', $new_state);
+    $order->update_meta_data('_bwwc_payment_state_changed_at', time());
+    $order->save();
+    
+    // Log transition
+    BWWC__log_payment_state_transition($order_id, $old_state, $new_state, $reason);
+    
+    // Add order note
+    $note = sprintf(
+        __('Payment state changed: %s → %s', 'bitcoin-payments-for-woocommerce'),
+        BWWC__get_payment_state_label($old_state),
+        BWWC__get_payment_state_label($new_state)
+    );
+    if ($reason) {
+        $note .= ' (' . $reason . ')';
+    }
+    $order->add_order_note($note);
+    
+    // Trigger state-specific actions
+    BWWC__handle_payment_state_change($order_id, $old_state, $new_state);
+    
+    return true;
+}
+
+/**
+ * Validate if a state transition is allowed
+ * 
+ * @param string $from_state Current state
+ * @param string $to_state Target state
+ * @return bool True if transition is valid
+ */
+function BWWC__is_valid_state_transition($from_state, $to_state)
+{
+    // Define allowed transitions
+    $allowed_transitions = array(
+        BWWC_PAYMENT_STATE_WAITING => array(
+            BWWC_PAYMENT_STATE_DETECTED,
+            BWWC_PAYMENT_STATE_VERIFIED,
+            BWWC_PAYMENT_STATE_EXPIRED,
+            BWWC_PAYMENT_STATE_UNDERPAID,
+        ),
+        BWWC_PAYMENT_STATE_DETECTED => array(
+            BWWC_PAYMENT_STATE_VERIFIED,
+            BWWC_PAYMENT_STATE_UNDERPAID,
+            BWWC_PAYMENT_STATE_OVERPAID,
+            BWWC_PAYMENT_STATE_CONFLICT,
+        ),
+        BWWC_PAYMENT_STATE_UNDERPAID => array(
+            BWWC_PAYMENT_STATE_DETECTED,
+            BWWC_PAYMENT_STATE_VERIFIED,
+            BWWC_PAYMENT_STATE_EXPIRED,
+        ),
+        BWWC_PAYMENT_STATE_EXPIRED => array(
+            BWWC_PAYMENT_STATE_DETECTED, // Late payment
+            BWWC_PAYMENT_STATE_VERIFIED,  // Late payment confirmed
+        ),
+        BWWC_PAYMENT_STATE_VERIFIED => array(
+            // Terminal state - no transitions out
+        ),
+        BWWC_PAYMENT_STATE_OVERPAID => array(
+            BWWC_PAYMENT_STATE_VERIFIED,
+        ),
+        BWWC_PAYMENT_STATE_CONFLICT => array(
+            BWWC_PAYMENT_STATE_VERIFIED,
+        ),
+    );
+    
+    if (!isset($allowed_transitions[$from_state])) {
+        return false;
+    }
+    
+    return in_array($to_state, $allowed_transitions[$from_state], true);
+}
+
+/**
+ * Handle payment state change side effects
+ * 
+ * @param int $order_id Order ID
+ * @param string $old_state Previous state
+ * @param string $new_state New state
+ */
+function BWWC__handle_payment_state_change($order_id, $old_state, $new_state)
+{
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        return;
+    }
+    
+    $settings = BWWC__get_settings();
+    
+    switch ($new_state) {
+        case BWWC_PAYMENT_STATE_DETECTED:
+            // Payment detected (0-conf or unconfirmed)
+            // Update order status to 'processing' if configured
+            if (!empty($settings['autocomplete_paid_orders'])) {
+                $order->update_status('processing', __('Payment detected on blockchain', 'bitcoin-payments-for-woocommerce'));
+            }
+            break;
+            
+        case BWWC_PAYMENT_STATE_VERIFIED:
+            // Payment verified (confirmations met)
+            // Complete the order
+            if (!empty($settings['autocomplete_paid_orders'])) {
+                $order->update_status('completed', __('Payment verified with required confirmations', 'bitcoin-payments-for-woocommerce'));
+            } else {
+                $order->update_status('processing', __('Payment verified with required confirmations', 'bitcoin-payments-for-woocommerce'));
+            }
+            $order->payment_complete();
+            break;
+            
+        case BWWC_PAYMENT_STATE_EXPIRED:
+            // Payment window expired
+            if ($old_state === BWWC_PAYMENT_STATE_WAITING) {
+                // Only auto-cancel if configured and no payment detected
+                if (!empty($settings['delete_expired_unpaid_orders'])) {
+                    $order->update_status('cancelled', __('Payment window expired', 'bitcoin-payments-for-woocommerce'));
+                }
+            }
+            break;
+            
+        case BWWC_PAYMENT_STATE_UNDERPAID:
+            // Partial payment received
+            $order->add_order_note(__('Partial payment received. Waiting for remaining amount.', 'bitcoin-payments-for-woocommerce'));
+            break;
+            
+        case BWWC_PAYMENT_STATE_OVERPAID:
+            // Overpayment received
+            $order->add_order_note(__('Overpayment received. Please contact customer to arrange refund.', 'bitcoin-payments-for-woocommerce'));
+            break;
+            
+        case BWWC_PAYMENT_STATE_CONFLICT:
+            // Conflicting transactions detected
+            $order->update_status('on-hold', __('Payment conflict detected. Manual review required.', 'bitcoin-payments-for-woocommerce'));
+            break;
+    }
+    
+    // Handle late payments (payment after expiry)
+    if ($old_state === BWWC_PAYMENT_STATE_EXPIRED && 
+        in_array($new_state, array(BWWC_PAYMENT_STATE_DETECTED, BWWC_PAYMENT_STATE_VERIFIED), true)) {
+        
+        $order->update_status('on-hold', __('Late payment received after expiry. Manual review required.', 'bitcoin-payments-for-woocommerce'));
+        
+        // Send admin notification
+        BWWC__send_late_payment_notification($order_id);
+    }
+}
+
+/**
+ * Send late payment notification to admin
+ * 
+ * @param int $order_id Order ID
+ */
+function BWWC__send_late_payment_notification($order_id)
+{
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        return;
+    }
+    
+    $to = get_option('admin_email');
+    $subject = sprintf(__('[%s] Late Payment Received - Order #%d', 'bitcoin-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
+    
+    $message = sprintf(
+        __('A late payment has been received for order #%d after the payment window expired.', 'bitcoin-payments-for-woocommerce'),
+        $order_id
+    ) . "\n\n";
+    
+    $message .= __('Order Details:', 'bitcoin-payments-for-woocommerce') . "\n";
+    $message .= sprintf(__('Order ID: %d', 'bitcoin-payments-for-woocommerce'), $order_id) . "\n";
+    $message .= sprintf(__('Order Total: %s', 'bitcoin-payments-for-woocommerce'), $order->get_formatted_order_total()) . "\n";
+    $message .= sprintf(__('Order URL: %s', 'bitcoin-payments-for-woocommerce'), $order->get_edit_order_url()) . "\n\n";
+    
+    $message .= __('Please review this order and decide whether to fulfill it.', 'bitcoin-payments-for-woocommerce') . "\n";
+    
+    wp_mail($to, $subject, $message);
+}

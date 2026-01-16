@@ -36,8 +36,8 @@ $g_BWWC__config_defaults = array(
    'blockchain_api_timeout_secs'          =>  '20',   // Connection and request timeouts for curl operations dealing with blockchain requests.
    'exchange_rate_api_timeout_secs'       =>  '10',   // Connection and request timeouts for curl operations dealing with exchange rate API requests.
    'soft_cron_job_schedule_name'          =>  'minutes_2.5',   // WP cron job frequency
-   'delete_expired_unpaid_orders'         =>  '1',   // Automatically delete expired, unpaid orders from WooCommerce->Orders database
-   'reuse_expired_addresses'              =>  '1',   // True - may reduce anonymouty of store customers (someone may click/generate bunch of fake orders to list many addresses that in a future will be used by real customers).
+   'delete_expired_unpaid_orders'         =>  '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Automatically delete expired, unpaid orders from WooCommerce->Orders database
+   'reuse_expired_addresses'              =>  '0',   // v6.0.0: Changed to OFF by default (better privacy). True - may reduce anonymouty of store customers (someone may click/generate bunch of fake orders to list many addresses that in a future will be used by real customers).
                                                       // False - better anonymouty but may leave many addresses in wallet unused (and hence will require very high 'gap limit') due to many unpaid order clicks.
                                                       //        In this case it is recommended to regenerate new wallet after 'gap limit' reaches 1000.
    'max_unused_addresses_buffer'          =>  10,     // Do not pre-generate more than these number of unused addresses. Pregeneration is done only by hard cron job or manually at plugin settings.
@@ -58,7 +58,7 @@ $g_BWWC__config_defaults = array(
    'exchange_multiplier'                  =>  '1.00',
 
    'delete_db_tables_on_uninstall'        =>  '0',
-   'autocomplete_paid_orders'							=>  '1',
+   'autocomplete_paid_orders'							=>  '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Merchants should manually review orders before marking complete.
    'enable_soft_cron_job'                 =>  '1',    // Enable "soft" Wordpress-driven cron jobs.
 
     // New BSV settings

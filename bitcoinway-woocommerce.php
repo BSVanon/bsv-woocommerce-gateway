@@ -119,33 +119,13 @@ function BWWC__plugin_action_links($links)
 
 //===========================================================================
 /**
- * Show admin notice if WooCommerce Blocks checkout is detected
+ * Admin notice if WooCommerce Blocks checkout is detected
+ * 
+ * v6.0.0: Blocks support is now complete via class-bsv-blocks-integration.php
+ * No warning needed - both classic and Blocks checkout work seamlessly
  */
-function BWWC__blocks_checkout_notice()
-{
-    // Only show on relevant admin pages
-    $screen = get_current_screen();
-    if (!$screen || !in_array($screen->id, array('plugins', 'woocommerce_page_wc-settings', 'dashboard'))) {
-        return;
-    }
-
-    // Check if WooCommerce is active
-    if (!class_exists('WooCommerce')) {
-        return;
-    }
-
-    // Check if checkout page uses Blocks
-    $checkout_page_id = wc_get_page_id('checkout');
-    if ($checkout_page_id > 0) {
-        $checkout_page = get_post($checkout_page_id);
-        if ($checkout_page && has_block('woocommerce/checkout', $checkout_page)) {
-            echo '<div class="notice notice-warning is-dismissible">';
-            echo '<p><strong>' . esc_html__('Bitcoin SV Gateway:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
-            echo esc_html__('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-payments-for-woocommerce');
-            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . esc_html__('Learn more', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
-            echo '</div>';
-        }
-    }
+function BWWC__blocks_checkout_notice() {
+    return;
 }
 //---------------------------------------------------------------------------
 

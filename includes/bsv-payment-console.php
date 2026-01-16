@@ -27,7 +27,7 @@ function BWWC__render_payment_console($order) {
     $confirmations = get_post_meta($order_id, 'best_confirmations', true);
     
     $bwwc_settings = BWWC__get_settings();
-    $required_confirmations = isset($bwwc_settings['confirmations']) ? intval($bwwc_settings['confirmations']) : 1;
+    $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
     $polling_interval = isset($bwwc_settings['status_polling_interval']) ? intval($bwwc_settings['status_polling_interval']) : 10;
     
     if (!$bsv_address || !$bsv_amount) {
@@ -444,7 +444,7 @@ function BWWC__ajax_check_payment_status() {
     $last_checked = get_post_meta($order_id, 'last_checked_at', true);
     
     $bwwc_settings = BWWC__get_settings();
-    $required_confirmations = isset($bwwc_settings['confirmations']) ? intval($bwwc_settings['confirmations']) : 1;
+    $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
     $explorer_base = 'https://whatsonchain.com';
     
     // Parse txids if string

@@ -139,7 +139,7 @@ function BWWC__get_persistent_settings($key=false)
 
     $row = $wpdb->get_row($sql_query, ARRAY_A);
     if ($row) {
-        $settings = @unserialize($row['settings']);
+        $settings = @unserialize($row['settings'], ['allowed_classes' => false]);
         if ($key) {
             return $settings[$key];
         } else {

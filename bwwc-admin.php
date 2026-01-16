@@ -435,49 +435,10 @@ function BWWC__create_database_tables($bwwc_settings)
     $wpdb->query($query);
     //----------------------------------------------------------
 
-    // upgrade bwwc_btc_addresses table, add additional indexes
-    if (!$b_first_time) {
-        $version = floatval($bwwc_settings['database_schema_version']);
-
-        if ($version < 1.1) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` ADD INDEX `origin_id` (`origin_id` ASC) , ADD INDEX `status` (`status` ASC)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.1;
-            $must_update_settings = true;
-        }
-
-        if ($version < 1.2) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` DROP INDEX `index_in_wallet`, ADD INDEX `index_in_wallet` (`index_in_wallet` ASC)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.2;
-            $must_update_settings = true;
-        }
-
-        if ($version < 1.3) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` CHANGE COLUMN `origin_id` `origin_id` char(128)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.3;
-            $must_update_settings = true;
-
-            $mpk = @$bwwc_settings['gateway_settings']['electrum_master_public_key'];
-            if ($mpk) {
-                // Replace hashed values of MPK in DB with real MPK values.
-                $mpk_old_value = 'electrum.mpk.' . md5($mpk);
-                // UPDATE table_name SET field = REPLACE(field, 'foo', 'bar') WHERE INSTR(field, 'foo') > 0;
-                // UPDATE [table_name] SET [field_name] = REPLACE([field_name], "foo", "bar");
-                $wpdb->query($wpdb->prepare("UPDATE `%s` SET `origin_id` = %s WHERE `origin_id` = %s", $btc_addresses_table_name, $mpk, $mpk_old_value));
-
-                // Copy settings from old location to new, if new is empty.
-                if (!@$bwwc_settings['electrum_mpk_saved']) {
-                    $bwwc_settings['electrum_mpk_saved'] = $mpk;
-                    // 'BWWC__update_settings()' will populate $bwwc_settings['electrum_mpks'].
-                }
-            }
-        }
-
-        if ($version < 1.4) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` MODIFY `address_meta` MEDIUMBLOB", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.4;
-            $must_update_settings = true;
-        }
-    }
+    // v6.0.0: Removed ancient migration code (A15)
+    // Support floor: v5.3.4+ with database schema version 1.4
+    // Users on older versions must upgrade to v5.3.4 first before upgrading to v6.0.0
+    // No migration path from pre-v5.3.4 versions
 
     if ($must_update_settings) {
         BWWC__update_settings($bwwc_settings);

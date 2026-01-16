@@ -948,42 +948,9 @@ function BWWC__safe_string_escape($str="")
 //===========================================================================
 
 //===========================================================================
-// Syntax:
-//    BWWC__log_event (__FILE__, __LINE__, "Hi!");
-//    BWWC__log_event (__FILE__, __LINE__, "Hi!", "/..");
-//    BWWC__log_event (__FILE__, __LINE__, "Hi!", "", "another_log.php");
-function BWWC__log_event($filename, $linenum, $message, $prepend_path="", $log_file_name='__log.php')
-{
-    $log_filename   = dirname(__FILE__) . $prepend_path . '/' . $log_file_name;
-    $logfile_header = "<?php exit(':-)'); ?>\n" . '/* =============== BitcoinWay LOG file =============== */' . "\r\n";
-    $logfile_tail   = "\r\nEND";
-
-    // Delete too long logfiles.
-    //if (@file_exists ($log_filename) && filesize($log_filename)>1000000)
-    //   unlink ($log_filename);
-
-    $filename = basename($filename);
-
-    if (@file_exists($log_filename)) {
-        // 'r+' non destructive R/W mode.
-        $fhandle = @fopen($log_filename, 'r+');
-        if ($fhandle) {
-            @fseek($fhandle, -strlen($logfile_tail), SEEK_END);
-        }
-    } else {
-        $fhandle = @fopen($log_filename, 'w');
-        if ($fhandle) {
-            @fwrite($fhandle, $logfile_header);
-        }
-    }
-
-    if ($fhandle) {
-        $remote_addr = isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : 'unknown';
-        $remote_port = isset($_SERVER['REMOTE_PORT']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_PORT'])) : '0';
-        @fwrite($fhandle, "\r\n// " . $remote_addr . '(' . $remote_port . ')' . ' -> ' . gmdate("Y-m-d, G:i:s T") . "|" . BWWC_VERSION . "/" . BWWC_EDITION . "|$filename($linenum)|: " . $message . $logfile_tail);
-        @fclose($fhandle);
-    }
-}
+// v6.0.0: Removed legacy BWWC__log_event() function
+// Now provided by includes/logging.php with WooCommerce logger integration
+// Old function used file-based logging with potential disk bloat issues
 //===========================================================================
 
 //===========================================================================

@@ -307,26 +307,7 @@ function BWWC__generate_qr_code($address, $amount) {
     </div>';
 }
 
-/**
- * Format time remaining
- */
-function BWWC__format_time_remaining($expires_at) {
-    $now = time();
-    $diff = $expires_at - $now;
-    
-    if ($diff <= 0) {
-        return __('Expired', 'bitcoin-sv-payments-for-woocommerce');
-    }
-    
-    $minutes = floor($diff / 60);
-    $seconds = $diff % 60;
-    
-    if ($minutes > 0) {
-        return sprintf('%dm %ds', $minutes, $seconds);
-    }
-    
-    return sprintf('%ds', $seconds);
-}
+// v6.0.0: BWWC__format_time_remaining() now provided by includes/expiry.php
 
 /**
  * Get payment state label

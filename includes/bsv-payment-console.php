@@ -63,15 +63,11 @@ function BWWC__render_payment_console($order) {
 
     wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), BWWC_VERSION);
     wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), BWWC_VERSION);
-    wp_enqueue_style('bsv-payment-redesign', plugins_url('/assets/css/bsv-payment-redesign.css', dirname(__FILE__)), array('bsv-payment-grid'), BWWC_VERSION);
     
     // Use WooCommerce's jQuery QR code library
     wp_enqueue_script('jquery-qrcode', WC()->plugin_url() . '/assets/js/jquery-qrcode/jquery.qrcode.min.js', array('jquery'), WC_VERSION, true);
     
     wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
-    
-    // Enqueue BRC-100 payment integration (desktop wallets)
-    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), BWWC_VERSION, true);
     
     // Include BIP270 invoice endpoint
     require_once(dirname(__FILE__) . '/bip270-invoice.php');
@@ -95,8 +91,12 @@ function BWWC__render_payment_console($order) {
     <div class="bsv-payment-console" data-order-id="<?php echo esc_attr($order_id); ?>" data-order-key="<?php echo esc_attr($order->get_order_key()); ?>" data-polling-interval="<?php echo esc_attr($polling_interval); ?>">
         
         <div class="bsv-payment-header">
-            <h2><?php esc_html_e('Complete Your Payment', 'bitcoin-sv-payments-for-woocommerce'); ?></h2>
-            <p class="bsv-payment-subtitle"><?php esc_html_e('Choose your preferred payment method below', 'bitcoin-sv-payments-for-woocommerce'); ?></p>
+            <h2><?php esc_html_e('Pay with Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'); ?></h2>
+            <div class="bsv-payment-steps">
+                <?php esc_html_e('1. Scan the QR code or copy the address below', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
+                <?php esc_html_e('2. Send the exact amount shown', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
+                <?php esc_html_e('3. Wait for blockchain confirmation', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            </div>
         </div>
 
         <!-- Two-column layout: QR/Wallet on left, Details on right -->
@@ -105,116 +105,79 @@ function BWWC__render_payment_console($order) {
             <!-- Left column: QR Code + Wallet Tabs -->
             <div class="bsv-qr-wallet-column">
                 
-                <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-                <!-- BRC-100 Wallet Button (Desktop) -->
-                <div class="bsv-payment-method">
-                    <h3 class="bsv-method-title"><?php esc_html_e('Desktop Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
-                    <button id="bsv-brc100-pay-button" class="bsv-brc100-button" type="button">
-                        <svg class="bsv-button-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
-                        </svg>
-                        <span><?php esc_html_e('Pay with Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
+                <!-- Payment Protocol Tabs -->
+                <div class="bsv-wallet-tabs" role="tablist">
+                    <button class="bsv-wallet-tab active" data-protocol="bip21" role="tab" aria-selected="true">
+                        <?php esc_html_e('Standard', 'bitcoin-sv-payments-for-woocommerce'); ?>
                     </button>
-                    <p class="bsv-method-description"><?php esc_html_e('For Yours Wallet, Panda Wallet, or other BRC-100 compatible wallets', 'bitcoin-sv-payments-for-woocommerce'); ?></p>
+                    <button class="bsv-wallet-tab" data-protocol="bip270" role="tab" aria-selected="false">
+                        <?php esc_html_e('Invoice Protocol', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    </button>
                 </div>
 
-                <div class="bsv-payment-divider">
-                    <span><?php esc_html_e('or', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
+                <!-- QR Code Container -->
+                <div class="bsv-qr-container">
+                    <div class="bsv-qr-card">
+                        <div id="bsv-qr-code" 
+                             data-address="<?php echo esc_attr($bsv_address); ?>" 
+                             data-amount="<?php echo esc_attr($bsv_amount); ?>" 
+                             data-order-id="<?php echo esc_attr($order_id); ?>"
+                             data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
+                             data-protocol="bip21"
+                             style="display: inline-block;"></div>
+                    </div>
                 </div>
-                <?php endif; ?>
 
-                <!-- Mobile Wallet (QR Code) -->
-                <div class="bsv-payment-method">
-                    <h3 class="bsv-method-title"><?php esc_html_e('Mobile Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
-                    
-                    <!-- Payment Protocol Tabs -->
-                    <div class="bsv-wallet-tabs" role="tablist">
-                        <button class="bsv-wallet-tab active" data-protocol="bip21" role="tab" aria-selected="true">
-                            <span><?php esc_html_e('Standard', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                        </button>
-                        <button class="bsv-wallet-tab" data-protocol="bip270" role="tab" aria-selected="false">
-                            <span><?php esc_html_e('Invoice', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                        </button>
-                    </div>
-
-                    <!-- QR Code Container -->
-                    <div class="bsv-qr-container">
-                        <div class="bsv-qr-card">
-                            <div id="bsv-qr-code" 
-                                 data-address="<?php echo esc_attr($bsv_address); ?>" 
-                                 data-amount="<?php echo esc_attr($bsv_amount); ?>" 
-                                 data-order-id="<?php echo esc_attr($order_id); ?>"
-                                 data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
-                                 data-protocol="bip21"
-                                 style="display: inline-block;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Protocol info -->
-                    <div class="bsv-protocol-info">
-                        <p class="bsv-protocol-description" data-protocol="bip21">
-                            <?php esc_html_e('Scan with RockWallet, Simply Cash, or any BSV mobile wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                        </p>
-                        <p class="bsv-protocol-description" data-protocol="bip270" style="display: none;">
-                            <?php esc_html_e('For HandCash, ElectrumSV, and other BIP270-compatible wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                        </p>
-                    </div>
+                <!-- Protocol info -->
+                <div class="bsv-protocol-info">
+                    <p class="bsv-protocol-description" data-protocol="bip21">
+                        <?php esc_html_e('Scan with any BSV wallet (RockWallet, Simply Cash, etc.)', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    </p>
+                    <p class="bsv-protocol-description" data-protocol="bip270" style="display: none;">
+                        <?php esc_html_e('For wallets supporting BIP270 invoice protocol (HandCash, ElectrumSV, Centi)', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    </p>
                 </div>
             </div>
 
             <!-- Right column: Amount + Address + Status -->
             <div class="bsv-details-column">
                 
-                <!-- Payment Details Card -->
-                <div class="bsv-payment-details-card">
-                    <h3 class="bsv-card-title"><?php esc_html_e('Payment Details', 'bitcoin-sv-payments-for-woocommerce'); ?></h3>
-                    
-                    <div class="bsv-detail-row bsv-amount-row">
-                        <span class="bsv-detail-label"><?php esc_html_e('Amount', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                        <div class="bsv-amount-display">
-                            <div class="bsv-amount" 
-                                 data-bsv="<?php echo esc_attr($bsv_amount); ?>" 
-                                 data-sats="<?php echo esc_attr($expected_sats); ?>" 
-                                 data-mode="bsv"
-                                 style="cursor: pointer;"
-                                 title="<?php esc_attr_e('Click to toggle between BSV and sats', 'bitcoin-sv-payments-for-woocommerce'); ?>">
-                                <span class="bsv-amount-value"><?php echo esc_html($bsv_amount); ?></span>
-                                <span class="bsv-unit">BSV</span>
-                            </div>
-                            <div class="bsv-fiat">
-                                <?php echo esc_html(sprintf('≈ %s %s', number_format($order_total, 2), $store_currency)); ?>
-                            </div>
-                        </div>
-                        <button class="bsv-copy-btn bsv-copy-amount" data-copy="<?php echo esc_attr($bsv_amount); ?>" data-copy-sats="<?php echo esc_attr($expected_sats); ?>">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                        </button>
-                    </div>
+        <div class="bsv-amount-section">
+            <div class="bsv-amount" 
+                 data-bsv="<?php echo esc_attr($bsv_amount); ?>" 
+                 data-sats="<?php echo esc_attr($expected_sats); ?>" 
+                 data-mode="bsv"
+                 style="cursor: pointer;"
+                 title="<?php esc_attr_e('Click to toggle between BSV and sats', 'bitcoin-sv-payments-for-woocommerce'); ?>">
+                <span class="bsv-amount-value"><?php echo esc_html($bsv_amount); ?></span>
+                <span class="bsv-unit">BSV</span>
+            </div>
+            <div class="bsv-fiat">
+                <?php echo esc_html(sprintf('≈ %s %s', number_format($order_total, 2), $store_currency)); ?>
+            </div>
+            <button class="bsv-copy-btn bsv-copy-amount" data-copy="<?php echo esc_attr($bsv_amount); ?>" data-copy-sats="<?php echo esc_attr($expected_sats); ?>" style="margin-top: 0.75rem;">
+                <?php esc_html_e('Copy Amount', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            </button>
+        </div>
 
-                    <div class="bsv-detail-row">
-                        <span class="bsv-detail-label"><?php esc_html_e('Address', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                        <div class="bsv-address-wrapper">
-                            <code class="bsv-address"><?php echo esc_html($bsv_address); ?></code>
-                            <button class="bsv-copy-btn" data-copy="<?php echo esc_attr($bsv_address); ?>">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                <div class="bsv-address-section">
+            <div class="bsv-address-label"><?php esc_html_e('Payment Address', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
+            <div class="bsv-address-wrapper">
+                <div class="bsv-address"><?php echo esc_html($bsv_address); ?></div>
+                <button class="bsv-copy-btn" data-copy="<?php echo esc_attr($bsv_address); ?>">
+                    <?php esc_html_e('Copy', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                </button>
+            </div>
+        </div>
 
-                    <?php if ($expires_at): ?>
-                    <div class="bsv-detail-row">
-                        <span class="bsv-detail-label"><?php esc_html_e('Expires In', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                        <div class="bsv-expiration-time" data-expires="<?php echo esc_attr($expires_at); ?>">
-                            <?php echo esc_html(BWWC__format_time_remaining($expires_at)); ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
+                <?php if ($expires_at): ?>
+                <div class="bsv-expiration">
+            <div class="bsv-expiration-label"><?php esc_html_e('Time Remaining', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
+            <div class="bsv-expiration-time" data-expires="<?php echo esc_attr($expires_at); ?>">
+                <?php echo esc_html(BWWC__format_time_remaining($expires_at)); ?>
+            </div>
                 </div>
+                <?php endif; ?>
 
                 <div class="bsv-status-box status-<?php echo esc_attr($payment_state); ?>">
                     <div class="bsv-status-label">

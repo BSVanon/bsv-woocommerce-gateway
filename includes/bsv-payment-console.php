@@ -440,13 +440,17 @@ function BWWC__ajax_check_payment_status() {
         return;
     }
     
-    // Force recheck if requested (with cooldown)
-    if ($force) {
-        $last_check = get_post_meta($order_id, 'last_manual_check', true);
-        $cooldown = 3; // 3 seconds
+    // Trigger blockchain check for pending orders
+    // For waiting/pending/underpaid states, check blockchain on every poll (with cooldown)
+    $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $should_check_blockchain = $force || in_array($payment_state, array('waiting', 'pending', 'underpaid', 'detected'));
+    
+    if ($should_check_blockchain) {
+        $last_check = get_post_meta($order_id, 'last_blockchain_check', true);
+        $cooldown = $force ? 3 : 10; // 3 seconds for manual, 10 seconds for auto
         
         if (!$last_check || (time() - $last_check) >= $cooldown) {
-            update_post_meta($order_id, 'last_manual_check', time());
+            update_post_meta($order_id, 'last_blockchain_check', time());
             
             // Trigger immediate payment check
             BWWC__check_payment_for_order($order_id);

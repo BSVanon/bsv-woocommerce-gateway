@@ -14,42 +14,56 @@
     'use strict';
 
     const BSVBRC7Payment = {
-        init: function() {
+        init: async function() {
             console.log('[BRC-7] Initializing wallet payment integration...');
             console.log('[BRC-7] Current URL:', window.location.href);
             
             this.bindPaymentButton();
             
-            // Check for window.CWI with progressive delays
-            this.detectWallet();
-            setTimeout(() => this.detectWallet(), 500);
-            setTimeout(() => this.detectWallet(), 1000);
-            setTimeout(() => this.detectWallet(), 2000);
-            setTimeout(() => this.detectWallet(), 5000);
+            // Wait for window.CWI to appear (user may be authenticating)
+            console.log('[BRC-7] Waiting for wallet to inject window.CWI...');
+            const detected = await this.waitForCWI({ timeoutMs: 8000, intervalMs: 250 });
+            
+            if (detected) {
+                console.log('[BRC-7] ✅ Wallet detected and ready');
+                $('#bsv-brc100-pay-button').prop('disabled', false).show();
+            } else {
+                console.log('[BRC-7] ⚠️ No wallet detected after 8s wait');
+                console.log('[BRC-7] User needs to open/authenticate wallet and refresh page');
+            }
         },
 
-        detectWallet: function() {
-            // Check for window.CWI (BRC-7 standard)
-            if (typeof window.CWI !== 'undefined') {
-                console.log('[BRC-7] ✅ BRC-7 wallet detected (window.CWI)');
-                
-                // Check if wallet has required methods
-                if (typeof window.CWI.getVersion === 'function') {
-                    try {
-                        const version = window.CWI.getVersion();
-                        console.log('[BRC-7] Wallet version:', version);
-                    } catch (e) {
-                        console.log('[BRC-7] Could not get version:', e.message);
+        isCwiPresent: function() {
+            return !!(window.CWI && typeof window.CWI.getVersion === 'function');
+        },
+
+        waitForCWI: function({ timeoutMs = 8000, intervalMs = 250 } = {}) {
+            return new Promise((resolve) => {
+                const start = Date.now();
+                const checkInterval = setInterval(() => {
+                    if (this.isCwiPresent()) {
+                        clearInterval(checkInterval);
+                        console.log('[BRC-7] window.CWI appeared after', Date.now() - start, 'ms');
+                        resolve(true);
+                    } else if (Date.now() - start > timeoutMs) {
+                        clearInterval(checkInterval);
+                        console.log('[BRC-7] Timeout waiting for window.CWI');
+                        resolve(false);
                     }
+                }, intervalMs);
+            });
+        },
+
+        async ensureAuthIfSupported() {
+            if (window.CWI && typeof window.CWI.waitForAuthentication === 'function') {
+                try {
+                    console.log('[BRC-7] Requesting authentication...');
+                    await window.CWI.waitForAuthentication({});
+                    console.log('[BRC-7] Authentication complete');
+                } catch (e) {
+                    console.log('[BRC-7] Authentication error (may already be authenticated):', e.message);
                 }
-                
-                // Enable payment button
-                $('#bsv-brc100-pay-button').prop('disabled', false).show();
-                return { available: true };
             }
-            
-            console.log('[BRC-7] No BRC-7 wallet detected (window.CWI undefined)');
-            return { available: false };
         },
 
         bindPaymentButton: function() {
@@ -77,23 +91,33 @@
         },
 
         async ensureWallet() {
-            if (typeof window.CWI === 'undefined') {
-                throw new Error('No BRC-7 wallet found. Please install a compatible wallet (e.g., Metanet Desktop) and refresh the page.');
-            }
-            
-            // Check if authenticated
-            if (typeof window.CWI.isAuthenticated === 'function') {
-                const isAuth = await window.CWI.isAuthenticated();
-                console.log('[BRC-7] Wallet authenticated:', isAuth);
+            // Try window.CWI first (BRC-7)
+            if (this.isCwiPresent()) {
+                await this.ensureAuthIfSupported();
                 
-                if (!isAuth && typeof window.CWI.waitForAuthentication === 'function') {
-                    console.log('[BRC-7] Requesting authentication...');
-                    await window.CWI.waitForAuthentication();
-                    console.log('[BRC-7] Authentication complete');
+                // Verify with getVersion
+                try {
+                    const version = await window.CWI.getVersion({});
+                    console.log('[BRC-7] Wallet version:', version);
+                    return { type: 'brc7', wallet: window.CWI };
+                } catch (e) {
+                    console.warn('[BRC-7] getVersion failed:', e.message);
                 }
             }
             
-            return window.CWI;
+            // Try BRC-6 XDM fallback (if in parent wallet page)
+            if (window !== window.parent) {
+                console.log('[BRC-7] Trying BRC-6 XDM fallback...');
+                try {
+                    const version = await this.cwiXdmCall('getVersion', {});
+                    console.log('[BRC-6] XDM wallet detected, version:', version);
+                    return { type: 'brc6', wallet: null };
+                } catch (e) {
+                    console.warn('[BRC-6] XDM not available:', e.message);
+                }
+            }
+            
+            throw new Error('No wallet detected. Please:\n1. Install a BRC-7 compatible wallet (e.g., Metanet Desktop)\n2. Authenticate in the wallet\n3. Refresh this page\n\nIf using Docker, the wallet may restrict this origin (http://172.19.0.3). Try accessing via localhost instead.');
         },
 
         async payWithWallet() {
@@ -110,15 +134,16 @@
 
             console.log('[BRC-7] Payment details:', { address, amountBSV, amountSats, orderId });
 
-            // Ensure wallet is ready and authenticated
-            await this.ensureWallet();
+            // Ensure wallet is ready
+            const walletInfo = await this.ensureWallet();
+            console.log('[BRC-7] Using wallet type:', walletInfo.type);
 
             // Convert address to P2PKH locking script (hex)
             const lockingScript = this.addressToP2PKHLockingScript(address);
             console.log('[BRC-7] Locking script:', lockingScript);
 
             // Build BRC-1 Transaction Creation request
-            const request = {
+            const brc1Request = {
                 description: `WooCommerce Order #${orderId} Payment`,
                 outputs: [{
                     satoshis: amountSats,
@@ -126,8 +151,15 @@
                 }]
             };
 
-            console.log('[BRC-7] Calling window.CWI.createAction...');
-            const result = await window.CWI.createAction(request);
+            let result;
+            if (walletInfo.type === 'brc7') {
+                console.log('[BRC-7] Calling window.CWI.createAction...');
+                result = await window.CWI.createAction(brc1Request);
+            } else if (walletInfo.type === 'brc6') {
+                console.log('[BRC-6] Calling createAction via XDM...');
+                result = await this.cwiXdmCall('createAction', brc1Request);
+            }
+
             console.log('[BRC-7] Payment result:', result);
 
             const txid = this.extractTxid(result);
@@ -139,6 +171,43 @@
             }
 
             return result;
+        },
+
+        cwiXdmCall: function(call, params = {}, target = window.parent, origin = '*') {
+            return new Promise((resolve, reject) => {
+                const id = Math.random().toString(16).slice(2) + Date.now().toString(16);
+                
+                const onMessage = (e) => {
+                    if (!e.isTrusted) return;
+                    const d = e.data || {};
+                    if (d.type !== 'CWI' || d.isInvocation || d.id !== id) return;
+                    
+                    window.removeEventListener('message', onMessage);
+                    
+                    if (d.status === 'error') {
+                        const err = new Error(d.description || 'CWI XDM error');
+                        err.code = d.code;
+                        reject(err);
+                    } else {
+                        resolve(d.result);
+                    }
+                };
+                
+                window.addEventListener('message', onMessage);
+                target.postMessage({
+                    type: 'CWI',
+                    isInvocation: true,
+                    id: id,
+                    call: call,
+                    params: params
+                }, origin);
+                
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    window.removeEventListener('message', onMessage);
+                    reject(new Error('CWI XDM timeout'));
+                }, 5000);
+            });
         },
 
         /**

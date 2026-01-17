@@ -560,13 +560,12 @@
 
             try {
                 // Generate QR code using jQuery QRCode
+                // Note: WooCommerce's jquery.qrcode uses simple API
                 qrEl.qrcode({
                     text: bip21Uri,
                     width: 256,
                     height: 256,
-                    colorDark: '#000000',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
+                    render: 'canvas'
                 });
             } catch (error) {
                 console.error('BSV: QR code generation failed', error);

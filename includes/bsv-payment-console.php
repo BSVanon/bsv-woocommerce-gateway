@@ -127,7 +127,7 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-payment-header">
             <h2><?php esc_html_e('Pay with Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'); ?></h2>
             <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-            <div class="bsv-timer-wrapper">
+            <div class="bsv-timer-wrapper" style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem; align-self: center;">
                 <div class="bsv-timer-label"><?php esc_html_e('Order Expires in:', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
                 <div class="bsv-timer-badge">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
@@ -151,7 +151,7 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-payment-card">
             
             <!-- Two-column grid: QR left, details right -->
-            <div class="bsv-payment-grid">
+            <div class="bsv-payment-grid" style="display: grid; grid-template-columns: 0.7fr 1.3fr; gap: 2rem; margin-bottom: 1.5rem; align-items: start;">
                 
                 <!-- Left: QR Code -->
                 <div class="bsv-qr-column">

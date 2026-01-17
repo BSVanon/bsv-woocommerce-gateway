@@ -30,6 +30,9 @@
                 return;
             }
 
+            // Generate QR code
+            this.generateQRCode();
+
             // Bind event handlers
             this.bindEvents();
 
@@ -536,6 +539,38 @@
                 const explorerUrl = explorerBase + '/address/' + data.address;
                 explorerEl.html(`<a href="${explorerUrl}" target="_blank" rel="noopener">View Address On BSV Blockchain ↗</a>`);
                 explorerEl.show();
+            }
+        },
+
+        generateQRCode: function() {
+            const qrEl = $('#bsv-qr-code');
+            if (!qrEl.length) return;
+
+            const address = qrEl.data('address') || bsvPaymentData.bsvAddress;
+            const amount = qrEl.data('amount') || bsvPaymentData.bsvAmount;
+
+            if (!address || !amount) {
+                console.warn('BSV: Missing address or amount for QR code');
+                qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable</div>');
+                return;
+            }
+
+            // Generate BIP21 URI for BSV payment
+            const bip21Uri = `bitcoin:${address}?amount=${amount}`;
+
+            try {
+                // Generate QR code using jQuery QRCode
+                qrEl.qrcode({
+                    text: bip21Uri,
+                    width: 256,
+                    height: 256,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (error) {
+                console.error('BSV: QR code generation failed', error);
+                qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable<br><small>Please use copy buttons below</small></div>');
             }
         }
     };

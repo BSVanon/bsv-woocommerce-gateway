@@ -53,9 +53,6 @@ function BWWC__render_payment_console($order) {
     $store_currency = get_woocommerce_currency();
     $order_total = $order->get_total();
 
-    // Generate QR code
-    $qr_code_svg = BWWC__generate_qr_code($bsv_address, $bsv_amount);
-
     // Enqueue assets
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
     $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
@@ -65,13 +62,22 @@ function BWWC__render_payment_console($order) {
     }
 
     wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), BWWC_VERSION);
-    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery'), $script_version, true);
+    
+    // Use WooCommerce's jQuery QR code library
+    wp_enqueue_script('jquery-qrcode', WC()->plugin_url() . '/assets/js/jquery-qrcode/jquery.qrcode.min.js', array('jquery'), WC_VERSION, true);
+    
+    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
+    
+    // Enqueue Gateway.cash SDK
+    wp_enqueue_script('gateway-cash-sdk', 'https://app.gateway.cash/pay.js', array(), null, true);
     
     // Localize script
     wp_localize_script('bsv-payment-console', 'bsvPaymentData', array(
         'statusEndpoint' => admin_url('admin-ajax.php?action=bsv_check_payment_status'),
         'nonce' => wp_create_nonce('bsv_payment_status_' . $order_id),
         'orderId' => $order_id,
+        'bsvAddress' => $bsv_address,
+        'bsvAmount' => $bsv_amount,
         'orderKey' => $order->get_order_key()
     ));
 
@@ -90,29 +96,28 @@ function BWWC__render_payment_console($order) {
 
         <div class="bsv-qr-container">
             <div class="bsv-qr-card">
-                <?php 
-                // Output QR code SVG directly - it comes from trusted external API
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                echo $qr_code_svg;
-                ?>
+                <div id="bsv-qr-code" data-address="<?php echo esc_attr($bsv_address); ?>" data-amount="<?php echo esc_attr($bsv_amount); ?>" style="display: inline-block;"></div>
             </div>
         </div>
 
         <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
         <div class="bsv-gateway-button-container" style="margin: 20px 0; text-align: center;">
-            <button 
-                class="gateway-paybutton gateway-paybutton-variable" 
-                data-variable="true"
-                data-address="<?php echo esc_attr($bsv_address); ?>"
-                data-amount="<?php echo esc_attr($bsv_amount); ?>"
-                data-currency="BSV"
-                data-order-id="<?php echo esc_attr($order_id); ?>"
-            >
+            <div
+                id="bsv-gateway-paybutton"
+                class="gateway-paybutton gateway-paybutton-fixed"
+                data-merchant="036a9c459157cf2000daf58bcc27e1298b2049dde1f482d7356db7af5585e469c4"
+                data-buttonId="bsv-gateway-paybutton"
+                data-paymentId="<?php echo esc_attr('Order #' . $order_id); ?>"
+                data-amount="<?php echo esc_attr(round($expected_sats)); ?>"
+                data-text="<?php echo esc_attr(sprintf('Pay %s BSV', $bsv_amount)); ?>"
+                data-description="<?php echo esc_attr('Payment for WooCommerce Order #' . $order_id); ?>"
+                data-width="fit-content"
+                data-multi-use="false">
                 <span class="gateway-button-icon">⚡</span>
-                <?php esc_html_e('Pay with BSV Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
-            </button>
+                <?php echo esc_html(sprintf('Pay %s BSV', $bsv_amount)); ?>
+            </div>
             <p class="description" style="margin-top: 10px; font-size: 12px; color: #666;">
-                <?php esc_html_e('Click to pay with HandCash, RelayX, or other BSV wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                <?php esc_html_e('Click to pay with HandCash, RelayX, or other BRC-100 wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
             </p>
         </div>
         <?php endif; ?>
@@ -280,32 +285,8 @@ function BWWC__render_payment_console($order) {
     <?php
 }
 
-/**
- * Generate QR code as SVG (local only - no external services)
- * 
- * v6.0.0: Removed external QR service fallback for security/privacy (A0.2)
- */
-function BWWC__generate_qr_code($address, $amount) {
-    // Use BIP21 format for compact QR
-    $bip21_uri = 'bitcoin:' . $address . '?amount=' . $amount;
-    
-    // Use bundled phpqrcode library if available
-    if (function_exists('QRcode')) {
-        ob_start();
-        QRcode::svg($bip21_uri, false, QR_ECLEVEL_M, 8, 4);
-        return ob_get_clean();
-    }
-    
-    // Fallback: simple data URI QR using inline SVG generation
-    // This is a minimal fallback - merchants should ensure phpqrcode is available
-    $encoded_data = rawurlencode($bip21_uri);
-    
-    // Return a simple placeholder with copy button emphasis if QR library unavailable
-    return '<div style="padding: 40px; text-align: center; border: 2px dashed #ccc; background: #f9f9f9;">
-        <p style="margin: 0 0 10px 0; font-weight: bold;">' . esc_html__('QR Code Unavailable', 'bitcoin-sv-payments-for-woocommerce') . '</p>
-        <p style="margin: 0; font-size: 12px; color: #666;">' . esc_html__('Please use the copy buttons below to get payment details', 'bitcoin-sv-payments-for-woocommerce') . '</p>
-    </div>';
-}
+// v6.0.0: QR code generation moved to JavaScript using WooCommerce's jQuery QRCode library
+// This eliminates the need for server-side QR generation and provides better browser compatibility
 
 // v6.0.0: Helper functions now provided by includes/constants.php and includes/expiry.php
 // - BWWC__format_time_remaining() from expiry.php

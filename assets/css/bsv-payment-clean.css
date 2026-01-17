@@ -19,24 +19,27 @@
 .bsv-wallet-button {
     width: 100%;
     padding: 0.75rem 1rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    border: 1px solid #f59e0b;
     border-radius: 8px;
     font-size: 14px;
-    font-weight: 500;
-    color: #475569;
+    font-weight: 600;
+    color: #ffffff;
     cursor: pointer;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
 
 .bsv-wallet-button:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #334155;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: #d97706;
+    color: #ffffff;
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
+    transform: translateY(-1px);
 }
 
 .bsv-wallet-button svg {
@@ -109,7 +112,7 @@
 /* Two-column grid inside card */
 .bsv-payment-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 0.9fr 1.1fr;
     gap: 2rem;
     margin-bottom: 1.5rem;
     align-items: start;
@@ -182,9 +185,10 @@
 
 .bsv-unit {
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 500;
     color: #64748b;
-    margin-left: 0.25rem;
+    margin-left: 0.5rem;
+    white-space: nowrap;
 }
 
 .bsv-fiat {
@@ -224,10 +228,12 @@
     background: #f8fafc;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
-    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
-    font-size: 11px;
-    color: #334155;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 12px;
+    color: #0f172a;
     word-break: break-all;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
     overflow-wrap: break-word;
 }
 
@@ -459,19 +465,19 @@
 .bsv-get-bsv-button {
     display: inline-block;
     padding: 0.75rem 1.5rem;
-    background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
     color: #ffffff !important;
     font-size: 14px;
     font-weight: 600;
     text-decoration: none;
     border-radius: 8px;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(34, 113, 177, 0.2);
+    box-shadow: 0 2px 4px rgba(245, 158, 11, 0.2);
 }
 
 .bsv-get-bsv-button:hover {
-    background: linear-gradient(135deg, #135e96 0%, #0a4a75 100%);
-    box-shadow: 0 4px 8px rgba(34, 113, 177, 0.3);
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 4px 8px rgba(245, 158, 11, 0.3);
     transform: translateY(-1px);
     text-decoration: none;
 }

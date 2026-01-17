@@ -170,7 +170,7 @@ function BWWC__render_payment_console($order) {
                     
                     <!-- One-line hint below QR -->
                     <p class="bsv-qr-hint" data-protocol="bip21">
-                        <?php esc_html_e('Scan with any BSV wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                        <?php esc_html_e('Scan with your BSV wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
                     </p>
                     <p class="bsv-qr-hint" data-protocol="bip270" style="display: none;">
                         <?php esc_html_e('For invoice protocol wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>

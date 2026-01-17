@@ -256,6 +256,9 @@
             
             // Update button state
             this.updateButtonState(data);
+            
+            // Hide Open Wallet button when payment detected
+            this.updateWalletButton(data);
 
             // Stop polling on final states
             const shouldStopPolling = this.shouldStopPolling(data);
@@ -337,6 +340,21 @@
                 btn.removeClass('bsv-btn-success').addClass('bsv-btn-primary');
                 btn.prop('disabled', false);
                 btn.css('cursor', 'pointer');
+            }
+        },
+        
+        updateWalletButton: function(data) {
+            const walletBtn = $('#bsv-brc100-pay-button');
+            if (!walletBtn.length) return;
+            
+            const state = data.payment_state || 'waiting';
+            
+            // Hide wallet button when payment is detected/pending/confirmed
+            if (state === 'detected' || state === 'pending' || state === 'confirmed') {
+                walletBtn.hide();
+            } else if (state === 'waiting' || state === 'underpaid') {
+                // Show wallet button only in waiting/underpaid states (if wallet was detected)
+                // Button visibility is controlled by BRC-100 script on initial load
             }
         },
 

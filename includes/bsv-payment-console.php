@@ -122,8 +122,10 @@ function BWWC__render_payment_console($order) {
             <?php endif; ?>
         </div>
         
-        <!-- Single instruction line -->
+        <!-- Single instruction line (only show when waiting) -->
+        <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
         <p class="bsv-instruction"><?php esc_html_e('Scan the QR with a BSV wallet and send the exact amount.', 'bitcoin-sv-payments-for-woocommerce'); ?></p>
+        <?php endif; ?>
 
         <!-- Main payment card -->
         <div class="bsv-payment-card">
@@ -311,7 +313,7 @@ function BWWC__render_payment_console($order) {
         
         <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
         <div class="bsv-get-bsv">
-            <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" class="bsv-link-btn">
+            <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" class="bsv-get-bsv-button">
                 <?php esc_html_e('Need BSV? Get BSV', 'bitcoin-sv-payments-for-woocommerce'); ?> ↗
             </a>
         </div>

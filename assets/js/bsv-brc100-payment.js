@@ -20,16 +20,14 @@
             
             this.bindPaymentButton();
             
-            // Wait for window.CWI to appear (user may be authenticating)
-            console.log('[BRC-7] Waiting for wallet to inject window.CWI...');
-            const detected = await this.waitForCWI({ timeoutMs: 8000, intervalMs: 250 });
-            
-            if (detected) {
-                console.log('[BRC-7] ✅ Wallet detected and ready');
+            // Try to detect wallet using all available methods
+            try {
+                const walletInfo = await this.ensureWallet();
+                console.log('[BRC-7] ✅ Wallet detected:', walletInfo.type);
                 $('#bsv-brc100-pay-button').prop('disabled', false).show();
-            } else {
-                console.log('[BRC-7] ⚠️ No wallet detected after 8s wait');
-                console.log('[BRC-7] User needs to open/authenticate wallet and refresh page');
+            } catch (error) {
+                console.log('[BRC-7] ⚠️ No wallet detected:', error.message);
+                console.log('[BRC-7] Button will remain hidden until wallet is available');
             }
         },
 

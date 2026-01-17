@@ -56,7 +56,8 @@ function BWWC__render_payment_console($order) {
     // Calculate time remaining for display
     $time_remaining = '';
     if ($expires_at) {
-        $time_remaining = BWWC__format_time_remaining($expires_at);
+        $seconds_remaining = $expires_at - time();
+        $time_remaining = BWWC__format_time_remaining($seconds_remaining);
     }
 
     // Enqueue assets

@@ -159,7 +159,7 @@ function BWWC__render_payment_console($order) {
                 <?php echo esc_html(BWWC__get_payment_state_label($payment_state)); ?>
             </div>
             <div class="bsv-status-message">
-                <?php echo esc_html(BWWC__get_payment_state_message($payment_state, $received_sats, $expected_sats)); ?>
+                <?php echo esc_html(BWWC__get_payment_console_state_message($payment_state, $received_sats, $expected_sats)); ?>
             </div>
         </div>
 
@@ -307,29 +307,15 @@ function BWWC__generate_qr_code($address, $amount) {
     </div>';
 }
 
-// v6.0.0: BWWC__format_time_remaining() now provided by includes/expiry.php
+// v6.0.0: Helper functions now provided by includes/constants.php and includes/expiry.php
+// - BWWC__format_time_remaining() from expiry.php
+// - BWWC__get_payment_state_label() from constants.php
+// - BWWC__get_payment_state_message() from constants.php
 
 /**
- * Get payment state label
+ * Get payment state message (local version for payment console)
  */
-function BWWC__get_payment_state_label($state) {
-    $labels = array(
-        'waiting' => __('Waiting for Payment', 'bitcoin-sv-payments-for-woocommerce'),
-        'detected' => __('Payment Detected!', 'bitcoin-sv-payments-for-woocommerce'),
-        'confirmed' => __('Payment Confirmed', 'bitcoin-sv-payments-for-woocommerce'),
-        'pending' => __('Awaiting Confirmation', 'bitcoin-sv-payments-for-woocommerce'),
-        'expired' => __('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce'),
-        'underpaid' => __('Underpaid', 'bitcoin-sv-payments-for-woocommerce'),
-        'overpaid' => __('Overpaid (Thank You!)', 'bitcoin-sv-payments-for-woocommerce')
-    );
-    
-    return isset($labels[$state]) ? $labels[$state] : $labels['waiting'];
-}
-
-/**
- * Get payment state message
- */
-function BWWC__get_payment_state_message($state, $received_sats = 0, $expected_sats = 0) {
+function BWWC__get_payment_console_state_message($state, $received_sats = 0, $expected_sats = 0) {
     // Ensure numeric values
     $received_sats = floatval($received_sats);
     $expected_sats = floatval($expected_sats);

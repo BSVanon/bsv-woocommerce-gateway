@@ -28,11 +28,18 @@
 
         checkWalletAvailability: function() {
             // Check for BRC-100 wallet (window.metanet for Metanet Desktop)
+            console.log('[BRC-100] Checking wallet availability...');
+            console.log('[BRC-100] window object:', typeof window);
+            console.log('[BRC-100] window.metanet:', typeof window.metanet, window.metanet);
+            console.log('[BRC-100] window.bsv:', typeof window.bsv, window.bsv);
+            
             if (typeof window !== 'undefined' && window.metanet) {
-                console.log('[BRC-100] Metanet wallet detected');
+                console.log('[BRC-100] ✅ Metanet wallet detected!');
                 $('#bsv-brc100-pay-button').prop('disabled', false);
                 return true;
             }
+            
+            console.log('[BRC-100] ❌ No wallet detected yet');
             return false;
         },
 

@@ -17,29 +17,56 @@
 
         init: function() {
             console.log('[BRC-100] Initializing payment integration...');
+            console.log('[BRC-100] Current URL:', window.location.href);
+            console.log('[BRC-100] Protocol:', window.location.protocol);
             
             // Bind BRC-100 payment button
             this.bindPaymentButton();
             
-            // Check wallet availability on load and after delay
+            // Check wallet availability with progressive delays
             this.checkWalletAvailability();
+            setTimeout(() => this.checkWalletAvailability(), 500);
             setTimeout(() => this.checkWalletAvailability(), 1000);
+            setTimeout(() => this.checkWalletAvailability(), 2000);
+            setTimeout(() => this.checkWalletAvailability(), 3000);
+            setTimeout(() => this.checkWalletAvailability(), 5000);
+            
+            // Also check on window load event
+            $(window).on('load', () => {
+                setTimeout(() => this.checkWalletAvailability(), 1000);
+            });
         },
 
         checkWalletAvailability: function() {
-            // Check for BRC-100 wallet (window.metanet for Metanet Desktop)
-            console.log('[BRC-100] Checking wallet availability...');
-            console.log('[BRC-100] window object:', typeof window);
-            console.log('[BRC-100] window.metanet:', typeof window.metanet, window.metanet);
-            console.log('[BRC-100] window.bsv:', typeof window.bsv, window.bsv);
+            console.log('[BRC-100] === Wallet Detection Check ===');
             
-            if (typeof window !== 'undefined' && window.metanet) {
-                console.log('[BRC-100] ✅ Metanet wallet detected!');
+            // Check all possible wallet objects
+            const walletChecks = {
+                'window.metanet': window.metanet,
+                'window.bsv': window.bsv,
+                'window.yours': window.yours,
+                'window.panda': window.panda,
+                'window.twetch': window.twetch,
+                'window.relayx': window.relayx,
+                'window.handcash': window.handcash
+            };
+            
+            console.log('[BRC-100] All wallet objects:', walletChecks);
+            
+            // Check for any BRC-100 compatible wallet
+            if (window.metanet && typeof window.metanet.createAction === 'function') {
+                console.log('[BRC-100] ✅ Metanet Desktop detected!');
                 $('#bsv-brc100-pay-button').prop('disabled', false);
                 return true;
             }
             
-            console.log('[BRC-100] ❌ No wallet detected yet');
+            if (window.bsv && typeof window.bsv.createAction === 'function') {
+                console.log('[BRC-100] ✅ BSV Desktop detected!');
+                $('#bsv-brc100-pay-button').prop('disabled', false);
+                return true;
+            }
+            
+            console.log('[BRC-100] ❌ No BRC-100 wallet detected');
             return false;
         },
 

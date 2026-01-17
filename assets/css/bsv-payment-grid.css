@@ -76,6 +76,57 @@
     transform: scale(0.95);
 }
 
+/* BRC-100 Wallet Button */
+.bsv-wallet-button-container {
+    margin-bottom: 1.5rem;
+}
+
+.bsv-brc100-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
+}
+
+.bsv-brc100-button:hover {
+    background: linear-gradient(135deg, #135e96 0%, #0a4a7a 100%);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.4);
+    transform: translateY(-2px);
+}
+
+.bsv-brc100-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(34, 113, 177, 0.3);
+}
+
+.bsv-brc100-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.bsv-button-icon {
+    flex-shrink: 0;
+}
+
+.bsv-button-description {
+    margin: 0.5rem 0 0 0;
+    font-size: 13px;
+    color: #6b7280;
+    text-align: center;
+}
+
 /* Protocol info */
 .bsv-protocol-info {
     margin-top: 1rem;

@@ -1,0 +1,159 @@
+/**
+ * BSV Payment Console - Grid Layout & Wallet Tabs
+ * v6.0.0 - Two-column responsive layout with wallet-specific QR codes
+ */
+
+/* Two-column grid layout */
+.bsv-payment-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+/* Left column: QR + Wallet tabs */
+.bsv-qr-wallet-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Right column: Details */
+.bsv-details-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Wallet tabs */
+.bsv-wallet-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f0f0f1;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+.bsv-wallet-tab {
+    flex: 1;
+    min-width: fit-content;
+    padding: 0.6rem 1rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #50575e;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.bsv-wallet-tab:hover {
+    background: rgba(34, 113, 177, 0.1);
+    color: #2271b1;
+}
+
+.bsv-wallet-tab.active {
+    background: #2271b1;
+    color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bsv-wallet-tab:focus {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+
+/* QR code transitions */
+.bsv-qr-card {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.bsv-qr-card.transitioning {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+/* BRC-100 Wallet Button */
+.bsv-wallet-button-container {
+    margin-top: 1rem;
+}
+
+.bsv-brc100-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #2271b1 0%, #135e96 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    box-shadow: 0 2px 8px rgba(34, 113, 177, 0.3);
+}
+
+.bsv-brc100-button:hover {
+    background: linear-gradient(135deg, #135e96 0%, #0a4a7a 100%);
+    box-shadow: 0 4px 12px rgba(34, 113, 177, 0.4);
+    transform: translateY(-2px);
+}
+
+.bsv-brc100-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(34, 113, 177, 0.3);
+}
+
+.bsv-brc100-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.bsv-button-icon {
+    flex-shrink: 0;
+}
+
+/* Responsive: Stack on mobile */
+@media (max-width: 768px) {
+    .bsv-payment-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .bsv-wallet-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .bsv-wallet-tab {
+        flex: 0 0 auto;
+    }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+    .bsv-wallet-tabs {
+        background: #2c2c2c;
+    }
+    
+    .bsv-wallet-tab {
+        color: #b0b0b0;
+    }
+    
+    .bsv-wallet-tab:hover {
+        background: rgba(34, 113, 177, 0.2);
+        color: #5b9dd9;
+    }
+    
+    .bsv-wallet-tab.active {
+        background: #2271b1;
+        color: #ffffff;
+    }
+}

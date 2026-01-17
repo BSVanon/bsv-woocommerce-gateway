@@ -39,35 +39,60 @@
 
         checkWalletAvailability: function() {
             console.log('[BRC-100] === Wallet Detection Check ===');
+            console.log('[BRC-100] In iframe?', window !== window.top);
+            console.log('[BRC-100] Same origin?', this.isSameOrigin());
             
-            // Check all possible wallet objects
-            const walletChecks = {
-                'window.metanet': window.metanet,
-                'window.bsv': window.bsv,
-                'window.yours': window.yours,
-                'window.panda': window.panda,
-                'window.twetch': window.twetch,
-                'window.relayx': window.relayx,
-                'window.handcash': window.handcash
-            };
+            // Check current window and parent window (for iframe scenarios)
+            const windows = [window];
             
-            console.log('[BRC-100] All wallet objects:', walletChecks);
-            
-            // Check for any BRC-100 compatible wallet
-            if (window.metanet && typeof window.metanet.createAction === 'function') {
-                console.log('[BRC-100] ✅ Metanet Desktop detected!');
-                $('#bsv-brc100-pay-button').prop('disabled', false).show();
-                return true;
+            // If in iframe and same origin, also check parent
+            if (window !== window.top && this.isSameOrigin()) {
+                console.log('[BRC-100] Checking parent window for wallet...');
+                windows.push(window.top);
             }
             
-            if (window.bsv && typeof window.bsv.createAction === 'function') {
-                console.log('[BRC-100] ✅ BSV Desktop detected!');
-                $('#bsv-brc100-pay-button').prop('disabled', false).show();
-                return true;
+            // Check all windows for wallet objects
+            for (const win of windows) {
+                const walletChecks = {
+                    'metanet': win.metanet,
+                    'bsv': win.bsv,
+                    'yours': win.yours,
+                    'panda': win.panda,
+                    'twetch': win.twetch,
+                    'relayx': win.relayx,
+                    'handcash': win.handcash
+                };
+                
+                console.log('[BRC-100] Wallet objects in', win === window ? 'current window' : 'parent window', ':', walletChecks);
+                
+                // Check for BRC-100 compatible wallet
+                if (win.metanet && typeof win.metanet.createAction === 'function') {
+                    console.log('[BRC-100] ✅ Metanet Desktop detected in', win === window ? 'current window' : 'parent window');
+                    this.wallet = win.metanet;
+                    $('#bsv-brc100-pay-button').prop('disabled', false).show();
+                    return true;
+                }
+                
+                if (win.bsv && typeof win.bsv.createAction === 'function') {
+                    console.log('[BRC-100] ✅ BSV Desktop detected in', win === window ? 'current window' : 'parent window');
+                    this.wallet = win.bsv;
+                    $('#bsv-brc100-pay-button').prop('disabled', false).show();
+                    return true;
+                }
             }
             
-            console.log('[BRC-100] ❌ No BRC-100 wallet detected');
+            console.log('[BRC-100] ❌ No BRC-100 wallet detected in any window');
             return false;
+        },
+        
+        isSameOrigin: function() {
+            try {
+                // Try to access parent window location - will throw if different origin
+                const parentLoc = window.top.location.href;
+                return true;
+            } catch (e) {
+                return false;
+            }
         },
 
         bindPaymentButton: function() {
@@ -96,10 +121,23 @@
         },
 
         async getWallet() {
-            // Check for Metanet Client (BRC-73 standard)
+            // Use cached wallet from detection
+            if (this.wallet) {
+                console.log('[BRC-100] Using cached wallet reference');
+                return this.wallet;
+            }
+            
+            // Fallback: check current window
             if (typeof window !== 'undefined' && window.metanet && typeof window.metanet.createAction === 'function') {
-                console.log('[BRC-100] Using Metanet Desktop wallet');
+                console.log('[BRC-100] Using Metanet Desktop wallet from current window');
+                this.wallet = window.metanet;
                 return window.metanet;
+            }
+            
+            if (typeof window !== 'undefined' && window.bsv && typeof window.bsv.createAction === 'function') {
+                console.log('[BRC-100] Using BSV Desktop wallet from current window');
+                this.wallet = window.bsv;
+                return window.bsv;
             }
 
             throw new Error('No BRC-100 wallet found. Please install Metanet Desktop or BSV Desktop.');

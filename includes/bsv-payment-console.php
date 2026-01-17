@@ -52,6 +52,12 @@ function BWWC__render_payment_console($order) {
     // Get store currency for fiat display
     $store_currency = get_woocommerce_currency();
     $order_total = $order->get_total();
+    
+    // Calculate time remaining for display
+    $time_remaining = '';
+    if ($expires_at) {
+        $time_remaining = BWWC__format_time_remaining($expires_at);
+    }
 
     // Enqueue assets
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));

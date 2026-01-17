@@ -60,17 +60,38 @@ function BWWC__render_payment_console($order) {
         $time_remaining = BWWC__format_time_remaining($seconds_remaining);
     }
 
-    // Enqueue assets
+    // Enqueue assets with cache busting
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
+    
+    // CSS versions with filemtime for cache busting
+    $css_clean_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-clean.css';
+    $css_clean_version = BWWC_VERSION;
+    if (file_exists($css_clean_path)) {
+        $css_clean_version .= '.' . filemtime($css_clean_path);
+    }
+    
+    $css_grid_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-grid.css';
+    $css_grid_version = BWWC_VERSION;
+    if (file_exists($css_grid_path)) {
+        $css_grid_version .= '.' . filemtime($css_grid_path);
+    }
+    
+    $css_console_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-console.css';
+    $css_console_version = BWWC_VERSION;
+    if (file_exists($css_console_path)) {
+        $css_console_version .= '.' . filemtime($css_console_path);
+    }
+    
+    // JS versions with filemtime
     $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
     $script_version = BWWC_VERSION;
     if (file_exists($script_file_path)) {
         $script_version .= '.' . filemtime($script_file_path);
     }
 
-    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), BWWC_VERSION);
-    wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), BWWC_VERSION);
-    wp_enqueue_style('bsv-payment-clean', plugins_url('/assets/css/bsv-payment-clean.css', dirname(__FILE__)), array('bsv-payment-grid'), BWWC_VERSION);
+    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), $css_console_version);
+    wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), $css_grid_version);
+    wp_enqueue_style('bsv-payment-clean', plugins_url('/assets/css/bsv-payment-clean.css', dirname(__FILE__)), array('bsv-payment-grid'), $css_clean_version);
     
     // Use WooCommerce's jQuery QR code library
     wp_enqueue_script('jquery-qrcode', WC()->plugin_url() . '/assets/js/jquery-qrcode/jquery.qrcode.min.js', array('jquery'), WC_VERSION, true);

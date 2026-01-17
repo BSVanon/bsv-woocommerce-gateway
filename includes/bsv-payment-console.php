@@ -69,8 +69,11 @@ function BWWC__render_payment_console($order) {
     
     wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
     
-    // Enqueue BRC-100 wallet integration
-    wp_enqueue_script('bsv-wallet-integration', plugins_url('/assets/js/bsv-wallet-integration.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), BWWC_VERSION, true);
+    // Include BIP270 invoice endpoint
+    require_once(dirname(__FILE__) . '/bip270-invoice.php');
+    
+    // Generate signed invoice URL for BIP270
+    $invoice_url = BWWC__get_invoice_url($order_id, $order->get_order_key());
     
     // Localize script
     wp_localize_script('bsv-payment-console', 'bsvPaymentData', array(
@@ -79,7 +82,8 @@ function BWWC__render_payment_console($order) {
         'orderId' => $order_id,
         'bsvAddress' => $bsv_address,
         'bsvAmount' => $bsv_amount,
-        'orderKey' => $order->get_order_key()
+        'orderKey' => $order->get_order_key(),
+        'invoiceUrl' => $invoice_url
     ));
 
     // Render console
@@ -101,19 +105,13 @@ function BWWC__render_payment_console($order) {
             <!-- Left column: QR Code + Wallet Tabs -->
             <div class="bsv-qr-wallet-column">
                 
-                <!-- Wallet Type Tabs -->
+                <!-- Payment Protocol Tabs -->
                 <div class="bsv-wallet-tabs" role="tablist">
-                    <button class="bsv-wallet-tab active" data-wallet="generic" role="tab" aria-selected="true">
-                        <?php esc_html_e('Generic', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    <button class="bsv-wallet-tab active" data-protocol="bip21" role="tab" aria-selected="true">
+                        <?php esc_html_e('Standard', 'bitcoin-sv-payments-for-woocommerce'); ?>
                     </button>
-                    <button class="bsv-wallet-tab" data-wallet="handcash" role="tab" aria-selected="false">
-                        <?php esc_html_e('HandCash', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                    </button>
-                    <button class="bsv-wallet-tab" data-wallet="rock" role="tab" aria-selected="false">
-                        <?php esc_html_e('Rock', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                    </button>
-                    <button class="bsv-wallet-tab" data-wallet="yours" role="tab" aria-selected="false">
-                        <?php esc_html_e('Yours', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    <button class="bsv-wallet-tab" data-protocol="bip270" role="tab" aria-selected="false">
+                        <?php esc_html_e('Invoice Protocol', 'bitcoin-sv-payments-for-woocommerce'); ?>
                     </button>
                 </div>
 
@@ -123,23 +121,22 @@ function BWWC__render_payment_console($order) {
                         <div id="bsv-qr-code" 
                              data-address="<?php echo esc_attr($bsv_address); ?>" 
                              data-amount="<?php echo esc_attr($bsv_amount); ?>" 
-                             data-wallet="generic"
+                             data-order-id="<?php echo esc_attr($order_id); ?>"
+                             data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
+                             data-protocol="bip21"
                              style="display: inline-block;"></div>
                     </div>
                 </div>
 
-                <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-                <!-- BRC-100 Wallet Button -->
-                <div class="bsv-wallet-button-container">
-                    <button id="bsv-brc100-pay-button" class="bsv-brc100-button" type="button">
-                        <svg class="bsv-button-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                            <path d="M2 17l10 5 10-5M2 12l10 5 10-5"></path>
-                        </svg>
-                        <?php esc_html_e('Pay with BRC-100 Wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                    </button>
+                <!-- Protocol info -->
+                <div class="bsv-protocol-info">
+                    <p class="bsv-protocol-description" data-protocol="bip21">
+                        <?php esc_html_e('Scan with any BSV wallet (RockWallet, Simply Cash, etc.)', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    </p>
+                    <p class="bsv-protocol-description" data-protocol="bip270" style="display: none;">
+                        <?php esc_html_e('For wallets supporting BIP270 invoice protocol (HandCash, ElectrumSV, Centi)', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                    </p>
                 </div>
-                <?php endif; ?>
             </div>
 
             <!-- Right column: Amount + Address + Status -->

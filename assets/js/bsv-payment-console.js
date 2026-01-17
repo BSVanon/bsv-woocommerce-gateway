@@ -35,6 +35,9 @@
 
             // Bind event handlers
             this.bindEvents();
+            
+            // Bind protocol tab switching
+            this.bindProtocolTabs();
 
             // Initial status check to determine if we should poll
             this.checkStatus().done((response) => {
@@ -542,12 +545,15 @@
             }
         },
 
-        generateQRCode: function() {
+        generateQRCode: function(protocol) {
             const qrEl = $('#bsv-qr-code');
             if (!qrEl.length) return;
 
             const address = qrEl.data('address') || bsvPaymentData.bsvAddress;
             const amount = qrEl.data('amount') || bsvPaymentData.bsvAmount;
+            const orderId = qrEl.data('order-id') || bsvPaymentData.orderId;
+            const orderKey = qrEl.data('order-key') || bsvPaymentData.orderKey;
+            const currentProtocol = protocol || qrEl.data('protocol') || 'bip21';
 
             if (!address || !amount) {
                 console.warn('BSV: Missing address or amount for QR code');
@@ -555,22 +561,81 @@
                 return;
             }
 
-            // Generate BIP21 URI for BSV payment
-            const bip21Uri = `bitcoin:${address}?amount=${amount}`;
+            let qrPayload;
+            
+            if (currentProtocol === 'bip270') {
+                // BIP270: QR encodes invoice URL
+                // Wallet fetches PaymentTerms from this URL
+                qrPayload = this.getInvoiceUrl(orderId, orderKey);
+                console.log('BSV: Generating BIP270 invoice QR:', qrPayload);
+            } else {
+                // BIP21: Standard bitcoin: URI with address and amount
+                // Amount MUST be in BSV decimal, not sats
+                qrPayload = `bitcoin:${address}?amount=${amount}`;
+                console.log('BSV: Generating BIP21 QR:', qrPayload);
+            }
 
             try {
+                // Clear existing QR
+                qrEl.empty();
+                
                 // Generate QR code using jQuery QRCode
-                // Note: WooCommerce's jquery.qrcode uses simple API
                 qrEl.qrcode({
-                    text: bip21Uri,
+                    text: qrPayload,
                     width: 256,
                     height: 256,
                     render: 'canvas'
                 });
+                
+                // Update protocol data attribute
+                qrEl.data('protocol', currentProtocol);
             } catch (error) {
                 console.error('BSV: QR code generation failed', error);
                 qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable<br><small>Please use copy buttons below</small></div>');
             }
+        },
+
+        getInvoiceUrl: function(orderId, orderKey) {
+            // Generate signed invoice URL for BIP270
+            // Server will verify signature to prevent tampering
+            const baseUrl = window.location.origin;
+            const params = new URLSearchParams({
+                order_id: orderId,
+                key: orderKey,
+                sig: 'placeholder' // Server generates real signature
+            });
+            
+            // Note: Real signature is generated server-side
+            // This is just for QR generation - actual URL comes from localized data
+            return bsvPaymentData.invoiceUrl || `${baseUrl}/wc-api/bsv_invoice?${params.toString()}`;
+        },
+
+        bindProtocolTabs: function() {
+            const self = this;
+            
+            $('.bsv-wallet-tab').on('click', function() {
+                const $tab = $(this);
+                const protocol = $tab.data('protocol');
+                
+                // Update active tab
+                $('.bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
+                $tab.addClass('active').attr('aria-selected', 'true');
+                
+                // Update protocol descriptions
+                $('.bsv-protocol-description').hide();
+                $(`.bsv-protocol-description[data-protocol="${protocol}"]`).show();
+                
+                // Regenerate QR code with smooth transition
+                const $qrCard = $('.bsv-qr-card');
+                $qrCard.addClass('transitioning');
+                
+                setTimeout(() => {
+                    self.generateQRCode(protocol);
+                    setTimeout(() => {
+                        $qrCard.removeClass('transitioning');
+                    }, 50);
+                }, 300);
+            });
         }
     };
 

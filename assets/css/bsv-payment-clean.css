@@ -99,6 +99,7 @@
     flex-direction: column;
     align-items: flex-end;
     gap: 0.25rem;
+    align-self: center;
 }
 
 .bsv-timer-label {
@@ -127,7 +128,7 @@
 /* Two-column grid inside card */
 .bsv-payment-grid {
     display: grid;
-    grid-template-columns: 0.8fr 1.2fr;
+    grid-template-columns: 0.7fr 1.3fr;
     gap: 2rem;
     margin-bottom: 1.5rem;
     align-items: start;

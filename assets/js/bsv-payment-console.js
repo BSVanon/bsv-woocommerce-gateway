@@ -374,7 +374,7 @@
                 },
                 pending: {
                     label: 'Payment Received',
-                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). This usually takes a few minutes—no action needed.`
+                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
                 },
                 confirmed: {
                     label: 'Payment Confirmed',

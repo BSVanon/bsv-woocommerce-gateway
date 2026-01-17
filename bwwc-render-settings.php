@@ -391,7 +391,13 @@ function BWWC__render_advanced_settings_page_html()
             <span class="description">Enable automatic payment detection via WordPress cron. Disable if using external cron job.</span>
         </td>
     </tr>
-    
+ </table>
+ 
+ <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
+    <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
+ </p>
+ 
+ <table class="form-table">
     <tr valign="top">
         <th scope="row">Delete Data on Uninstall</th>
         <td>
@@ -413,7 +419,8 @@ function BWWC__render_advanced_settings_page_html()
  <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #d63638; margin-bottom: 20px;">
     <p style="margin: 0 0 10px 0; font-weight: bold; color: #d63638;">WARNING: Only modify these settings if you fully understand BIP32/BIP44 derivation paths!</p>
     <p style="margin: 0 0 10px 0;">Incorrect settings can cause transactions to appear "lost" or invisible in your wallet, even though they exist on the blockchain.</p>
-    <p style="margin: 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Tracker</a> to locate your funds.</p>
+    <p style="margin: 0 0 10px 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Tracker</a> to locate your funds.</p>
+    <p style="margin: 0; font-weight: bold; color: #d63638;">DISCLAIMER: Merchant uses these advanced settings at their own risk. The plugin developers are not responsible for lost or inaccessible funds due to incorrect derivation configuration.</p>
  </div>
  
  <table class="form-table">
@@ -423,7 +430,6 @@ function BWWC__render_advanced_settings_page_html()
             <select name="derivation_path_type">
                 <option value="m/0/i" <?php selected($bwwc_settings['derivation_path_type'], 'm/0/i'); ?>>m/0/i (Receiving - Default)</option>
                 <option value="m/1/i" <?php selected($bwwc_settings['derivation_path_type'], 'm/1/i'); ?>>m/1/i (Change)</option>
-                <option value="m/i" <?php selected($bwwc_settings['derivation_path_type'], 'm/i'); ?>>m/i (Root)</option>
             </select>
             <p class="description">
                 <strong>Default: m/0/i (Receiving)</strong> - Standard ElectrumSV receiving addresses.<br />
@@ -464,10 +470,6 @@ function BWWC__render_advanced_settings_page_html()
     <p style="margin: 0 0 10px 0; font-weight: bold;">Need Help Finding "Lost" Transactions?</p>
     <p style="margin: 0;">If you've changed derivation settings and can't see payments in ElectrumSV, use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to scan your xPub with different derivation paths and find your addresses.</p>
  </div>
- 
- <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
-    <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
- </p>
  
  <p class="submit">
     <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>" />

@@ -60,34 +60,25 @@ function BWWC__render_payment_console($order) {
         $time_remaining = BWWC__format_time_remaining($seconds_remaining);
     }
 
-    // Enqueue assets with cache busting
+    // Enqueue assets with AGGRESSIVE cache busting
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
     
-    // CSS versions with filemtime for cache busting
+    // Use timestamp for absolute cache busting
+    $cache_buster = time();
+    
+    // CSS versions with timestamp
     $css_clean_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-clean.css';
-    $css_clean_version = BWWC_VERSION;
-    if (file_exists($css_clean_path)) {
-        $css_clean_version .= '.' . filemtime($css_clean_path);
-    }
+    $css_clean_version = BWWC_VERSION . '.' . $cache_buster;
     
     $css_grid_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-grid.css';
-    $css_grid_version = BWWC_VERSION;
-    if (file_exists($css_grid_path)) {
-        $css_grid_version .= '.' . filemtime($css_grid_path);
-    }
+    $css_grid_version = BWWC_VERSION . '.' . $cache_buster;
     
     $css_console_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-console.css';
-    $css_console_version = BWWC_VERSION;
-    if (file_exists($css_console_path)) {
-        $css_console_version .= '.' . filemtime($css_console_path);
-    }
+    $css_console_version = BWWC_VERSION . '.' . $cache_buster;
     
-    // JS versions with filemtime
+    // JS versions with timestamp
     $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
-    $script_version = BWWC_VERSION;
-    if (file_exists($script_file_path)) {
-        $script_version .= '.' . filemtime($script_file_path);
-    }
+    $script_version = BWWC_VERSION . '.' . $cache_buster;
 
     wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), $css_console_version);
     wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), $css_grid_version);
@@ -125,6 +116,11 @@ function BWWC__render_payment_console($order) {
 
     // Render console
     ?>
+    <!-- CSS Load Test: If you see this yellow box, CSS v<?php echo esc_html($css_clean_version); ?> is loaded -->
+    <div style="background: #ffeb3b; padding: 15px; margin-bottom: 20px; border: 3px solid #f57c00; border-radius: 8px; text-align: center; font-weight: bold; color: #000;">
+        ✅ CSS LOADED - Version: <?php echo esc_html($css_clean_version); ?> - Grid: 0.7fr/1.3fr - Timer: align-self center
+    </div>
+    
     <div class="bsv-payment-console" data-order-id="<?php echo esc_attr($order_id); ?>" data-order-key="<?php echo esc_attr($order->get_order_key()); ?>" data-polling-interval="<?php echo esc_attr($polling_interval); ?>">
         
         <!-- Header with title and timer badge -->

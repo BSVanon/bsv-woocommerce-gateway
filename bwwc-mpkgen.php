@@ -46,16 +46,11 @@ function BWWC__MATH_generate_bitcoin_address_from_mpk($master_public_key, $key_i
         $derivation_path = isset($bwwc_settings['derivation_path_type']) ? $bwwc_settings['derivation_path_type'] : 'm/0/i';
         
         // Determine if this should be a change address based on derivation path setting
-        // m/0/i = receiving (is_for_change = false)
+        // m/0/i = receiving (is_for_change = false) - Default
         // m/1/i = change (is_for_change = true)
-        // m/i = root (is_for_change = false, but uses root derivation)
         
         if ($derivation_path === 'm/1/i') {
             $is_for_change = true;
-        } elseif ($derivation_path === 'm/i') {
-            // Root derivation - treat as receiving but note this is non-standard
-            $is_for_change = false;
-            BWWC__log_event(__FILE__, __LINE__, "Using root derivation path m/i for address index $key_index");
         } else {
             // Default m/0/i (receiving)
             $is_for_change = false;

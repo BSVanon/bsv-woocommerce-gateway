@@ -110,14 +110,17 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-payment-header">
             <h2><?php esc_html_e('Pay with Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'); ?></h2>
             <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-            <div class="bsv-timer-badge">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 6 12 12 16 14"></polyline>
-                </svg>
-                <span class="bsv-expiration-timer" data-expires="<?php echo esc_attr($expires_at); ?>">
-                    <?php echo esc_html($time_remaining); ?>
-                </span>
+            <div class="bsv-timer-wrapper">
+                <div class="bsv-timer-label"><?php esc_html_e('Order Expires in:', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
+                <div class="bsv-timer-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="bsv-expiration-timer" data-expires="<?php echo esc_attr($expires_at); ?>">
+                        <?php echo esc_html($time_remaining); ?>
+                    </span>
+                </div>
             </div>
             <?php endif; ?>
         </div>

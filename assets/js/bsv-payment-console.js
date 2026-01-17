@@ -359,8 +359,8 @@
         },
 
         updateStatusBox: function(data) {
-            const statusBox = $('.bsv-status-box');
-            if (!statusBox.length) return;
+            const statusStrip = $('.bsv-status-strip');
+            if (!statusStrip.length) return;
 
             const state = data.payment_state || 'waiting';
             const statusMessages = {
@@ -399,17 +399,17 @@
             const statusInfo = statusMessages[state] || statusMessages.waiting;
 
             // Update classes
-            statusBox.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid');
-            statusBox.addClass('status-' + state);
+            statusStrip.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid status-pending');
+            statusStrip.addClass('status-' + state);
 
-            // Update content
-            statusBox.find('.bsv-status-label').text(statusInfo.label);
-            statusBox.find('.bsv-status-message').text(statusInfo.message);
+            // Update content - find strong and span within .bsv-status-text
+            statusStrip.find('.bsv-status-text strong').text(statusInfo.label);
+            statusStrip.find('.bsv-status-text span').text(statusInfo.message);
         },
 
         createStepper: function(requiredConfs) {
-            const statusBox = $('.bsv-status-box');
-            if (!statusBox.length) return;
+            const statusStrip = $('.bsv-status-strip');
+            if (!statusStrip.length) return;
             
             const maxDots = Math.max(requiredConfs, 3);
             let dotsHtml = '';
@@ -424,7 +424,7 @@
                 '<div class="bsv-conf-progress">' + dotsHtml + '</div>' +
                 '</div>';
             
-            statusBox.after(stepperHtml);
+            statusStrip.after(stepperHtml);
             console.log('BSV: Stepper created with ' + maxDots + ' dots');
         },
         

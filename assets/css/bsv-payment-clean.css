@@ -94,6 +94,21 @@
     font-weight: 600;
 }
 
+.bsv-timer-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+}
+
+.bsv-timer-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
 .bsv-instruction {
     color: #475569;
 }
@@ -112,7 +127,7 @@
 /* Two-column grid inside card */
 .bsv-payment-grid {
     display: grid;
-    grid-template-columns: 0.9fr 1.1fr;
+    grid-template-columns: 0.8fr 1.2fr;
     gap: 2rem;
     margin-bottom: 1.5rem;
     align-items: start;

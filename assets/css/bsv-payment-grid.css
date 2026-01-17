@@ -3,12 +3,70 @@
  * v6.0.0 - Two-column responsive layout with wallet-specific QR codes
  */
 
-/* Two-column grid layout */
+/* ============================================
+   BROWSERAI UI REDESIGN - SINGLE CARD PATTERN
+   Clean hierarchy, proper spacing, no blocks
+   ============================================ */
+
+/* Header with timer badge */
+.bsv-payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.bsv-payment-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.bsv-timer-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+/* Single instruction line */
+.bsv-instruction {
+    margin: 0 0 1.5rem 0;
+    font-size: 14px;
+    color: #64748b;
+}
+
+/* Main payment card - single surface */
+.bsv-payment-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Two-column grid inside card */
 .bsv-payment-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 2rem;
-    margin: 2rem 0;
+    gap: 3rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .bsv-payment-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .bsv-payment-card {
+        padding: 1.5rem;
+    }
 }
 
 /* Left column: QR + Wallet tabs */

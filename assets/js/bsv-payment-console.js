@@ -613,28 +613,20 @@
         bindProtocolTabs: function() {
             const self = this;
             
-            $('.bsv-wallet-tab').on('click', function() {
+            $('.bsv-protocol-tab, .bsv-wallet-tab').on('click', function() {
                 const $tab = $(this);
                 const protocol = $tab.data('protocol');
                 
-                // Update active tab
-                $('.bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
+                // Update active state
+                $('.bsv-protocol-tab, .bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
                 $tab.addClass('active').attr('aria-selected', 'true');
                 
-                // Update protocol descriptions
-                $('.bsv-protocol-description').hide();
-                $(`.bsv-protocol-description[data-protocol="${protocol}"]`).show();
+                // Update QR code
+                self.generateQRCode(protocol);
                 
-                // Regenerate QR code with smooth transition
-                const $qrCard = $('.bsv-qr-card');
-                $qrCard.addClass('transitioning');
-                
-                setTimeout(() => {
-                    self.generateQRCode(protocol);
-                    setTimeout(() => {
-                        $qrCard.removeClass('transitioning');
-                    }, 50);
-                }, 300);
+                // Update protocol description/hint
+                $('.bsv-protocol-description, .bsv-qr-hint').hide();
+                $(`.bsv-protocol-description[data-protocol="${protocol}"], .bsv-qr-hint[data-protocol="${protocol}"]`).show();
             });
         }
     };

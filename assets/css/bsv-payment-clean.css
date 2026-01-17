@@ -1,0 +1,433 @@
+/**
+ * BSV Payment Console - Clean UI Redesign
+ * Per BrowserAI guidance: Single card, clear hierarchy, lightweight
+ * v6.0.0
+ */
+
+/* ============================================
+   LEFT COLUMN: QR CODE
+   ============================================ */
+
+.bsv-qr-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* Desktop Wallet Button (contextual, secondary) */
+.bsv-wallet-button {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.bsv-wallet-button:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #334155;
+}
+
+.bsv-wallet-button svg {
+    flex-shrink: 0;
+}
+
+/* Protocol Tabs (small, secondary) */
+.bsv-protocol-tabs {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.25rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.bsv-protocol-tab {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.bsv-protocol-tab:hover {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.bsv-protocol-tab.active {
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* QR Code (hero element) */
+.bsv-qr-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 1.5rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+.bsv-qr-wrapper canvas {
+    display: block;
+}
+
+/* QR hint (one-line, muted) */
+.bsv-qr-hint {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+/* ============================================
+   RIGHT COLUMN: DETAILS
+   ============================================ */
+
+.bsv-details-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Amount (hero) */
+.bsv-amount-section {
+    text-align: center;
+}
+
+.bsv-amount {
+    font-size: 36px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.bsv-amount:hover {
+    color: #2271b1;
+}
+
+.bsv-unit {
+    font-size: 20px;
+    font-weight: 600;
+    color: #64748b;
+    margin-left: 0.25rem;
+}
+
+.bsv-fiat {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+}
+
+/* Address (monospace + copy) */
+.bsv-address-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.bsv-address-label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+}
+
+.bsv-address-wrapper {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.bsv-address {
+    flex: 1;
+    padding: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 12px;
+    color: #334155;
+    word-break: break-all;
+}
+
+/* Copy buttons */
+.bsv-copy-btn {
+    padding: 0.5rem 1rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.bsv-copy-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.bsv-copy-btn:active {
+    background: #f1f5f9;
+}
+
+.bsv-copy-amount {
+    width: 100%;
+}
+
+/* Expected (muted text) */
+.bsv-expected {
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+}
+
+.bsv-expected strong {
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* ============================================
+   STATUS STRIP (BOTTOM OF CARD)
+   ============================================ */
+
+.bsv-status-strip {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.bsv-status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+    flex-shrink: 0;
+}
+
+.bsv-status-strip.status-waiting .bsv-status-indicator {
+    background: #f59e0b;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.bsv-status-strip.status-detected .bsv-status-indicator,
+.bsv-status-strip.status-pending .bsv-status-indicator {
+    background: #3b82f6;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.bsv-status-strip.status-confirmed .bsv-status-indicator {
+    background: #10b981;
+}
+
+.bsv-status-strip.status-expired .bsv-status-indicator,
+.bsv-status-strip.status-underpaid .bsv-status-indicator {
+    background: #ef4444;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.bsv-status-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+}
+
+.bsv-status-text strong {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.bsv-status-text span {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ============================================
+   STEPPER (INSIDE CARD)
+   ============================================ */
+
+.bsv-confirmations {
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.bsv-conf-label {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+}
+
+.bsv-conf-progress {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+.bsv-conf-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.bsv-conf-dot.pending {
+    background: #f59e0b;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.bsv-conf-dot.confirmed {
+    background: #10b981;
+}
+
+.bsv-conf-dot.partial {
+    background: #f59e0b;
+}
+
+.bsv-conf-dot.failed {
+    background: #ef4444;
+}
+
+/* Payment details */
+.bsv-payment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1rem;
+    background: #f8fafc;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.bsv-detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.bsv-detail-label {
+    color: #64748b;
+    font-weight: 500;
+}
+
+.bsv-detail-value {
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* ============================================
+   FOOTER ACTIONS (TERTIARY LINKS)
+   ============================================ */
+
+.bsv-footer-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.bsv-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #2271b1;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.bsv-link-btn:hover {
+    color: #135e96;
+    text-decoration: underline;
+}
+
+.bsv-footer-separator {
+    color: #cbd5e1;
+    user-select: none;
+}
+
+.bsv-get-bsv {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* Explorer link */
+.bsv-explorer-link {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.bsv-explorer-link a {
+    font-size: 13px;
+    color: #2271b1;
+    text-decoration: none;
+}
+
+.bsv-explorer-link a:hover {
+    text-decoration: underline;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 768px) {
+    .bsv-amount {
+        font-size: 28px;
+    }
+    
+    .bsv-unit {
+        font-size: 16px;
+    }
+    
+    .bsv-address-wrapper {
+        flex-direction: column;
+    }
+    
+    .bsv-copy-btn {
+        width: 100%;
+    }
+}

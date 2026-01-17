@@ -56,13 +56,13 @@
             // Check for any BRC-100 compatible wallet
             if (window.metanet && typeof window.metanet.createAction === 'function') {
                 console.log('[BRC-100] ✅ Metanet Desktop detected!');
-                $('#bsv-brc100-pay-button').prop('disabled', false);
+                $('#bsv-brc100-pay-button').prop('disabled', false).show();
                 return true;
             }
             
             if (window.bsv && typeof window.bsv.createAction === 'function') {
                 console.log('[BRC-100] ✅ BSV Desktop detected!');
-                $('#bsv-brc100-pay-button').prop('disabled', false);
+                $('#bsv-brc100-pay-button').prop('disabled', false).show();
                 return true;
             }
             

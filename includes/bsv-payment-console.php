@@ -70,7 +70,12 @@ function BWWC__render_payment_console($order) {
     wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
     
     // Enqueue BRC-100 payment integration (desktop wallets)
-    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), BWWC_VERSION, true);
+    $brc100_script_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-brc100-payment.js';
+    $brc100_version = BWWC_VERSION;
+    if (file_exists($brc100_script_path)) {
+        $brc100_version .= '.' . filemtime($brc100_script_path);
+    }
+    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), $brc100_version, true);
     
     // Include BIP270 invoice endpoint
     require_once(dirname(__FILE__) . '/bip270-invoice.php');

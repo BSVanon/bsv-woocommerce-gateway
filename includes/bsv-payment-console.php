@@ -109,16 +109,12 @@ function BWWC__render_payment_console($order) {
                 data-buttonId="bsv-gateway-paybutton"
                 data-paymentId="<?php echo esc_attr('Order #' . $order_id); ?>"
                 data-amount="<?php echo esc_attr(round($expected_sats)); ?>"
-                data-text="<?php echo esc_attr(sprintf('Pay %s BSV', $bsv_amount)); ?>"
+                data-text="Use BRC-100 Wallet to Pay"
                 data-description="<?php echo esc_attr('Payment for WooCommerce Order #' . $order_id); ?>"
                 data-width="fit-content"
                 data-multi-use="false">
-                <span class="gateway-button-icon">⚡</span>
-                <?php echo esc_html(sprintf('Pay %s BSV', $bsv_amount)); ?>
+                <?php esc_html_e('Use BRC-100 Wallet to Pay', 'bitcoin-sv-payments-for-woocommerce'); ?>
             </div>
-            <p class="description" style="margin-top: 10px; font-size: 12px; color: #666;">
-                <?php esc_html_e('Click to pay with HandCash, RelayX, or other BRC-100 wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
-            </p>
         </div>
         <?php endif; ?>
 

@@ -254,11 +254,11 @@ function BWWC__render_general_settings_page_html()
             <td>
               <p class="description" style="padding: 10px; background: #f0f0f1; border-left: 4px solid #2271b1;">
                 <strong>WordPress Cron (Automatic)</strong><br>
-                Payment processing runs automatically via WordPress scheduled events. No additional configuration needed.<br><br>
-                <strong>For Reliable Processing:</strong> Configure your server to run <code>wp-cron.php</code> every 5 minutes via system cron, then disable WordPress page-load cron by adding this to <code>wp-config.php</code>:<br>
+                Payment processing runs automatically via WordPress scheduled events.<br><br>
+                <strong>Optional - For High-Traffic Sites:</strong> For more reliable processing on busy sites, configure your server to run <code>wp-cron.php</code> every 5 minutes via system cron, then disable WordPress page-load cron by adding this to <code>wp-config.php</code>:<br>
                 <code style="background: #fff; padding: 2px 6px; display: inline-block; margin-top: 5px;">define('DISABLE_WP_CRON', true);</code><br><br>
-                <strong>System Cron Command:</strong><br>
-                <code style="background: #fff; padding: 2px 6px; display: inline-block; margin-top: 5px;">*/5 * * * * wget -q -O - <?php echo esc_url(site_url('wp-cron.php')); ?> &>/dev/null</code>
+                <strong>System Cron Command (replace with your domain):</strong><br>
+                <code style="background: #fff; padding: 2px 6px; display: inline-block; margin-top: 5px;">*/5 * * * * wget -q -O - https://yourdomain.com/wp-cron.php &>/dev/null</code>
               </p>
               <input type="hidden" name="enable_soft_cron_job" value="1" />               
               </p>

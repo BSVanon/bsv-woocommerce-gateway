@@ -454,11 +454,11 @@
 
 .gateway-paybutton-fixed {
     border-radius: 2em;
-    border: none;
+    border: 2px solid #2271b1;
     padding: 0.9em 2em;
     min-width: 12em;
-    background: #FCCA09;
-    color: #000000;
+    background: #2271b1;
+    color: #ffffff;
     box-shadow: 2px 4px 6px rgba(0, 0, 0, 0.15);
     user-select: none;
     transition: all 0.3s ease;
@@ -471,12 +471,15 @@
 
 .gateway-paybutton-fixed:hover {
     box-shadow: 4px 8px 12px rgba(0, 0, 0, 0.25);
-    background: #FFD700;
+    background: #135e96;
+    border-color: #135e96;
 }
 
 .gateway-paybutton-fixed.disabled {
     opacity: 1 !important;
-    background: #FCCA09 !important;
+    background: #2271b1 !important;
+    border-color: #2271b1 !important;
+    color: #ffffff !important;
     cursor: pointer !important;
     pointer-events: auto !important;
 }

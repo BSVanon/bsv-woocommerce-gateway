@@ -91,11 +91,21 @@
         },
 
         async ensureWallet() {
-            // Try window.CWI first (BRC-7)
+            // Try JSON-API first (Metanet Desktop on localhost:3321)
+            // This is what @bsv/sdk WalletClient actually does
+            try {
+                console.log('[JSON-API] Trying direct connection to localhost:3321...');
+                const version = await this.jsonApiCall('getVersion', {});
+                console.log('[JSON-API] ✅ Metanet Desktop connected, version:', version);
+                return { type: 'json-api', wallet: null };
+            } catch (e) {
+                console.warn('[JSON-API] Connection failed:', e.message);
+            }
+            
+            // Try window.CWI (BRC-7)
             if (this.isCwiPresent()) {
                 await this.ensureAuthIfSupported();
                 
-                // Verify with getVersion
                 try {
                     const version = await window.CWI.getVersion({});
                     console.log('[BRC-7] Wallet version:', version);
@@ -107,7 +117,7 @@
             
             // Try BRC-6 XDM fallback (if in parent wallet page)
             if (window !== window.parent) {
-                console.log('[BRC-7] Trying BRC-6 XDM fallback...');
+                console.log('[BRC-6] Trying XDM fallback...');
                 try {
                     const version = await this.cwiXdmCall('getVersion', {});
                     console.log('[BRC-6] XDM wallet detected, version:', version);
@@ -117,7 +127,7 @@
                 }
             }
             
-            throw new Error('No wallet detected. Please:\n1. Install a BRC-7 compatible wallet (e.g., Metanet Desktop)\n2. Authenticate in the wallet\n3. Refresh this page\n\nIf using Docker, the wallet may restrict this origin (http://172.19.0.3). Try accessing via localhost instead.');
+            throw new Error('No wallet detected. Please:\n1. Install Metanet Desktop and ensure it\'s running\n2. Authenticate in the wallet\n3. Refresh this page');
         },
 
         async payWithWallet() {
@@ -152,7 +162,10 @@
             };
 
             let result;
-            if (walletInfo.type === 'brc7') {
+            if (walletInfo.type === 'json-api') {
+                console.log('[JSON-API] Calling createAction on localhost:3321...');
+                result = await this.jsonApiCall('createAction', brc1Request);
+            } else if (walletInfo.type === 'brc7') {
                 console.log('[BRC-7] Calling window.CWI.createAction...');
                 result = await window.CWI.createAction(brc1Request);
             } else if (walletInfo.type === 'brc6') {
@@ -171,6 +184,28 @@
             }
 
             return result;
+        },
+
+        jsonApiCall: async function(call, args = {}) {
+            // Direct HTTP call to Metanet Desktop JSON-API
+            // Mimics @bsv/sdk HTTPWalletJSON implementation
+            const baseUrl = 'http://localhost:3321';
+            
+            const response = await fetch(`${baseUrl}/${call}`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(args)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text().catch(() => '');
+                throw new Error(`JSON-API error ${response.status}: ${errorText}`);
+            }
+            
+            return await response.json();
         },
 
         cwiXdmCall: function(call, params = {}, target = window.parent, origin = '*') {

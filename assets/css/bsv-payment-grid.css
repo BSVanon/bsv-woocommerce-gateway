@@ -51,12 +51,15 @@
 }
 
 /* Two-column grid inside card */
+/* DISABLED: Moved to bsv-payment-clean.css with updated ratio */
+/*
 .bsv-payment-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 3rem;
     margin-bottom: 1.5rem;
 }
+*/
 
 @media (max-width: 768px) {
     .bsv-payment-grid {

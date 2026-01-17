@@ -1,98 +1,55 @@
 /**
- * BSV BRC-100 Payment Integration
- * v6.0.0 - Desktop wallet payment with minimal dependencies
+ * BSV BRC-7 Wallet Payment Integration
+ * v6.0.0 - Standards-based desktop wallet payment
  * 
- * Implements BrowserAI's recommended approach:
- * - Tiny base58 decoder (no external dependencies)
- * - P2PKH locking script builder
- * - Uses lockingScript (hex) + satoshis for wallet calls
+ * Uses BRC-7 (window.CWI) standard per BSV specialist guidance:
+ * - No npm dependencies, pure browser JavaScript
+ * - Vendor-neutral wallet interface (window.CWI)
+ * - P2PKH locking script builder (inline)
+ * - BRC-1 Transaction Creation request format
  * 
- * Supports: Metanet Desktop, BSV Desktop (BRC-73 standard)
+ * Supports: Any BRC-7 compatible wallet (Metanet Desktop, etc.)
  */
 (function($) {
     'use strict';
 
-    const BSVBRC100Payment = {
-        wallet: null,
-
+    const BSVBRC7Payment = {
         init: function() {
-            console.log('[BRC-100] Initializing payment integration...');
-            console.log('[BRC-100] Current URL:', window.location.href);
-            console.log('[BRC-100] Protocol:', window.location.protocol);
+            console.log('[BRC-7] Initializing wallet payment integration...');
+            console.log('[BRC-7] Current URL:', window.location.href);
             
-            // Bind BRC-100 payment button
             this.bindPaymentButton();
             
-            // Check wallet availability with progressive delays
-            this.checkWalletAvailability();
-            setTimeout(() => this.checkWalletAvailability(), 500);
-            setTimeout(() => this.checkWalletAvailability(), 1000);
-            setTimeout(() => this.checkWalletAvailability(), 2000);
-            setTimeout(() => this.checkWalletAvailability(), 3000);
-            setTimeout(() => this.checkWalletAvailability(), 5000);
-            
-            // Also check on window load event
-            $(window).on('load', () => {
-                setTimeout(() => this.checkWalletAvailability(), 1000);
-            });
+            // Check for window.CWI with progressive delays
+            this.detectWallet();
+            setTimeout(() => this.detectWallet(), 500);
+            setTimeout(() => this.detectWallet(), 1000);
+            setTimeout(() => this.detectWallet(), 2000);
+            setTimeout(() => this.detectWallet(), 5000);
         },
 
-        checkWalletAvailability: function() {
-            console.log('[BRC-100] === Wallet Detection Check ===');
-            console.log('[BRC-100] In iframe?', window !== window.top);
-            console.log('[BRC-100] Same origin?', this.isSameOrigin());
-            
-            // Check current window and parent window (for iframe scenarios)
-            const windows = [window];
-            
-            // If in iframe and same origin, also check parent
-            if (window !== window.top && this.isSameOrigin()) {
-                console.log('[BRC-100] Checking parent window for wallet...');
-                windows.push(window.top);
-            }
-            
-            // Check all windows for wallet objects
-            for (const win of windows) {
-                const walletChecks = {
-                    'metanet': win.metanet,
-                    'bsv': win.bsv,
-                    'yours': win.yours,
-                    'panda': win.panda,
-                    'twetch': win.twetch,
-                    'relayx': win.relayx,
-                    'handcash': win.handcash
-                };
+        detectWallet: function() {
+            // Check for window.CWI (BRC-7 standard)
+            if (typeof window.CWI !== 'undefined') {
+                console.log('[BRC-7] ✅ BRC-7 wallet detected (window.CWI)');
                 
-                console.log('[BRC-100] Wallet objects in', win === window ? 'current window' : 'parent window', ':', walletChecks);
-                
-                // Check for BRC-100 compatible wallet
-                if (win.metanet && typeof win.metanet.createAction === 'function') {
-                    console.log('[BRC-100] ✅ Metanet Desktop detected in', win === window ? 'current window' : 'parent window');
-                    this.wallet = win.metanet;
-                    $('#bsv-brc100-pay-button').prop('disabled', false).show();
-                    return true;
+                // Check if wallet has required methods
+                if (typeof window.CWI.getVersion === 'function') {
+                    try {
+                        const version = window.CWI.getVersion();
+                        console.log('[BRC-7] Wallet version:', version);
+                    } catch (e) {
+                        console.log('[BRC-7] Could not get version:', e.message);
+                    }
                 }
                 
-                if (win.bsv && typeof win.bsv.createAction === 'function') {
-                    console.log('[BRC-100] ✅ BSV Desktop detected in', win === window ? 'current window' : 'parent window');
-                    this.wallet = win.bsv;
-                    $('#bsv-brc100-pay-button').prop('disabled', false).show();
-                    return true;
-                }
+                // Enable payment button
+                $('#bsv-brc100-pay-button').prop('disabled', false).show();
+                return { available: true };
             }
             
-            console.log('[BRC-100] ❌ No BRC-100 wallet detected in any window');
-            return false;
-        },
-        
-        isSameOrigin: function() {
-            try {
-                // Try to access parent window location - will throw if different origin
-                const parentLoc = window.top.location.href;
-                return true;
-            } catch (e) {
-                return false;
-            }
+            console.log('[BRC-7] No BRC-7 wallet detected (window.CWI undefined)');
+            return { available: false };
         },
 
         bindPaymentButton: function() {
@@ -101,7 +58,6 @@
             $('#bsv-brc100-pay-button').on('click', async function() {
                 const $button = $(this);
                 
-                // Prevent double-click
                 if ($button.prop('disabled')) return;
                 
                 $button.prop('disabled', true);
@@ -109,9 +65,9 @@
                 $button.html('<span style="opacity: 0.7;">Connecting wallet...</span>');
                 
                 try {
-                    await self.payWithBRC100Wallet();
+                    await self.payWithWallet();
                 } catch (error) {
-                    console.error('[BRC-100] Payment failed', error);
+                    console.error('[BRC-7] Payment failed:', error);
                     self.showError(error.message || 'Payment failed. Please try again.');
                 } finally {
                     $button.prop('disabled', false);
@@ -120,33 +76,29 @@
             });
         },
 
-        async getWallet() {
-            // Use cached wallet from detection
-            if (this.wallet) {
-                console.log('[BRC-100] Using cached wallet reference');
-                return this.wallet;
+        async ensureWallet() {
+            if (typeof window.CWI === 'undefined') {
+                throw new Error('No BRC-7 wallet found. Please install a compatible wallet (e.g., Metanet Desktop) and refresh the page.');
             }
             
-            // Fallback: check current window
-            if (typeof window !== 'undefined' && window.metanet && typeof window.metanet.createAction === 'function') {
-                console.log('[BRC-100] Using Metanet Desktop wallet from current window');
-                this.wallet = window.metanet;
-                return window.metanet;
+            // Check if authenticated
+            if (typeof window.CWI.isAuthenticated === 'function') {
+                const isAuth = await window.CWI.isAuthenticated();
+                console.log('[BRC-7] Wallet authenticated:', isAuth);
+                
+                if (!isAuth && typeof window.CWI.waitForAuthentication === 'function') {
+                    console.log('[BRC-7] Requesting authentication...');
+                    await window.CWI.waitForAuthentication();
+                    console.log('[BRC-7] Authentication complete');
+                }
             }
             
-            if (typeof window !== 'undefined' && window.bsv && typeof window.bsv.createAction === 'function') {
-                console.log('[BRC-100] Using BSV Desktop wallet from current window');
-                this.wallet = window.bsv;
-                return window.bsv;
-            }
-
-            throw new Error('No BRC-100 wallet found. Please install Metanet Desktop or BSV Desktop.');
+            return window.CWI;
         },
 
-        async payWithBRC100Wallet() {
-            console.log('[BRC-100] Initiating payment...');
+        async payWithWallet() {
+            console.log('[BRC-7] Initiating payment...');
 
-            // Get payment details from page
             const address = bsvPaymentData.bsvAddress;
             const amountBSV = parseFloat(bsvPaymentData.bsvAmount);
             const amountSats = Math.round(amountBSV * 100000000);
@@ -156,44 +108,31 @@
                 throw new Error('Invalid payment details');
             }
 
-            console.log('[BRC-100] Payment details:', {
-                address,
-                amountBSV,
-                amountSats,
-                orderId
-            });
+            console.log('[BRC-7] Payment details:', { address, amountBSV, amountSats, orderId });
 
-            // Get wallet client
-            this.wallet = await this.getWallet();
+            // Ensure wallet is ready and authenticated
+            await this.ensureWallet();
 
-            // Convert base58 address to P2PKH locking script (hex)
-            // This is the canonical BRC-100 format: lockingScript + satoshis
+            // Convert address to P2PKH locking script (hex)
             const lockingScript = this.addressToP2PKHLockingScript(address);
+            console.log('[BRC-7] Locking script:', lockingScript);
 
-            console.log('[BRC-100] Locking script:', lockingScript);
+            // Build BRC-1 Transaction Creation request
+            const request = {
+                description: `WooCommerce Order #${orderId} Payment`,
+                outputs: [{
+                    satoshis: amountSats,
+                    lockingScript: lockingScript
+                }]
+            };
 
-            // Create payment output using BRC-100 standard format
-            const outputs = [{
-                satoshis: amountSats,
-                lockingScript: lockingScript,  // HEX format
-                description: `WooCommerce Order #${orderId}`
-            }];
+            console.log('[BRC-7] Calling window.CWI.createAction...');
+            const result = await window.CWI.createAction(request);
+            console.log('[BRC-7] Payment result:', result);
 
-            console.log('[BRC-100] Creating payment action...');
-
-            // Create action using BRC-100 wallet
-            const result = await this.wallet.createAction({
-                description: `Payment for WooCommerce Order #${orderId}`,
-                outputs: outputs
-            });
-
-            console.log('[BRC-100] Payment action created:', result);
-
-            // Extract txid from result
             const txid = this.extractTxid(result);
-            
             if (txid) {
-                console.log('[BRC-100] Payment broadcast successful, txid:', txid);
+                console.log('[BRC-7] ✅ Payment successful, txid:', txid);
                 this.showSuccess(txid);
             } else {
                 throw new Error('Payment created but no transaction ID returned');
@@ -204,12 +143,8 @@
 
         /**
          * Convert base58 P2PKH address to locking script hex
-         * 
-         * Per BrowserAI's guidance:
-         * - Decode base58check address
-         * - Extract 20-byte pubKeyHash
-         * - Build P2PKH script: OP_DUP OP_HASH160 <20-byte-hash> OP_EQUALVERIFY OP_CHECKSIG
-         * - Return as hex: 76a914<hash>88ac
+         * Format: 76a914<20-byte-pubKeyHash>88ac
+         * (OP_DUP OP_HASH160 PUSH20 <hash> OP_EQUALVERIFY OP_CHECKSIG)
          */
         addressToP2PKHLockingScript: function(address) {
             try {
@@ -244,7 +179,7 @@
                 
                 return script;
             } catch (error) {
-                console.error('[BRC-100] Address conversion failed:', error);
+                console.error('[BRC-7] Address conversion failed:', error);
                 throw new Error('Failed to convert address to locking script: ' + error.message);
             }
         },
@@ -429,7 +364,7 @@
                 if (firstSend.txid) return firstSend.txid;
             }
 
-            console.warn('[BRC-100] Could not extract txid from result:', result);
+            console.warn('[BRC-7] Could not extract txid from result:', result);
             return null;
         },
 
@@ -450,7 +385,7 @@
 
     // Initialize on document ready
     $(document).ready(function() {
-        BSVBRC100Payment.init();
+        BSVBRC7Payment.init();
     });
 
 })(jQuery);

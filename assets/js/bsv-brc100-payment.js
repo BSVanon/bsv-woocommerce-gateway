@@ -155,7 +155,8 @@
                 description: `WooCommerce Order #${orderId} Payment`,
                 outputs: [{
                     satoshis: amountSats,
-                    lockingScript: lockingScript
+                    lockingScript: lockingScript,
+                    outputDescription: `Order #${orderId} payment`
                 }]
             };
 

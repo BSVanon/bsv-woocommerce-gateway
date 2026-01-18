@@ -94,10 +94,10 @@ function BWWC_activate()
 // Cron Subfunctions
 function BWWC__add_custom_scheduled_intervals($schedules)
 {
-    $schedules['seconds_30']     = array('interval'=>30,     'display'=>__('Once every 30 seconds', 'bitcoin-sv-payments-for-woocommerce'));     // For testing only.
-    $schedules['minutes_1']      = array('interval'=>1*60,   'display'=>__('Once every 1 minute', 'bitcoin-sv-payments-for-woocommerce'));
-    $schedules['minutes_2.5']    = array('interval'=>2.5*60, 'display'=>__('Once every 2.5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
-    $schedules['minutes_5']      = array('interval'=>5*60,   'display'=>__('Once every 5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['seconds_30']     = array('interval'=>30,  'display'=>__('Once every 30 seconds', 'bitcoin-sv-payments-for-woocommerce'));     // For testing only.
+    $schedules['minutes_1']      = array('interval'=>60,  'display'=>__('Once every 1 minute', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['minutes_2.5']    = array('interval'=>150, 'display'=>__('Once every 2.5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['minutes_5']      = array('interval'=>300, 'display'=>__('Once every 5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
 
     return $schedules;
 }

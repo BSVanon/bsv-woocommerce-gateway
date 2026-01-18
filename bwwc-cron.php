@@ -96,9 +96,9 @@ function BWWC_cron_job_worker()
                 $order = wc_get_order($last_order_info['order_id']);
                 if ($order && in_array($order->get_status(), array('completed', 'processing', 'cancelled', 'refunded', 'failed'))) {
                     // Ensure payment_state reflects final status to stop frontend polling
-                    $current_payment_state = BWWC_get_order_meta($last_order_info['order_id'], 'payment_state', true);
+                    $current_payment_state = get_post_meta($last_order_info['order_id'], 'payment_state', true);
                     if (($order->get_status() === 'completed' || $order->get_status() === 'processing') && $current_payment_state !== 'confirmed') {
-                        BWWC_update_order_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
+                        update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Updated payment_state to 'confirmed' for order {$last_order_info['order_id']} (status: {$order->get_status()})");
                     }
                     
@@ -155,9 +155,9 @@ function BWWC_cron_job_worker()
                     $expected_sats = intval(round($expected_btc * 100000000));
                     $received_btc = $total_btc;
                     
-                    BWWC_update_order_meta($order_id, 'received_sats', $total_sats);
-                    BWWC_update_order_meta($order_id, 'confirmed_sats', $confirmed_sats);
-                    BWWC_update_order_meta($order_id, 'last_checked_at', time());
+                    update_post_meta($order_id, 'received_sats', $total_sats);
+                    update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
+                    update_post_meta($order_id, 'last_checked_at', time());
                     
                     // Fetch transaction history to get txids and confirmations
                     $max_confirmations = 0;
@@ -186,40 +186,40 @@ function BWWC_cron_job_worker()
                             }
                             
                             if (!empty($txids)) {
-                                BWWC_update_order_meta($order_id, 'txids', implode(',', $txids));
-                                BWWC_update_order_meta($order_id, 'best_confirmations', $max_confirmations);
+                                update_post_meta($order_id, 'txids', implode(',', $txids));
+                                update_post_meta($order_id, 'best_confirmations', $max_confirmations);
                                 BWWC__log_event(__FILE__, __LINE__, "Cron job: Stored " . count($txids) . " transaction ID(s) for order {$order_id}, best confirmations: {$max_confirmations}");
                             }
                         }
                     }
                     // Extend expiration if funds detected (prevents scary "expired" while awaiting confirmations)
                     if ($total_sats > 0) {
-                        $expires_at = intval(BWWC_get_order_meta($order_id, 'address_expires_at', true));
+                        $expires_at = intval(get_post_meta($order_id, 'address_expires_at', true));
                         $pending_extension_secs = max($assigned_address_expires_in_secs, $confirmations_required * 10 * 60);
                         $proposed_expiration = $current_time + $pending_extension_secs;
                         if ($proposed_expiration > $expires_at) {
-                            BWWC_update_order_meta($order_id, 'address_expires_at', $proposed_expiration);
+                            update_post_meta($order_id, 'address_expires_at', $proposed_expiration);
                         }
                     }
 
                     // Determine payment state using consistent logic
                     if ($total_sats < $expected_sats) {
-                        BWWC_update_order_meta($order_id, 'payment_state', 'underpaid');
+                        update_post_meta($order_id, 'payment_state', 'underpaid');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'underpaid' for order {$order_id} (received {$total_sats} of {$expected_sats} sats)");
                     } elseif ($confirmed_sats >= $expected_sats && $max_confirmations >= $confirmations_required) {
-                        BWWC_update_order_meta($order_id, 'payment_state', 'confirmed');
+                        update_post_meta($order_id, 'payment_state', 'confirmed');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$order_id} (confirmed {$confirmed_sats} sats, {$max_confirmations} confirmations)");
                     } else {
-                        BWWC_update_order_meta($order_id, 'payment_state', 'pending');
+                        update_post_meta($order_id, 'payment_state', 'pending');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'pending' for order {$order_id} (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$max_confirmations}/{$confirmations_required} confirmations)");
                     }
                 } else {
                     // No funds detected - reset to waiting if previously pending/underpaid
-                    BWWC_update_order_meta($last_order_info['order_id'], 'received_sats', 0);
-                    BWWC_update_order_meta($last_order_info['order_id'], 'confirmed_sats', 0);
-                    $current_state = BWWC_get_order_meta($last_order_info['order_id'], 'payment_state', true);
+                    update_post_meta($last_order_info['order_id'], 'received_sats', 0);
+                    update_post_meta($last_order_info['order_id'], 'confirmed_sats', 0);
+                    $current_state = get_post_meta($last_order_info['order_id'], 'payment_state', true);
                     if (in_array($current_state, array('pending', 'underpaid'))) {
-                        BWWC_update_order_meta($last_order_info['order_id'], 'payment_state', 'waiting');
+                        update_post_meta($last_order_info['order_id'], 'payment_state', 'waiting');
                     }
                 }
 
@@ -254,8 +254,8 @@ function BWWC_cron_job_worker()
                     BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Full payment for order ID '{$last_order_info['order_id']}' detected at address: '{$row_for_balance_check['btc_address']}' (BTC '$received_btc'). Total was required for this order: '$expected_btc'. Processing order ...");
 
                     // Update payment state to confirmed
-                    BWWC_update_order_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
-                    BWWC_update_order_meta($last_order_info['order_id'], 'best_confirmations', $max_confirmations); // Use actual confirmations
+                    update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
+                    update_post_meta($last_order_info['order_id'], 'best_confirmations', 1); // Will be updated by blockchain check
                     BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$last_order_info['order_id']} - processing payment completion");
 
                     // Update order' meta info

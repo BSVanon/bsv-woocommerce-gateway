@@ -72,12 +72,12 @@ function BWWC__check_payment_for_order($order_id) {
     BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} - Confirmed: {$confirmed_sats} sats, Total (incl. mempool): {$total_sats} sats, Expected: {$expected_sats} sats");
     
     // Update received amount and last checked time
-    BWWC_update_order_meta($order_id, 'received_sats', $total_sats);
-    BWWC_update_order_meta($order_id, 'confirmed_sats', $confirmed_sats);
-    BWWC_update_order_meta($order_id, 'last_checked_at', time());
+    update_post_meta($order_id, 'received_sats', $total_sats);
+    update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
+    update_post_meta($order_id, 'last_checked_at', time());
     
     // Fetch transaction history if payment detected
-    $best_confirmations = intval(BWWC_get_order_meta($order_id, 'best_confirmations', true));
+    $best_confirmations = intval(get_post_meta($order_id, 'best_confirmations', true));
     if ($total_sats > 0) {
         $tx_history_response = BWWC__file_get_contents(
             'https://api.whatsonchain.com/v1/bsv/main/address/' . $bsv_address . '/history',
@@ -106,9 +106,9 @@ function BWWC__check_payment_for_order($order_id) {
                 }
                 
                 if (!empty($txids)) {
-                    BWWC_update_order_meta($order_id, 'txids', implode(',', $txids));
+                    update_post_meta($order_id, 'txids', implode(',', $txids));
                     $best_confirmations = $max_confirmations;
-                    BWWC_update_order_meta($order_id, 'best_confirmations', $best_confirmations);
+                    update_post_meta($order_id, 'best_confirmations', $best_confirmations);
                     BWWC__log_event(__FILE__, __LINE__, "Payment check: Stored " . count($txids) . " transaction ID(s) for order {$order_id}");
                 }
             }
@@ -116,38 +116,38 @@ function BWWC__check_payment_for_order($order_id) {
     }
     
     // Determine payment state using consistent logic
-    $order_total_btc = floatval(BWWC_get_order_meta($order_id, 'order_total_in_btc', true));
+    $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
     
     // Extend expiration if funds detected
     if ($total_sats > 0) {
-        $expires_at = intval(BWWC_get_order_meta($order_id, 'address_expires_at', true));
+        $expires_at = intval(get_post_meta($order_id, 'address_expires_at', true));
         $assigned_address_expires_in_secs = intval($bwwc_settings['assigned_address_expires_in_mins']) * 60;
         $pending_extension_secs = max($assigned_address_expires_in_secs, intval($bwwc_settings['confs_num']) * 10 * 60);
         $proposed_expiration = time() + $pending_extension_secs;
         if ($proposed_expiration > $expires_at) {
-            BWWC_update_order_meta($order_id, 'address_expires_at', $proposed_expiration);
+            update_post_meta($order_id, 'address_expires_at', $proposed_expiration);
         }
     }
     
     // Consistent state machine logic
     if ($total_sats == 0) {
-        BWWC_update_order_meta($order_id, 'payment_state', 'waiting');
+        update_post_meta($order_id, 'payment_state', 'waiting');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = waiting (no payment detected)");
         return false;
     }
 
     if ($total_sats < $expected_sats) {
-        BWWC_update_order_meta($order_id, 'payment_state', 'underpaid');
+        update_post_meta($order_id, 'payment_state', 'underpaid');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = underpaid (received {$total_sats} of {$expected_sats} sats)");
         return false;
     }
 
     // Full amount received - check if confirmed
     if ($confirmed_sats >= $expected_sats && $best_confirmations >= $required_confirmations) {
-        BWWC_update_order_meta($order_id, 'payment_state', 'confirmed');
+        update_post_meta($order_id, 'payment_state', 'confirmed');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = confirmed (confirmed {$confirmed_sats} sats, {$best_confirmations} confirmations)");
     } else {
-        BWWC_update_order_meta($order_id, 'payment_state', 'pending');
+        update_post_meta($order_id, 'payment_state', 'pending');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = pending (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$best_confirmations}/{$required_confirmations} confirmations)");
         return true;
     }

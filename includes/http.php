@@ -23,18 +23,6 @@ if (!defined('ABSPATH')) {
  */
 function BWWC__http_get($url, $timeout = 30, $headers = array())
 {
-    // Enforce HTTPS for external API calls
-    if (!BWWC__is_secure_url($url)) {
-        BWWC__log_event(__FILE__, __LINE__, 'HTTP GET blocked: URL must use HTTPS | URL: ' . $url);
-        return false;
-    }
-    
-    // Enforce API host allowlist
-    if (!BWWC__is_allowed_api_host($url)) {
-        BWWC__log_event(__FILE__, __LINE__, 'HTTP GET blocked: Host not in allowlist | URL: ' . $url);
-        return false;
-    }
-    
     $args = array(
         'timeout'     => $timeout,
         'redirection' => 5,
@@ -66,16 +54,15 @@ function BWWC__http_get($url, $timeout = 30, $headers = array())
  * @deprecated 6.0.0 Use BWWC__http_get() or BWWC__http_post() instead
  * @param string $url Target URL
  * @param bool $use_include_path Ignored (legacy parameter)
- * @param int|resource $context Timeout in seconds if numeric, ignored otherwise
+ * @param resource $context Ignored (legacy parameter)
  * @param int $offset Ignored (legacy parameter)
  * @param int $maxlen Ignored (legacy parameter)
  * @return string|false Response body on success, false on failure
  */
 function BWWC__file_get_contents($url, $use_include_path = false, $context = null, $offset = 0, $maxlen = null)
 {
-    // Support timeout as 3rd parameter (common usage pattern in codebase)
-    $timeout = (is_numeric($context) && $context > 0) ? intval($context) : 30;
-    return BWWC__http_get($url, $timeout);
+    // Legacy wrapper - just use http_get with default timeout
+    return BWWC__http_get($url, 30);
 }
 
 /**

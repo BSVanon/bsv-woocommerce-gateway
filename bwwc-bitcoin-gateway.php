@@ -516,12 +516,43 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 'order_id'								=> $order_id,
                 'order_total'			    	 	=> $order_total_in_btc,  // Order total in BTC
                 'order_datetime'  				=> gmdate('Y-m-d H:i:s T'),
+                'requested_by_ip'					=> isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
+                'requested_by_ua'					=> isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '',
                 );
 
-            // Only electrum_wallet provider is supported in v6.0.0+
-            // Legacy blockchain_info provider removed (security: logged secrets in URLs)
-            $ret_info_array = BWWC__get_bitcoin_address_for_payment__electrum(BWWC__get_next_available_mpk(), $order_info);
-            $bitcoins_address = @$ret_info_array['generated_bitcoin_address'];
+            $ret_info_array = array();
+
+            if ($this->service_provider == 'blockchain_info') {
+                $bitcoin_addr_merchant = $this->bitcoin_addr_merchant;
+                $secret_key = substr(md5(microtime()), 0, 16);	# Generate secret key to be validate upon receiving IPN callback to prevent spoofing.
+                $callback_url = trailingslashit(home_url()) . "?wc-api=BWWC_Bitcoin&secret_key={$secret_key}&bitcoinway=1&src=bcinfo&order_id={$order_id}"; // http://www.example.com/?bitcoinway=1&order_id=74&src=bcinfo
+            BWWC__log_event(__FILE__, __LINE__, "Calling BWWC__generate_temporary_bitcoin_address__blockchain_info(). Payments to be forwarded to: '{$bitcoin_addr_merchant}' with callback URL: '{$callback_url}' ...");
+
+                // This function generates temporary bitcoin address and schedules IPN callback at the same
+                $ret_info_array = BWWC__generate_temporary_bitcoin_address__blockchain_info($bitcoin_addr_merchant, $callback_url);
+    
+                /*
+            $ret_info_array = array (
+               'result'                      => 'success', // OR 'error'
+               'message'										 => '...',
+               'host_reply_raw'              => '......',
+               'generated_bitcoin_address'   => '18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj', // or false
+               );
+                */
+                $bitcoins_address = @$ret_info_array['generated_bitcoin_address'];
+            } elseif ($this->service_provider == 'electrum_wallet') {
+                // Generate bitcoin address for ElectrumSV wallet provider.
+                /*
+            $ret_info_array = array (
+               'result'                      => 'success', // OR 'error'
+               'message'										 => '...',
+               'host_reply_raw'              => '......',
+               'generated_bitcoin_address'   => '18vzABPyVbbia8TDCKDtXJYXcoAFAPk2cj', // or false
+               );
+                */
+                $ret_info_array = BWWC__get_bitcoin_address_for_payment__electrum(BWWC__get_next_available_mpk(), $order_info);
+                $bitcoins_address = @$ret_info_array['generated_bitcoin_address'];
+            }
 
             if (!$bitcoins_address) {
                 $msg = "ERROR: cannot generate Bitcoin SV address for the order: '" . @$ret_info_array['message'] . "'";

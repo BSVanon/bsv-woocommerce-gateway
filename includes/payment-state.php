@@ -86,8 +86,8 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     BWWC__log_payment_state_transition($order_id, $old_state, $new_state, $reason);
     
     // Add order note
-    /* translators: 1: old payment state, 2: new payment state */
     $note = sprintf(
+        /* translators: 1: old payment state, 2: new payment state */
         __('Payment state changed: %1$s → %2$s', 'sendbsv-bsv-payments-for-woocommerce'),
         BWWC__get_payment_state_label($old_state),
         BWWC__get_payment_state_label($new_state)
@@ -239,11 +239,15 @@ function BWWC__send_late_payment_notification($order_id)
     }
     
     $to = get_option('admin_email');
-    /* translators: 1: site name, 2: order ID */
-    $subject = sprintf(__('[%1$s] Late Payment Received - Order #%2$d', 'sendbsv-bsv-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
+    $subject = sprintf(
+        /* translators: 1: site name, 2: order ID */
+        __('[%1$s] Late Payment Received - Order #%2$d', 'sendbsv-bsv-payments-for-woocommerce'),
+        get_bloginfo('name'),
+        $order_id
+    );
     
-    /* translators: %d: order ID */
     $message = sprintf(
+        /* translators: %d: order ID */
         __('A late payment has been received for order #%d after the payment window expired.', 'sendbsv-bsv-payments-for-woocommerce'),
         $order_id
     ) . "\n\n";

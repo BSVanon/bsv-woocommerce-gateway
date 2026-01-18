@@ -365,8 +365,8 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-confirmation-notice" style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 12px; color: #856404;">
             <strong><?php esc_html_e('Note:', 'sendbsv-bsv-payments-for-woocommerce'); ?></strong>
             <?php
-            /* translators: 1: number of confirmations required, 2: estimated minutes */
             printf(
+                /* translators: 1: number of confirmations required, 2: estimated minutes */
                 esc_html__('Merchant requires %1$d confirmations (~%2$d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'sendbsv-bsv-payments-for-woocommerce'),
                 esc_html($required_confs),
                 esc_html($estimated_minutes)
@@ -404,15 +404,15 @@ function BWWC__get_payment_console_state_message($state, $received_sats = 0, $ex
     
     // Build dynamic messages for underpaid/overpaid states
     if ($state === 'underpaid' && $expected_sats > 0) {
-        /* translators: 1: received satoshis, 2: expected satoshis */
         $messages['underpaid'] = sprintf(
+            /* translators: 1: received satoshis, 2: expected satoshis */
             __('Received %1$s sats but expected %2$s sats. Please send the remaining amount.', 'sendbsv-bsv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($expected_sats, 0, '.', ',')
         );
     } elseif ($state === 'overpaid' && $expected_sats > 0) {
-        /* translators: 1: received satoshis, 2: extra satoshis */
         $messages['overpaid'] = sprintf(
+            /* translators: 1: received satoshis, 2: extra satoshis */
             __('Received %1$s sats (%2$s sats extra). Payment accepted!', 'sendbsv-bsv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($received_sats - $expected_sats, 0, '.', ',')

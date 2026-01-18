@@ -126,13 +126,13 @@ function BWWC__get_persistent_settings($key=false)
 {
     global $wpdb;
 
-    $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
-    $sql_query = $wpdb->prepare(
-        "SELECT * FROM `$persistent_settings_table_name` WHERE `id` = %d",
-        1
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT * FROM `{$wpdb->prefix}bwwc_persistent_settings` WHERE `id` = %d",
+            1
+        ),
+        ARRAY_A
     );
-
-    $row = $wpdb->get_row($sql_query, ARRAY_A);
     if ($row) {
         $settings = @unserialize($row['settings'], ['allowed_classes' => false]);
         if ($key) {
@@ -176,18 +176,17 @@ function BWWC__reset_all_persistent_settings()
     global $wpdb;
     global $g_BWWC__config_defaults;
 
-    $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
-
     $initial_settings = BWWC__safe_string_escape(serialize($g_BWWC__config_defaults));
 
-    $wpdb->query("TRUNCATE TABLE `$persistent_settings_table_name`");
+    $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}bwwc_persistent_settings`");
 
-    $insert_sql = $wpdb->prepare(
-        "INSERT INTO `$persistent_settings_table_name` (`id`, `settings`) VALUES ( %d, %s )",
-        1,
-        $initial_settings
+    $wpdb->query(
+        $wpdb->prepare(
+            "INSERT INTO `{$wpdb->prefix}bwwc_persistent_settings` (`id`, `settings`) VALUES ( %d, %s )",
+            1,
+            $initial_settings
+        )
     );
-    $wpdb->query($insert_sql);
 }
 //===========================================================================
 
@@ -383,8 +382,7 @@ function BWWC__create_database_tables($bwwc_settings)
     $must_update_settings = false;
 
     ///$persistent_settings_table_name       = $wpdb->prefix . 'bwwc_persistent_settings';
-    ///$electrum_wallets_table_name          = $wpdb->prefix . 'bwwc_electrum_wallets';
-    $btc_addresses_table_name             = $wpdb->prefix . 'bwwc_btc_addresses';
+    $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
 
     if ($wpdb->get_var("SHOW TABLES LIKE '$btc_addresses_table_name'") != $btc_addresses_table_name) {
         $b_first_time = true;
@@ -394,23 +392,7 @@ function BWWC__create_database_tables($bwwc_settings)
 
     //----------------------------------------------------------
     // Create tables
-    /// NOT NEEDED YET
-    /// $query = "CREATE TABLE IF NOT EXISTS `$persistent_settings_table_name` (
-    ///   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    ///   `settings` text,
-    ///   PRIMARY KEY  (`id`)
-    ///   );";
-    /// $wpdb->query ($query);
-
-    /// $query = "CREATE TABLE IF NOT EXISTS `$electrum_wallets_table_name` (
-    ///   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    ///   `master_public_key` varchar(255) NOT NULL,
-    ///   PRIMARY KEY  (`id`),
-    ///   UNIQUE KEY  `master_public_key` (`master_public_key`)
-    ///   );";
-    /// $wpdb->query ($query);
-
-    $query = "CREATE TABLE IF NOT EXISTS `$btc_addresses_table_name` (
+    $wpdb->query("CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}bwwc_btc_addresses` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `btc_address` char(36) NOT NULL,
     `origin_id` char(128) NOT NULL DEFAULT '',
@@ -426,8 +408,7 @@ function BWWC__create_database_tables($bwwc_settings)
     KEY `index_in_wallet` (`index_in_wallet`),
     KEY `origin_id` (`origin_id`),
     KEY `status` (`status`)
-    );";
-    $wpdb->query($query);
+    )");
     //----------------------------------------------------------
 
     // v6.0.0: Removed ancient migration code (A15)

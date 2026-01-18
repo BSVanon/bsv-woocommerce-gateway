@@ -149,7 +149,7 @@ function BWWC__get_allowed_api_hosts()
  */
 function BWWC__is_allowed_api_host($url)
 {
-    $parsed = parse_url($url);
+    $parsed = wp_parse_url($url);
     if (!$parsed || !isset($parsed['host'])) {
         return false;
     }

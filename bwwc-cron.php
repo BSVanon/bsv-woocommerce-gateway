@@ -29,9 +29,6 @@ function BWWC_cron_job_worker()
         return; // Only active electrum wallet as a service provider needs cron job
     }
 
-    // status = "unused", "assigned", "used"
-    $btc_addresses_table_name     = $wpdb->prefix . 'bwwc_btc_addresses';
-
     $funds_received_value_expires_in_secs = $bwwc_settings['funds_received_value_expires_in_mins'] * 60;
     $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
     $confirmations_required = $bwwc_settings['confs_num'];
@@ -46,23 +43,24 @@ function BWWC_cron_job_worker()
     //     'assigned'   - unexpired, with old balances (due for revalidation. Fresh balances and still 'assigned' means no [full] payment received yet)
     //     'revalidate' - all
     //        order results by most recently assigned
-    $query = $wpdb->prepare(
-        "SELECT * FROM `$btc_addresses_table_name`
-            WHERE
-            (
-              (`status`='assigned' AND ((%d - `assigned_at`) < %d))
-              OR
-              (`status`='revalidate')
-            )
-            AND ((%d - `received_funds_checked_at`) > %d)
-            ORDER BY `received_funds_checked_at` ASC",
-        $current_time,
-        $assigned_address_expires_in_secs,
-        $current_time,
-        $funds_received_value_expires_in_secs
+    $rows_for_balance_check = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                WHERE
+                (
+                  (`status`='assigned' AND ((%d - `assigned_at`) < %d))
+                  OR
+                  (`status`='revalidate')
+                )
+                AND ((%d - `received_funds_checked_at`) > %d)
+                ORDER BY `received_funds_checked_at` ASC",
+            $current_time,
+            $assigned_address_expires_in_secs,
+            $current_time,
+            $funds_received_value_expires_in_secs
+        ),
+        ARRAY_A
     ); // Check the ones that haven't been checked for longest time
-
-    $rows_for_balance_check = $wpdb->get_results($query, ARRAY_A);
 
     if (is_array($rows_for_balance_check)) {
         $count_rows_for_balance_check = count($rows_for_balance_check);
@@ -335,15 +333,23 @@ function BWWC_cron_job_worker()
         //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
         //
         // Hence - any returned address will be clean to use.
-        $query = $wpdb->prepare(
-            "SELECT COUNT(*) as `total_unused_addresses` FROM `$btc_addresses_table_name`
-               WHERE `origin_id` = %s
-               AND `total_received_funds` = %s
-               AND (`status`='unused' $reuse_expired_addresses_query_part)",
-            $origin_id,
-            '0'
+        
+        // Build WHERE clause safely
+        $where_unused = "`status`='unused'";
+        if ($reuse_expired_addresses_query_part) {
+            $where_unused .= " " . $reuse_expired_addresses_query_part;
+        }
+        
+        $total_unused_addresses = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                   WHERE `origin_id` = %s
+                   AND `total_received_funds` = %s
+                   AND ({$where_unused})",
+                $origin_id,
+                '0'
+            )
         );
-        $total_unused_addresses = $wpdb->get_var($query);
 
 
         if ($total_unused_addresses < $bwwc_settings['max_unused_addresses_buffer']) {

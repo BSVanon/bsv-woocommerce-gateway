@@ -427,18 +427,19 @@ function BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings=f
         $received_funds_checked_at_time  = ($ret_info_array['balance'] === false)?0:time();
 
         // Insert newly generated address into DB
-        $query = $wpdb->prepare(
-            "INSERT INTO `$btc_addresses_table_name`
-                (`btc_address`, `origin_id`, `index_in_wallet`, `total_received_funds`, `received_funds_checked_at`, `status`)
-                VALUES ( %s, %s, %d, %f, %d, %s )",
-            $new_btc_address,
-            $origin_id,
-            $next_key_index,
-            $funds_received,
-            $received_funds_checked_at_time,
-            $status
+        $wpdb->query(
+            $wpdb->prepare(
+                "INSERT INTO `{$wpdb->prefix}bwwc_btc_addresses`
+                    (`btc_address`, `origin_id`, `index_in_wallet`, `total_received_funds`, `received_funds_checked_at`, `status`)
+                    VALUES ( %s, %s, %d, %f, %d, %s )",
+                $new_btc_address,
+                $origin_id,
+                $next_key_index,
+                $funds_received,
+                $received_funds_checked_at_time,
+                $status
+            )
         );
-        $wpdb->query($query);
 
         $next_key_index++;
 

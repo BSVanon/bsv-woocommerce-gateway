@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 // Include everything
@@ -33,21 +33,21 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(esc_html__('Security check failed. Please try again.', 'bitcoin-sv-payments-for-woocommerce'));
+            wp_die(esc_html__('Security check failed. Please try again.', 'sendbsv-bsv-payments-for-woocommerce'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
             BWWC__update_settings("", false);
-            $action_message = __('Settings updated!', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('Settings updated!', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_bwwc_settings'])) {
             BWWC__reset_all_settings(false);
-            $action_message = __('All settings reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('All settings reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
             BWWC__reset_partial_settings(false);
-            $action_message = __('Settings on this page reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('Settings on this page reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['validate_bwwc-license'])) {
             BWWC__update_settings("", false);
-            $action_message = __('License validated.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('License validated.', 'sendbsv-bsv-payments-for-woocommerce');
         }
     }
 
@@ -115,11 +115,11 @@ function BWWC__render_general_settings_page_html()
     $bwwc_settings = BWWC__get_settings();
     global $g_BWWC__cron_script_url; ?>
 
-    <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+    <form method="post" action="">
       <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce'); ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'bitcoin-sv-payments-for-woocommerce')); ?>');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'sendbsv-bsv-payments-for-woocommerce')); ?>');" />
       </p>
       <table class="form-table">
 
@@ -319,8 +319,8 @@ function BWWC__render_general_settings_page_html()
       </table>
 
       <p class="submit">
-          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>"             />
-          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>"             />
+          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
       </p>
     </form>
 <?php
@@ -332,7 +332,7 @@ function BWWC__render_advanced_settings_page_html()
 {
     $bwwc_settings = BWWC__get_settings();
  ?>
- <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+ <form method="post" action="">
  <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
  <h3>Advanced Configuration</h3>
  <p>These settings control technical aspects of the plugin. Only modify if you understand the implications.</p>
@@ -454,7 +454,7 @@ function BWWC__render_advanced_settings_page_html()
  </div>
  
  <p class="submit">
-    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>" />
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>" />
  </p>
  </form>
 <?php

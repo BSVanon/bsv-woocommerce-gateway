@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce - Address Generation Module
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

@@ -1,4 +1,4 @@
-=== Bitcoin SV Payments for WooCommerce ===
+=== SendBSV BSV Payments for WooCommerce ===
 Contributors: BSVanon
 Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8

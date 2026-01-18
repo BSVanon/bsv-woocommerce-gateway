@@ -65,15 +65,15 @@ function BWWC__is_valid_payment_state($state)
 function BWWC__get_payment_state_label($state)
 {
     $labels = array(
-        BWWC_PAYMENT_STATE_WAITING   => __('Waiting for Payment', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_PENDING   => __('Payment Pending', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_CONFIRMED => __('Payment Confirmed', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_DETECTED  => __('Payment Detected', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_VERIFIED  => __('Payment Verified', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_EXPIRED   => __('Payment Expired', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_UNDERPAID => __('Underpaid', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_OVERPAID  => __('Overpaid', 'bitcoin-sv-payments-for-woocommerce'),
-        BWWC_PAYMENT_STATE_CONFLICT  => __('Payment Conflict', 'bitcoin-sv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_WAITING   => __('Waiting for Payment', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_PENDING   => __('Payment Pending', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_CONFIRMED => __('Payment Confirmed', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_DETECTED  => __('Payment Detected', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_VERIFIED  => __('Payment Verified', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_EXPIRED   => __('Payment Expired', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_UNDERPAID => __('Underpaid', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_OVERPAID  => __('Overpaid', 'sendbsv-bsv-payments-for-woocommerce'),
+        BWWC_PAYMENT_STATE_CONFLICT  => __('Payment Conflict', 'sendbsv-bsv-payments-for-woocommerce'),
     );
     
     return isset($labels[$state]) ? $labels[$state] : $state;

@@ -63,22 +63,31 @@ function BWWC__render_payment_console($order) {
     // Enqueue assets with AGGRESSIVE cache busting
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
     
-    // Use timestamp for absolute cache busting
-    $cache_buster = time();
-    
-    // CSS versions with timestamp
+    // CSS versions with filemtime() for proper cache busting
     $css_clean_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-clean.css';
-    $css_clean_version = BWWC_VERSION . '.' . $cache_buster;
+    $css_clean_version = BWWC_VERSION;
+    if (file_exists($css_clean_path)) {
+        $css_clean_version .= '.' . filemtime($css_clean_path);
+    }
     
     $css_grid_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-grid.css';
-    $css_grid_version = BWWC_VERSION . '.' . $cache_buster;
+    $css_grid_version = BWWC_VERSION;
+    if (file_exists($css_grid_path)) {
+        $css_grid_version .= '.' . filemtime($css_grid_path);
+    }
     
     $css_console_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-console.css';
-    $css_console_version = BWWC_VERSION . '.' . $cache_buster;
+    $css_console_version = BWWC_VERSION;
+    if (file_exists($css_console_path)) {
+        $css_console_version .= '.' . filemtime($css_console_path);
+    }
     
-    // JS versions with timestamp
+    // JS versions with filemtime()
     $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
-    $script_version = BWWC_VERSION . '.' . $cache_buster;
+    $script_version = BWWC_VERSION;
+    if (file_exists($script_file_path)) {
+        $script_version .= '.' . filemtime($script_file_path);
+    }
     
     $qr_script_path = trailingslashit($plugin_base_dir) . 'assets/js/vendor/jquery-qrcode.min.js';
     $qr_script_version = BWWC_VERSION;
@@ -454,10 +463,8 @@ function BWWC__ajax_check_payment_status() {
             __FILE__,
             __LINE__,
             sprintf(
-                'AJAX status error: Order %d key mismatch (expected %s got %s)',
-                $order_id,
-                $expected_order_key,
-                $order_key
+                'AJAX status error: Order %d key mismatch (keys redacted for security)',
+                $order_id
             )
         );
         wp_send_json_error(array('message' => 'Invalid order'));

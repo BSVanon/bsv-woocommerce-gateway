@@ -96,14 +96,9 @@ function BWWC__GetPluginNameVersionEdition($please_donate = true)
 //===========================================================================
 
 //===========================================================================
-function BWWC__GetProUrl()
-{
-    return 'http://google.com';
-}
-function BWWC__GetProLabel()
-{
-    return '<span style="background-color:#FF4;color:#F44;border:1px solid #F44;padding:2px 6px;font-family:\'Open Sans\',sans-serif;font-size:14px;border-radius:6px;"><a href="' . BWWC__GetProUrl() . '">PRO Only</a></span>';
-}
+// Pro version functions removed in v6.0.0
+// This is a free, open-source plugin with no Pro version
+//===========================================================================
 
 /**
  * Recursively sanitize incoming values from forms.

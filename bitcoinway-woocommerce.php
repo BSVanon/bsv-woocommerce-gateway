@@ -85,8 +85,7 @@ function BWWC_activate()
     // Setup cron jobs
 
     if ($bwwc_settings['enable_soft_cron_job'] && !wp_next_scheduled('BWWC_cron_action')) {
-        $http_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
-        $cron_job_schedule_name = strpos($http_host, 'ttt.com')===false ? $bwwc_settings['soft_cron_job_schedule_name'] : 'seconds_30';
+        $cron_job_schedule_name = $bwwc_settings['soft_cron_job_schedule_name'];
         wp_schedule_event(time(), $cron_job_schedule_name, 'BWWC_cron_action');
     }
     //----------------------------------

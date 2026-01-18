@@ -115,8 +115,8 @@ function BWWC__getreceivedbyaddress_info($address_request_array, $bwwc_settings=
     } else {
         $ret_info_array = array(
       'result'                      => 'error',
-      'message'                     => "Blockchains API failure. Erratic replies:\n" . $blockexplorer_com_failure_reply . "\n" . $blockchain_info_failure_reply,
-      'host_reply_raw'              => $blockexplorer_com_failure_reply . "\n" . $blockchain_info_failure_reply,
+      'message'                     => "Blockchain API failure. Both WhatsOnChain and Bitails providers returned invalid responses.",
+      'host_reply_raw'              => "",
       'balance'                     => false,
       );
     }

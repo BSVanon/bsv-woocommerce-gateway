@@ -35,21 +35,25 @@ function BWWC__migrate_gateway_id()
         BWWC__log_event(__FILE__, __LINE__, 'Migrated gateway settings from bitcoin to bitcoin_sv', 'info');
     }
     
-    // Update payment method in existing orders
-    global $wpdb;
+    // Update payment method in existing orders (HPOS compatible)
+    // Use WooCommerce CRUD to handle both legacy postmeta and HPOS tables
+    $orders = wc_get_orders(array(
+        'payment_method' => 'bitcoin',
+        'limit' => -1,
+        'return' => 'ids',
+    ));
     
-    $updated = $wpdb->update(
-        $wpdb->postmeta,
-        array('meta_value' => 'bitcoin_sv'),
-        array(
-            'meta_key' => '_payment_method',
-            'meta_value' => 'bitcoin'
-        ),
-        array('%s'),
-        array('%s', '%s')
-    );
+    $updated = 0;
+    foreach ($orders as $order_id) {
+        $order = wc_get_order($order_id);
+        if ($order) {
+            $order->set_payment_method('bitcoin_sv');
+            $order->save();
+            $updated++;
+        }
+    }
     
-    if ($updated !== false) {
+    if ($updated > 0) {
         BWWC__log_event(__FILE__, __LINE__, "Migrated payment method for {$updated} orders from bitcoin to bitcoin_sv", 'info');
     }
     

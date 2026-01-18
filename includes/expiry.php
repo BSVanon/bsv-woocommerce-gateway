@@ -34,7 +34,7 @@ function BWWC__enforce_order_expiry()
         FROM {$wpdb->posts} p
         INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
         LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state'
-        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin'
+        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
         WHERE p.post_type = 'shop_order'
         AND p.post_status IN ('wc-pending', 'wc-on-hold')
         AND CAST(pm1.meta_value AS UNSIGNED) < %d
@@ -88,7 +88,7 @@ function BWWC__monitor_late_payments()
         FROM {$wpdb->posts} p
         INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
         INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state' AND pm2.meta_value = %s
-        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin'
+        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
         WHERE p.post_type = 'shop_order'
         AND p.post_status IN ('wc-cancelled', 'wc-failed')
         AND CAST(pm1.meta_value AS UNSIGNED) > %d",

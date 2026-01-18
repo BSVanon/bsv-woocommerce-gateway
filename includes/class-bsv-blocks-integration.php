@@ -21,13 +21,13 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
      *
      * @var string
      */
-    protected $name = 'bitcoin';
+    protected $name = 'bitcoin_sv';
 
     /**
      * Initializes the payment method type.
      */
     public function initialize() {
-        $this->settings = get_option('woocommerce_bitcoin_settings', array());
+        $this->settings = get_option('woocommerce_bitcoin_sv_settings', array());
     }
 
     /**
@@ -37,7 +37,7 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
      */
     public function is_active() {
         $payment_gateways = WC()->payment_gateways->payment_gateways();
-        return isset($payment_gateways['bitcoin']) && $payment_gateways['bitcoin']->is_available();
+        return isset($payment_gateways['bitcoin_sv']) && $payment_gateways['bitcoin_sv']->is_available();
     }
 
     /**
@@ -58,14 +58,14 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
             );
 
         wp_register_script(
-            'wc-bitcoin-blocks-integration',
+            'wc-bitcoin-sv-blocks-integration',
             $script_url,
             $script_asset['dependencies'],
             $script_asset['version'],
             true
         );
 
-        return array('wc-bitcoin-blocks-integration');
+        return array('wc-bitcoin-sv-blocks-integration');
     }
 
     /**
@@ -75,7 +75,7 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
      */
     public function get_payment_method_data() {
         $payment_gateways = WC()->payment_gateways->payment_gateways();
-        $gateway = isset($payment_gateways['bitcoin']) ? $payment_gateways['bitcoin'] : null;
+        $gateway = isset($payment_gateways['bitcoin_sv']) ? $payment_gateways['bitcoin_sv'] : null;
 
         if (!$gateway) {
             return array();

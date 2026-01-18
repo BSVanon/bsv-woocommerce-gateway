@@ -10,7 +10,7 @@ const { getSetting } = window.wc.wcSettings;
 const { decodeEntities } = window.wp.htmlEntities;
 const { createElement } = window.wp.element;
 
-const settings = getSetting('bitcoin_data', {});
+const settings = getSetting('bitcoin_sv_data', {});
 
 const defaultLabel = decodeEntities(settings.title) || 'Bitcoin SV Payment';
 const defaultDescription = decodeEntities(settings.description) || 'Please proceed to the next screen to see necessary payment details.';
@@ -42,7 +42,7 @@ const Label = (props) => {
  * Bitcoin SV payment method configuration
  */
 const BitcoinPaymentMethod = {
-    name: 'bitcoin',
+    name: 'bitcoin_sv',
     label: createElement(Label, null),
     content: createElement(Content, null),
     edit: createElement(Content, null),

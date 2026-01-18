@@ -49,15 +49,32 @@ function BWWC__http_get($url, $timeout = 30, $headers = array())
 }
 
 /**
+ * Legacy compatibility wrapper for BWWC__file_get_contents()
+ * 
+ * @deprecated 6.0.0 Use BWWC__http_get() or BWWC__http_post() instead
+ * @param string $url Target URL
+ * @param bool $use_include_path Ignored (legacy parameter)
+ * @param resource $context Ignored (legacy parameter)
+ * @param int $offset Ignored (legacy parameter)
+ * @param int $maxlen Ignored (legacy parameter)
+ * @return string|false Response body on success, false on failure
+ */
+function BWWC__file_get_contents($url, $use_include_path = false, $context = null, $offset = 0, $maxlen = null)
+{
+    // Legacy wrapper - just use http_get with default timeout
+    return BWWC__http_get($url, 30);
+}
+
+/**
  * Secure HTTP POST request using WordPress HTTP API
  * 
- * @param string $url Target URL
- * @param array|string $data POST data
+ * @param string $url Target URL (must be HTTPS for external calls)
+ * @param array $data POST data
  * @param int $timeout Timeout in seconds (default: 30)
  * @param array $headers Optional additional headers
  * @return string|false Response body on success, false on failure
  */
-function BWWC__http_post($url, $data, $timeout = 30, $headers = array())
+function BWWC__http_post($url, $data = array(), $timeout = 30, $headers = array())
 {
     $args = array(
         'timeout'     => $timeout,

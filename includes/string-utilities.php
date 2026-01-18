@@ -142,55 +142,23 @@ function BWWC__send_email($email_to, $email_from, $subject, $plain_body)
     $message = "
    <html>
    <head>
-   <title>$subject</title>
+   <title>" . esc_html($subject) . "</title>
    </head>
    <body>" . $plain_body . "
    </body>
    </html>
    ";
 
-    // To send HTML mail, the Content-type header must be set
-    $headers  = 'MIME-Version: 1.0' . "\r\n";
-    $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+    // Use WordPress wp_mail() instead of PHP mail()
+    $headers = array(
+        'Content-Type: text/html; charset=UTF-8',
+        'From: ' . $email_from
+    );
 
-    // Additional headers
-   $headers .= "From: " . $email_from . "\r\n";    //"From: Birthday Reminder <birthday@example.com>" . "\r\n";
-
-   // Mail it
-    $ret_code = @mail($email_to, $subject, $message, $headers);
-
-    return $ret_code;
+    return wp_mail($email_to, $subject, $message, $headers);
 }
 //===========================================================================
-
-//===========================================================================
-function BWWC__SubIns()
-{
-    $bwwc_settings = BWWC__get_settings();
-    $elists = @$bwwc_settings['elists'];
-    if (!is_array($elists)) {
-        $elists = array();
-    }
-
-    $email = get_option('admin_email');
-
-    if (!$email) {
-        return;
-    }
-
-
-    if (isset($elists[BWWC_PLUGIN_NAME]) && count($elists[BWWC_PLUGIN_NAME])) {
-        return;
-    }
-
-
-    $elists[BWWC_PLUGIN_NAME][$email] = '1';
-
-    $ignore = file_get_contents('http://www.XXXbitcoinway.com/NOTIFY/?email=' . urlencode($email) . "&c1=" . urlencode(BWWC_PLUGIN_NAME) . "&c2=" . urlencode(BWWC_EDITION));
-
-    $bwwc_settings['elists'] = $elists;
-    BWWC__update_settings($bwwc_settings);
-
-    return true;
-}
+// BWWC__SubIns() - REMOVED in v6.0.0
+// Legacy phone-home function that transmitted admin email to external server
+// over insecure HTTP. Deleted for security and privacy compliance.
 //===========================================================================

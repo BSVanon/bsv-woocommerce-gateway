@@ -8,31 +8,7 @@
    Clean hierarchy, proper spacing, no blocks
    ============================================ */
 
-/* Header with timer badge */
-.bsv-payment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.bsv-payment-header h2 {
-    margin: 0;
-    font-size: 24px;
-    font-weight: 600;
-    color: #1e293b;
-}
-
-.bsv-timer-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 6px 12px;
-    background: #f1f5f9;
-    border-radius: 6px;
-    font-size: 13px;
-    font-weight: 500;
-    color: #64748b;
-}
+/* Header styles moved to bsv-payment-console.css */
 
 /* Single instruction line */
 .bsv-instruction {

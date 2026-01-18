@@ -602,7 +602,7 @@
                     text: qrPayload,
                     width: 256,
                     height: 256,
-                    render: 'canvas'
+                    correctLevel: window.QRErrorCorrectLevel ? QRErrorCorrectLevel.H : undefined
                 });
                 
                 // Update protocol data attribute

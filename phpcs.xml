@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<ruleset name="BSV WooCommerce Gateway">
+    <description>PHP_CodeSniffer configuration for BSV WooCommerce Gateway</description>
+
+    <!-- What to scan -->
+    <file>.</file>
+
+    <!-- Exclude patterns -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/libs/*</exclude-pattern>
+    <exclude-pattern>*/docker/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*.js</exclude-pattern>
+    <exclude-pattern>*.css</exclude-pattern>
+
+    <!-- Show progress -->
+    <arg value="ps"/>
+    
+    <!-- Show sniff codes in all reports -->
+    <arg value="s"/>
+    
+    <!-- Use colors in output -->
+    <arg name="colors"/>
+
+    <!-- Check up to 8 files simultaneously -->
+    <arg name="parallel" value="8"/>
+
+    <!-- WordPress Coding Standards -->
+    <rule ref="WordPress">
+        <!-- Allow short array syntax -->
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        
+        <!-- Allow short ternary operators -->
+        <exclude name="WordPress.PHP.DisallowShortTernary"/>
+        
+        <!-- Relax file naming requirements -->
+        <exclude name="WordPress.Files.FileName"/>
+        
+        <!-- Allow direct database queries (we use $wpdb properly) -->
+        <exclude name="WordPress.DB.DirectDatabaseQuery"/>
+    </rule>
+
+    <!-- WordPress Extra Standards -->
+    <rule ref="WordPress-Extra">
+        <!-- Exclude documentation requirements for now -->
+        <exclude name="Squiz.Commenting.FunctionComment"/>
+        <exclude name="Squiz.Commenting.ClassComment"/>
+        <exclude name="Squiz.Commenting.FileComment"/>
+        <exclude name="Squiz.Commenting.VariableComment"/>
+        <exclude name="Squiz.Commenting.InlineComment"/>
+    </rule>
+
+    <!-- WordPress Docs Standards (relaxed) -->
+    <rule ref="WordPress-Docs">
+        <exclude-pattern>*</exclude-pattern>
+    </rule>
+
+    <!-- Enforce WordPress date/time functions -->
+    <rule ref="WordPress.DateTime.RestrictedFunctions"/>
+    
+    <!-- Enforce WordPress nonce verification -->
+    <rule ref="WordPress.Security.NonceVerification"/>
+    
+    <!-- Enforce WordPress data validation -->
+    <rule ref="WordPress.Security.ValidatedSanitizedInput"/>
+    
+    <!-- Enforce WordPress escaping -->
+    <rule ref="WordPress.Security.EscapeOutput"/>
+
+    <!-- PHP version compatibility -->
+    <config name="testVersion" value="7.4-"/>
+    <rule ref="PHPCompatibility"/>
+
+    <!-- Minimum supported WP version -->
+    <config name="minimum_supported_wp_version" value="5.8"/>
+</ruleset>

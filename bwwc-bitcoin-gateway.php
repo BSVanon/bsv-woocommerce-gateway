@@ -54,7 +54,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
          */
         public function __construct()
         {
-            $this->id				= 'bitcoin';
+            $this->id				= 'bitcoin_sv';
             $this->icon 			= plugins_url('/images/bsv_buyitnow_32x.png', __FILE__);	// 32 pixels high
             $this->has_fields 		= false;
             $this->method_title     = __('Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce');
@@ -772,13 +772,6 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 ? $bwwc_settings['email_instructions_intro'] 
                 : __('Complete your Bitcoin SV payment using the details below:', 'bitcoin-sv-payments-for-woocommerce');
 
-            // Generate QR code URL
-            $bip21_uri = 'bitcoin:' . $bitcoins_address . '?amount=' . $order_total_in_btc;
-            $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' . urlencode($bip21_uri);
-
-            // Check if QR should be included
-            $include_qr = !isset($bwwc_settings['email_instructions_include_qr']) || $bwwc_settings['email_instructions_include_qr'];
-
             // Build email content
             echo '<div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, sans-serif;">';
             echo '<h3 style="margin-top: 0; color: #333;">' . esc_html__('Bitcoin SV Payment Instructions', 'bitcoin-sv-payments-for-woocommerce') . '</h3>';
@@ -797,13 +790,13 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             echo '<p style="margin: 0; font-family: monospace; font-size: 13px; color: #333; word-break: break-all;">' . esc_html($bitcoins_address) . '</p>';
             echo '</div>';
             
-            // QR Code
-            if ($include_qr) {
-                echo '<div style="text-align: center; margin: 20px 0;">';
-                echo '<p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">' . esc_html__('Scan to Pay', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
-                echo '<img src="' . esc_url($qr_url) . '" alt="QR Code" style="max-width: 200px; border: 8px solid white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />';
-                echo '</div>';
-            }
+            // QR Code note (local generation on payment page)
+            echo '<div style="background: #fff3cd; padding: 12px; border-radius: 6px; margin: 15px 0; border-left: 4px solid #ffc107;">';
+            echo '<p style="margin: 0; font-size: 13px; color: #856404; line-height: 1.5;">';
+            echo '<strong>' . esc_html__('QR Code Available:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
+            echo esc_html__('Click the payment link below to view a scannable QR code and complete your payment.', 'bitcoin-sv-payments-for-woocommerce');
+            echo '</p>';
+            echo '</div>';
             
             // Pay link button
             echo '<div style="text-align: center; margin: 20px 0;">';

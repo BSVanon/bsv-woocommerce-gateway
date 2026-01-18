@@ -12,7 +12,16 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.6rem;
+    position: relative;
+    padding-top: 2.25rem;
+}
+
+.bsv-card-top {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 0.5rem;
 }
 
 /* Desktop Wallet Button (contextual, secondary) */
@@ -53,7 +62,7 @@
     padding: 0.25rem;
     background: #f8fafc;
     border-radius: 6px;
-    margin-bottom: 0.5rem;
+    margin: 0.15rem 0 0.1rem;
 }
 
 .bsv-protocol-tab {
@@ -129,8 +138,8 @@
 .bsv-payment-grid {
     display: grid;
     grid-template-columns: 0.7fr 1.3fr !important;
-    gap: 2rem;
-    margin-bottom: 1.5rem;
+    gap: 1.75rem;
+    margin-bottom: 0.85rem;
     align-items: start;
 }
 
@@ -149,10 +158,11 @@
 .bsv-qr-wrapper {
     display: flex;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 1.4rem;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
+    margin-bottom: 0.15rem;
 }
 
 .bsv-qr-wrapper canvas {
@@ -174,8 +184,8 @@
 .bsv-details-column {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding-top: 0;
+    gap: 1rem;
+    padding-top: 2.25rem;
 }
 
 /* Amount (hero) */
@@ -283,16 +293,27 @@
 /* Expected (muted text) */
 .bsv-expected {
     font-size: 13px;
-    color: #64748b;
-    text-align: left;
-    padding: 0.75rem 1rem;
-    background: #f8fafc;
-    border-radius: 6px;
-    margin-top: 0;
+    color: #475569;
+    text-align: center;
+    padding: 0.45rem 1.1rem;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 180px;
+    max-width: 90%;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 6px 12px rgba(15, 23, 42, 0.08);
 }
 
 .bsv-expected strong {
-    color: #64748b;
+    color: #0f172a;
     font-weight: 600;
 }
 
@@ -307,7 +328,7 @@
     padding: 1rem;
     background: #f8fafc;
     border-radius: 8px;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
 }
 
 .bsv-status-indicator {

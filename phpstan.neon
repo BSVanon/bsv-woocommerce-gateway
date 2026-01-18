@@ -1,0 +1,23 @@
+parameters:
+    level: 5
+    paths:
+        - .
+    excludePaths:
+        - vendor
+        - node_modules
+        - libs
+        - docker
+        - tests
+    ignoreErrors:
+        # WordPress core functions
+        - '#Function (wp_|wc_|get_|add_|update_|delete_|esc_|__)\w+ not found#'
+        # WooCommerce classes
+        - '#Class WC_\w+ not found#'
+        # WordPress classes
+        - '#Class WP_\w+ not found#'
+    bootstrapFiles:
+        - wordpress-stubs.php
+    scanDirectories:
+        - .
+    checkMissingIterableValueType: false
+    checkGenericClassInNonGenericObjectType: false

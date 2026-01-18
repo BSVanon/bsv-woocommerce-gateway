@@ -34,6 +34,9 @@ if (!defined('BWWC_USE_EXT')) {
         define('BWWC_USE_EXT', 'NONE');
     }
 }
+
+// Load gateway ID migration (v6.0.0)
+require_once(dirname(__FILE__) . '/includes/gateway-migration.php');
 //---------------------------------------------------------------------------
 
 //------------------------------------------

@@ -110,38 +110,85 @@ Your support helps maintain and improve this plugin for the entire BSV community
 
 == Changelog ==
 
-= 6.0.0 - 2026-01-16 =
-**Major security and architecture update**
+= 6.0.0 - 2026-01-17 =
+**Major security, architecture, and feature update**
 
 **SECURITY FIXES:**
+* CRITICAL: Gateway ID changed from 'bitcoin' to 'bitcoin_sv' to prevent plugin collisions (auto-migrates existing installations)
 * CRITICAL: Enabled TLS verification for all external API calls (fixes MITM vulnerability)
 * CRITICAL: Removed public hardcron trigger (DoS vulnerability)
-* CRITICAL: Disabled legacy IPN callback (security risk - logged secrets)
-* Hardened unserialize() calls with allowed_classes restriction
-* Removed insecure HTTP fallbacks (bchsvexplorer.com)
+* CRITICAL: Disabled legacy IPN callback (security risk)
+* CRITICAL: Removed external QR code services - all QR generation now client-side via jquery.qrcode.js
+* Hardened all unserialize() calls with ['allowed_classes' => false]
+* Replaced date() with gmdate() for WP.org compliance
+* Added External Services disclosure section in readme.txt
 
-**ARCHITECTURE:**
-* New modular provider system with failover support
-* Secure HTTP wrapper using WordPress HTTP API
-* WooCommerce logger integration with proper log levels and redaction
-* Canonical payment state machine (waiting/detected/verified/expired/underpaid/overpaid/conflict)
-* Payment check module with transaction aggregation
-* Expiry enforcement and late payment monitoring
+**ARCHITECTURE & MODULARIZATION:**
+* Reduced core utilities file from 1,215 LOC to 75 LOC (94% reduction)
+* Created 12 focused modules in includes/ directory:
+  - address-generation.php (529 LOC) - BIP32 address derivation
+  - blockchain-api.php (157 LOC) - WhatsOnChain/Bitails integration
+  - exchange-rates.php (142 LOC) - Rate fetching with caching
+  - payment-state.php (257 LOC) - Canonical state machine
+  - expiry.php (193 LOC) - Payment window enforcement
+  - http.php (130 LOC) - Secure WordPress HTTP API wrapper
+  - logging.php (155 LOC) - WooCommerce logger integration
+  - gateway-validation.php (126 LOC) - Settings validation
+  - string-utilities.php (196 LOC) - String helpers
+  - gateway-migration.php - Auto-migration for gateway ID change
+  - providers/* - Modular API provider system (CoinGecko, CoinPaprika, WhatsOnChain, Bitails)
+  - And more...
+
+**PAYMENT STATE MACHINE:**
+* 7 canonical states: waiting, detected, verified, expired, underpaid, overpaid, conflict
+* Idempotent state transitions with validation
+* Automatic state logging and order notes
+* Payment state displayed in admin order metabox
+
+**EXPIRY & LATE PAYMENT:**
+* Scheduled sweep finds and expires unpaid orders automatically
+* Late payment monitoring with configurable 7-30 day watch window
+* Proper handling of payments received after expiry/cancellation
+
+**MULTI-FORMAT PAYMENT CONSOLE:**
+* Single QR code with BIP21/BIP270 protocol tab switching
+* Local QR generation (no external services)
+* Real-time payment status updates
+* Countdown timer with expiry display
+* Copy buttons for address and amount
+
+**EMAIL IMPROVEMENTS:**
+* Payment instructions with address, amount, and pay link
+* Note directing to payment page for QR code (no external QR in email)
+* Clean, modern styling with responsive design
+
+**ADMIN FEATURES:**
+* Order metabox showing payment state, expected/received amounts
+* Force recheck button with cooldown protection
+* Transaction ID display and blockchain explorer links
 
 **RATE PROVIDERS:**
-* Replaced broken Blockchair with CoinPaprika fallback
-* Removed legacy providers (CoinMarketCap, BitPay placeholders)
-* CoinGecko primary, CoinPaprika fallback with caching
+* CoinGecko primary with correct BSV ID (bitcoin-cash-sv)
+* CoinPaprika fallback provider
+* 60-second chain height caching to reduce API calls
+* Removed legacy/broken providers (Blockchair, etc.)
 
-**SETTINGS:**
-* Unified settings keys (confirmations → confs_num)
+**SETTINGS & DEFAULTS:**
+* Unified on confs_num with legacy compatibility
+* Minimum 1 confirmation enforced (no 0-conf)
 * Safe defaults: autocomplete OFF, delete expired OFF, reuse addresses OFF
-* Added External Services disclosure section
+
+**CODE QUALITY:**
+* PHPCS configuration (WordPress coding standards)
+* PHPStan configuration (level 5)
+* WordPress stubs for static analysis
+* All PHP files pass syntax validation
 
 **REMOVED:**
 * Legacy XXXbitcoinway.com dead code
 * Public unauthenticated endpoints
 * Insecure cURL with disabled TLS verification
+* File-based logging (replaced with WooCommerce logger)
 
 = 5.3.4 - 2026-01-14 =
 * WordPress.org submission fixes
@@ -311,20 +358,19 @@ Your support helps maintain and improve this plugin for the entire BSV community
 
 == Upgrade Notice ==
 
-soon
+= 6.0.0 =
+Major security and architecture update. Gateway ID changed from 'bitcoin' to 'bitcoin_sv' (auto-migrates). All external API calls now enforce TLS verification. Modular architecture with 94% code reduction. Payment state machine, expiry enforcement, and multi-format payment console added.
 
 == Frequently Asked Questions ==
 
 = Why doesn't the Bitcoin SV payment option appear at checkout? =
 
-If you're using WooCommerce 8.3+ with the new Blocks-based checkout, you need to switch to classic checkout:
+The plugin supports both WooCommerce Blocks checkout and classic shortcode checkout. Ensure:
 
-1. Create a new page with the shortcode: [woocommerce_checkout]
-2. Go to WooCommerce → Settings → Advanced → Page setup
-3. Set your new page as the Checkout page
-4. Save changes
-
-The plugin currently requires classic checkout. Blocks support is coming in v5.1.
+1. Your checkout page contains either the WooCommerce Checkout block OR the [woocommerce_checkout] shortcode
+2. The gateway is enabled in WooCommerce → Settings → Payments → Bitcoin SV
+3. Your Master Public Key is configured correctly
+4. PHP extension gmp or bcmath is loaded
 
 = What are the minimum requirements? =
 

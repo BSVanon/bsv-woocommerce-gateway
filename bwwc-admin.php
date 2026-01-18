@@ -526,7 +526,7 @@ class BWWC_Fix_Legacy_Metadata_Command {
             if ( $order_id ) {
                 // Get order details
                 $order_total = floatval( get_post_meta( $order_id, 'order_total_in_btc', true ) );
-                $order_datetime = date( 'Y-m-d H:i:s T' );
+                $order_datetime = gmdate( 'Y-m-d H:i:s' ) . ' UTC';
 
                 // Build normalized entry
                 $normalized_order_entry = array(

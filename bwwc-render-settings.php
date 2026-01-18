@@ -123,15 +123,6 @@ function BWWC__render_general_settings_page_html()
       </p>
       <table class="form-table">
 
-
-        <tr valign="top">
-          <th scope="row">Delete all plugin-specific settings, database tables and data on uninstall:</th>
-          <td>
-            <input type="hidden" name="delete_db_tables_on_uninstall" value="0" /><input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], 1); ?> />
-            <p class="description">If checked - all plugin-specific settings, database tables and data will be removed from Wordpress database upon plugin uninstall (but not upon deactivation or upgrade).</p>
-          </td>
-        </tr>
-
         <tr valign="top">
           <th scope="row">Bitcoin SV Address Generation:</th>
           <td>
@@ -268,18 +259,9 @@ function BWWC__render_general_settings_page_html()
           <th scope="row">Email Payment Instructions:</th>
           <td>
             <input type="hidden" name="email_instructions_enabled" value="0" /><input type="checkbox" name="email_instructions_enabled" value="1" <?php checked($bwwc_settings['email_instructions_enabled'], 1); ?> />
-            <p class="description">Include payment instructions with QR code in WooCommerce order emails (new orders, on-hold status).
-              <br />When enabled, customers receive a beautifully formatted payment block with amount, address, QR code, and direct payment link.
-            </p>
-          </td>
-        </tr>
-
-        <tr valign="top">
-          <th scope="row">Include QR Code in Emails:</th>
-          <td>
-            <input type="hidden" name="email_instructions_include_qr" value="0" /><input type="checkbox" name="email_instructions_include_qr" value="1" <?php checked($bwwc_settings['email_instructions_include_qr'], 1); ?> />
-            <p class="description">Include QR code image in email payment instructions for easy mobile wallet scanning.
-              <br />Disable if email size is a concern or if your email provider blocks external images.
+            <p class="description">Include payment instructions in WooCommerce order emails (new orders, on-hold status).
+              <br />When enabled, customers receive a beautifully formatted payment block with amount, address, and direct payment link.
+              <br /><strong>Note:</strong> QR codes are NOT included in emails (privacy/security). Customers can scan QR codes on the payment page.
             </p>
           </td>
         </tr>

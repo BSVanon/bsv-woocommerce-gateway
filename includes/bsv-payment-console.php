@@ -55,9 +55,26 @@ function BWWC__render_payment_console($order) {
     
     // Calculate time remaining for display
     $time_remaining = '';
+    $is_expired = false;
     if ($expires_at) {
         $seconds_remaining = $expires_at - time();
         $time_remaining = BWWC__format_time_remaining($seconds_remaining);
+        $is_expired = ($seconds_remaining <= 0);
+    }
+    
+    // If order is expired and no payment detected, show expiration message and hide payment UI
+    if ($is_expired && $payment_state === 'waiting') {
+        echo '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+        echo '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce') . '</h2>';
+        echo '<p>' . esc_html__('The payment window for this order has expired. The payment address is no longer active.', 'bitcoin-sv-payments-for-woocommerce') . '</p>';
+        echo '<p><strong>' . esc_html__('What you can do:', 'bitcoin-sv-payments-for-woocommerce') . '</strong></p>';
+        echo '<ul>';
+        echo '<li>' . esc_html__('Place a new order to receive a fresh payment address', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+        echo '<li>' . esc_html__('Contact the store owner if you need assistance', 'bitcoin-sv-payments-for-woocommerce') . '</li>';
+        echo '</ul>';
+        echo '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_page_permalink('shop')) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Shop', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
+        echo '</div>';
+        return;
     }
 
     // Enqueue assets with AGGRESSIVE cache busting

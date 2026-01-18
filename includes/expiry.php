@@ -29,22 +29,22 @@ function BWWC__enforce_order_expiry()
     // - Payment state: waiting or detected (not verified)
     // - Past expiry time
     
-    $query = $wpdb->prepare(
-        "SELECT p.ID as order_id, pm1.meta_value as expires_at, pm2.meta_value as payment_state
-        FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
-        LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state'
-        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
-        WHERE p.post_type = 'shop_order'
-        AND p.post_status IN ('wc-pending', 'wc-on-hold')
-        AND CAST(pm1.meta_value AS UNSIGNED) < %d
-        AND (pm2.meta_value IS NULL OR pm2.meta_value IN (%s, %s))",
-        $current_time,
-        BWWC_PAYMENT_STATE_WAITING,
-        BWWC_PAYMENT_STATE_DETECTED
+    $expired_orders = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT p.ID as order_id, pm1.meta_value as expires_at, pm2.meta_value as payment_state
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
+            LEFT JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state'
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
+            WHERE p.post_type = 'shop_order'
+            AND p.post_status IN ('wc-pending', 'wc-on-hold')
+            AND CAST(pm1.meta_value AS UNSIGNED) < %d
+            AND (pm2.meta_value IS NULL OR pm2.meta_value IN (%s, %s))",
+            $current_time,
+            BWWC_PAYMENT_STATE_WAITING,
+            BWWC_PAYMENT_STATE_DETECTED
+        )
     );
-    
-    $expired_orders = $wpdb->get_results($query);
     
     foreach ($expired_orders as $row) {
         $order_id = (int) $row->order_id;
@@ -83,20 +83,20 @@ function BWWC__monitor_late_payments()
     // - Expired within watch window
     // - Status: cancelled or failed
     
-    $query = $wpdb->prepare(
-        "SELECT p.ID as order_id, pm1.meta_value as expires_at
-        FROM {$wpdb->posts} p
-        INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
-        INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state' AND pm2.meta_value = %s
-        INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
-        WHERE p.post_type = 'shop_order'
-        AND p.post_status IN ('wc-cancelled', 'wc-failed')
-        AND CAST(pm1.meta_value AS UNSIGNED) > %d",
-        BWWC_PAYMENT_STATE_EXPIRED,
-        $watch_cutoff
+    $watch_orders = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT p.ID as order_id, pm1.meta_value as expires_at
+            FROM {$wpdb->posts} p
+            INNER JOIN {$wpdb->postmeta} pm1 ON p.ID = pm1.post_id AND pm1.meta_key = '_bwwc_address_expires_at'
+            INNER JOIN {$wpdb->postmeta} pm2 ON p.ID = pm2.post_id AND pm2.meta_key = '_bwwc_payment_state' AND pm2.meta_value = %s
+            INNER JOIN {$wpdb->postmeta} pm3 ON p.ID = pm3.post_id AND pm3.meta_key = '_payment_method' AND pm3.meta_value = 'bitcoin_sv'
+            WHERE p.post_type = 'shop_order'
+            AND p.post_status IN ('wc-cancelled', 'wc-failed')
+            AND CAST(pm1.meta_value AS UNSIGNED) > %d",
+            BWWC_PAYMENT_STATE_EXPIRED,
+            $watch_cutoff
+        )
     );
-    
-    $watch_orders = $wpdb->get_results($query);
     
     foreach ($watch_orders as $row) {
         $order_id = (int) $row->order_id;
@@ -175,7 +175,7 @@ function BWWC__get_time_until_expiry($order_id)
 function BWWC__format_time_remaining($seconds)
 {
     if ($seconds <= 0) {
-        return __('Expired', 'bitcoin-payments-for-woocommerce');
+        return __('Expired', 'sendbsv-bsv-payments-for-woocommerce');
     }
     
     $hours = floor($seconds / 3600);

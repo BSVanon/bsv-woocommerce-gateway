@@ -72,7 +72,7 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Check if order is still payable
-    $payment_state = get_post_meta($order_id, 'bsv_payment_state', true);
+    $payment_state = get_post_meta($order_id, 'payment_state', true);
     if (!in_array($payment_state, array('waiting', 'underpaid', 'pending', 'detected'))) {
         wp_send_json_error(array(
             'message' => 'Order is no longer accepting payment',
@@ -82,10 +82,10 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Get payment details
-    $bsv_address = get_post_meta($order_id, 'bsv_address', true);
-    $bsv_amount = get_post_meta($order_id, 'bsv_amount', true);
-    $expected_sats = get_post_meta($order_id, 'bsv_expected_sats', true);
-    $expires_at = get_post_meta($order_id, 'bsv_expires_at', true);
+    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
+    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
 
     if (!$bsv_address || !$bsv_amount || !$expected_sats) {
         wp_send_json_error(array(

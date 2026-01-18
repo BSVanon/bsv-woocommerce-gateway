@@ -19,6 +19,11 @@ if (!defined('ABSPATH')) {
  */
 function BWWC__migrate_gateway_id()
 {
+    // Security: Only allow users with WooCommerce management capability
+    if (!current_user_can('manage_woocommerce')) {
+        return;
+    }
+    
     $migration_done = get_option('bwwc_gateway_id_migration_done', false);
     
     if ($migration_done) {

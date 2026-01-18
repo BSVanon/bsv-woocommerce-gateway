@@ -36,8 +36,8 @@
             // Bind event handlers
             this.bindEvents();
             
-            // Bind protocol tab switching
-            this.bindProtocolTabs();
+            // BIP270 protocol tab switching removed - deferred to v6.1
+            // See V6.1_ROADMAP.md for restoration instructions
 
             // Initial status check to determine if we should poll
             this.checkStatus().done((response) => {
@@ -586,7 +586,6 @@
             const amount = qrEl.data('amount') || bsvPaymentData.bsvAmount;
             const orderId = qrEl.data('order-id') || bsvPaymentData.orderId;
             const orderKey = qrEl.data('order-key') || bsvPaymentData.orderKey;
-            const currentProtocol = protocol || qrEl.data('protocol') || 'bip21';
 
             if (!address || !amount) {
                 console.warn('BSV: Missing address or amount for QR code');
@@ -594,19 +593,11 @@
                 return;
             }
 
-            let qrPayload;
-            
-            if (currentProtocol === 'bip270') {
-                // BIP270: QR encodes invoice URL
-                // Wallet fetches PaymentTerms from this URL
-                qrPayload = this.getInvoiceUrl(orderId, orderKey);
-                console.log('BSV: Generating BIP270 invoice QR:', qrPayload);
-            } else {
-                // BIP21: Standard bitcoin: URI with address and amount
-                // Amount MUST be in BSV decimal, not sats
-                qrPayload = `bitcoin:${address}?amount=${amount}`;
-                console.log('BSV: Generating BIP21 QR:', qrPayload);
-            }
+            // BIP21: Standard bitcoin: URI with address and amount
+            // Amount MUST be in BSV decimal, not sats
+            // BIP270 support deferred to v6.1 - see V6.1_ROADMAP.md
+            const qrPayload = `bitcoin:${address}?amount=${amount}`;
+            console.log('BSV: Generating BIP21 QR:', qrPayload);
 
             try {
                 // Clear existing QR
@@ -619,15 +610,16 @@
                     height: 256,
                     correctLevel: window.QRErrorCorrectLevel ? QRErrorCorrectLevel.H : undefined
                 });
-                
-                // Update protocol data attribute
-                qrEl.data('protocol', currentProtocol);
             } catch (error) {
                 console.error('BSV: QR code generation failed', error);
                 qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable<br><small>Please use copy buttons below</small></div>');
             }
         },
 
+        // BIP270 functions removed for v6.0.0 - restore in v6.1
+        // See V6.1_ROADMAP.md for restoration instructions
+        
+        /* RESTORE FOR v6.1:
         getInvoiceUrl: function(orderId, orderKey) {
             // Generate signed invoice URL for BIP270
             // Server will verify signature to prevent tampering
@@ -662,6 +654,7 @@
                 $(`.bsv-protocol-description[data-protocol="${protocol}"], .bsv-qr-hint[data-protocol="${protocol}"]`).show();
             });
         }
+        END RESTORE FOR v6.1 */
     };
 
     // Initialize on document ready

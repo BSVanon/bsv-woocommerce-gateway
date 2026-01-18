@@ -216,22 +216,9 @@ function BWWC__render_payment_console($order) {
                              style="display: inline-block;"></div>
                     </div>
                     
-                    <!-- Protocol Tabs (small, secondary) -->
-                    <div class="bsv-protocol-tabs" role="tablist">
-                        <button class="bsv-protocol-tab active" data-protocol="bip21" role="tab" aria-selected="true">
-                            <?php esc_html_e('Standard', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                        </button>
-                        <button class="bsv-protocol-tab" data-protocol="bip270" role="tab" aria-selected="false">
-                            <?php esc_html_e('Invoice', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                        </button>
-                    </div>
-                    
                     <!-- One-line hint below QR -->
-                    <p class="bsv-qr-hint" data-protocol="bip21">
+                    <p class="bsv-qr-hint">
                         <?php esc_html_e('Scan with your BSV wallet', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                    </p>
-                    <p class="bsv-qr-hint" data-protocol="bip270" style="display: none;">
-                        <?php esc_html_e('For invoice protocol wallets', 'bitcoin-sv-payments-for-woocommerce'); ?>
                     </p>
                 </div>
 

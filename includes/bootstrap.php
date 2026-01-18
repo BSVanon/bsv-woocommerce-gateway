@@ -16,6 +16,7 @@ if (!defined('ABSPATH')) {
 require_once dirname(__FILE__) . '/constants.php';
 require_once dirname(__FILE__) . '/logging.php';
 require_once dirname(__FILE__) . '/http.php';
+require_once dirname(__FILE__) . '/order-meta.php';
 
 // Load provider modules
 require_once dirname(__FILE__) . '/providers/interface.php';

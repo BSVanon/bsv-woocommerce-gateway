@@ -16,15 +16,15 @@ function BWWC__render_payment_console($order) {
     }
 
     $order_id = $order->get_id();
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-    $received_sats = get_post_meta($order_id, 'received_sats', true);
-    $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
-    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
-    $txids = get_post_meta($order_id, 'txids', true);
-    $confirmations = get_post_meta($order_id, 'best_confirmations', true);
+    $bsv_address = BWWC_get_order_meta($order_id, 'bitcoins_address', true);
+    $bsv_amount = BWWC_get_order_meta($order_id, 'order_total_in_btc', true);
+    $expected_sats = BWWC_get_order_meta($order_id, 'expected_sats', true);
+    $received_sats = BWWC_get_order_meta($order_id, 'received_sats', true);
+    $confirmed_sats = BWWC_get_order_meta($order_id, 'confirmed_sats', true);
+    $expires_at = BWWC_get_order_meta($order_id, 'address_expires_at', true);
+    $payment_state = BWWC_get_order_meta($order_id, 'payment_state', true);
+    $txids = BWWC_get_order_meta($order_id, 'txids', true);
+    $confirmations = BWWC_get_order_meta($order_id, 'best_confirmations', true);
     
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
@@ -37,7 +37,7 @@ function BWWC__render_payment_console($order) {
     // Calculate sats if not stored
     if (!$expected_sats) {
         $expected_sats = intval(round($bsv_amount * 100000000));
-        update_post_meta($order_id, 'expected_sats', $expected_sats);
+        BWWC_update_order_meta($order_id, 'expected_sats', $expected_sats);
     }
 
     // Default payment state
@@ -469,15 +469,15 @@ function BWWC__ajax_check_payment_status() {
     
     // Trigger blockchain check for pending orders
     // For waiting/pending/underpaid states, check blockchain on every poll (with cooldown)
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $payment_state = BWWC_get_order_meta($order_id, 'payment_state', true);
     $should_check_blockchain = $force || in_array($payment_state, array('waiting', 'pending', 'underpaid', 'detected'));
     
     if ($should_check_blockchain) {
-        $last_check = get_post_meta($order_id, 'last_blockchain_check', true);
+        $last_check = BWWC_get_order_meta($order_id, 'last_blockchain_check', true);
         $cooldown = $force ? 3 : 10; // 3 seconds for manual, 10 seconds for auto
         
         if (!$last_check || (time() - $last_check) >= $cooldown) {
-            update_post_meta($order_id, 'last_blockchain_check', time());
+            BWWC_update_order_meta($order_id, 'last_blockchain_check', time());
             
             // Trigger immediate payment check
             BWWC__check_payment_for_order($order_id);
@@ -485,15 +485,15 @@ function BWWC__ajax_check_payment_status() {
     }
     
     // Get current status
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-    $received_sats = get_post_meta($order_id, 'received_sats', true);
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
-    $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
-    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
-    $txids = get_post_meta($order_id, 'txids', true);
-    $confirmations = get_post_meta($order_id, 'best_confirmations', true);
-    $last_checked = get_post_meta($order_id, 'last_checked_at', true);
+    $bsv_address = BWWC_get_order_meta($order_id, 'bitcoins_address', true);
+    $expected_sats = BWWC_get_order_meta($order_id, 'expected_sats', true);
+    $received_sats = BWWC_get_order_meta($order_id, 'received_sats', true);
+    $payment_state = BWWC_get_order_meta($order_id, 'payment_state', true);
+    $confirmed_sats = BWWC_get_order_meta($order_id, 'confirmed_sats', true);
+    $expires_at = BWWC_get_order_meta($order_id, 'address_expires_at', true);
+    $txids = BWWC_get_order_meta($order_id, 'txids', true);
+    $confirmations = BWWC_get_order_meta($order_id, 'best_confirmations', true);
+    $last_checked = BWWC_get_order_meta($order_id, 'last_checked_at', true);
     
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;

@@ -399,7 +399,8 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 echo $store_valid ? ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#004400;background-color:#CCFFCC;">' .
             esc_html__('Bitcoin SV payment gateway is operational', 'sendbsv-bsv-payments-for-woocommerce') .
             '</p>') : ('<p style="border:1px solid #DDD;padding:5px 10px;font-weight:bold;color:#EE0000;background-color:#FFFFAA;">' .
-            esc_html__('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): ', 'sendbsv-bsv-payments-for-woocommerce') . esc_html($validation_msg) . '</p>'); ?>
+            /* translators: %s: validation error message */
+            sprintf(esc_html__('Bitcoin SV payment gateway is not operational (try to re-enter and save Bitcoinway Plugin settings): %s', 'sendbsv-bsv-payments-for-woocommerce'), esc_html($validation_msg)) . '</p>'); ?>
 	    	<table class="form-table">
 	    	<?php
                 // Generate the HTML For the settings form.

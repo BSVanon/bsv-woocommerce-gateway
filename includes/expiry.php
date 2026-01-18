@@ -183,10 +183,13 @@ function BWWC__format_time_remaining($seconds)
     $secs = $seconds % 60;
     
     if ($hours > 0) {
-        return sprintf(__('%d hours %d minutes', 'bitcoin-payments-for-woocommerce'), $hours, $minutes);
+        /* translators: 1: number of hours, 2: number of minutes */
+        return sprintf(__('%1$d hours %2$d minutes', 'sendbsv-bsv-payments-for-woocommerce'), $hours, $minutes);
     } elseif ($minutes > 0) {
-        return sprintf(__('%d minutes %d seconds', 'bitcoin-payments-for-woocommerce'), $minutes, $secs);
+        /* translators: 1: number of minutes, 2: number of seconds */
+        return sprintf(__('%1$d minutes %2$d seconds', 'sendbsv-bsv-payments-for-woocommerce'), $minutes, $secs);
     } else {
-        return sprintf(__('%d seconds', 'bitcoin-payments-for-woocommerce'), $secs);
+        /* translators: %d: number of seconds */
+        return sprintf(__('%d seconds', 'sendbsv-bsv-payments-for-woocommerce'), $secs);
     }
 }

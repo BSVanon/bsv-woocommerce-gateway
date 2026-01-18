@@ -238,16 +238,21 @@ function BWWC__send_late_payment_notification($order_id)
     }
     
     $to = get_option('admin_email');
-    $subject = sprintf(__('[%s] Late Payment Received - Order #%d', 'sendbsv-bsv-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
+    /* translators: 1: site name, 2: order ID */
+    $subject = sprintf(__('[%1$s] Late Payment Received - Order #%2$d', 'sendbsv-bsv-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
     
+    /* translators: %d: order ID */
     $message = sprintf(
         __('A late payment has been received for order #%d after the payment window expired.', 'sendbsv-bsv-payments-for-woocommerce'),
         $order_id
     ) . "\n\n";
     
     $message .= __('Order Details:', 'sendbsv-bsv-payments-for-woocommerce') . "\n";
+    /* translators: %d: order ID */
     $message .= sprintf(__('Order ID: %d', 'sendbsv-bsv-payments-for-woocommerce'), $order_id) . "\n";
+    /* translators: %s: formatted order total */
     $message .= sprintf(__('Order Total: %s', 'sendbsv-bsv-payments-for-woocommerce'), $order->get_formatted_order_total()) . "\n";
+    /* translators: %s: order edit URL */
     $message .= sprintf(__('Order URL: %s', 'sendbsv-bsv-payments-for-woocommerce'), $order->get_edit_order_url()) . "\n\n";
     
     $message .= __('Please review this order and decide whether to fulfill it.', 'sendbsv-bsv-payments-for-woocommerce') . "\n";

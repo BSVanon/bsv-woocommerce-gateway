@@ -68,17 +68,25 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
     //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
     //
     // Hence - any returned address will be clean to use.
-    $query = $wpdb->prepare(
-        "SELECT `btc_address` FROM `$btc_addresses_table_name`
-            WHERE `origin_id` = %s
-              AND `total_received_funds` = %s
-              AND (`status` = 'unused' $reuse_expired_addresses_freshb_query_part)
-            ORDER BY `index_in_wallet` ASC
-            LIMIT 1",
-        $origin_id,
-        '0'
+    
+    // Build WHERE clause safely
+    $where_clause = "`status` = 'unused'";
+    if ($reuse_expired_addresses_freshb_query_part) {
+        $where_clause .= " " . $reuse_expired_addresses_freshb_query_part;
+    }
+    
+    $clean_address = $wpdb->get_var(
+        $wpdb->prepare(
+            "SELECT `btc_address` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                WHERE `origin_id` = %s
+                  AND `total_received_funds` = %s
+                  AND ({$where_clause})
+                ORDER BY `index_in_wallet` ASC
+                LIMIT 1",
+            $origin_id,
+            '0'
+        )
     );
-    $clean_address = $wpdb->get_var($query);
 
     //-------------------------------------------------------
 
@@ -108,20 +116,24 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
             $reuse_expired_addresses_oldb_query_part = "";
         }
 
-        $query = $wpdb->prepare(
-            "SELECT * FROM `$btc_addresses_table_name`
-                WHERE `origin_id` = %s
-                  AND `total_received_funds` = %s
-                  AND (
-                        `status`='unused'
-                        OR `status`='unknown'
-                        $reuse_expired_addresses_oldb_query_part
-                  )
-                ORDER BY `index_in_wallet` ASC",
-            $origin_id,
-            '0'
+        // Build WHERE clause safely
+        $where_status = "`status`='unused' OR `status`='unknown'";
+        if ($reuse_expired_addresses_oldb_query_part) {
+            $where_status .= " " . $reuse_expired_addresses_oldb_query_part;
+        }
+        
+        $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                    WHERE `origin_id` = %s
+                      AND `total_received_funds` = %s
+                      AND ({$where_status})
+                    ORDER BY `index_in_wallet` ASC",
+                $origin_id,
+                '0'
+            ),
+            ARRAY_A
         ); // Try to use lower indexes first
-        $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results($query, ARRAY_A);
 
         if (!is_array($addresses_to_verify_for_zero_balances_rows)) {
             $addresses_to_verify_for_zero_balances_rows = array();
@@ -175,19 +187,20 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
                     }				// No orders were ever placed to this address. Likely payment was sent to this address outside of this online store business.
 
                     $current_time = time();
-                    $query = $wpdb->prepare(
-                        "UPDATE `$btc_addresses_table_name`
-                            SET
-                                `status` = %s,
-                                `total_received_funds` = %f,
-                                `received_funds_checked_at` = %d
-                            WHERE `btc_address` = %s",
-                        $new_status,
-                        $ret_info_array['balance'],
-                        $current_time,
-                        $address_to_verify_for_zero_balance
+                    $wpdb->query(
+                        $wpdb->prepare(
+                            "UPDATE `{$wpdb->prefix}bwwc_btc_addresses`
+                                SET
+                                    `status` = %s,
+                                    `total_received_funds` = %f,
+                                    `received_funds_checked_at` = %d
+                                WHERE `btc_address` = %s",
+                            $new_status,
+                            $ret_info_array['balance'],
+                            $current_time,
+                            $address_to_verify_for_zero_balance
+                        )
                     );
-                    $wpdb->query($query);
                 }
             }
         }
@@ -249,7 +262,7 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         // Prepare `address_meta` field for this clean address.
         $address_meta = $wpdb->get_var(
             $wpdb->prepare(
-                "SELECT `address_meta` FROM `$btc_addresses_table_name` WHERE `btc_address` = %s",
+                "SELECT `address_meta` FROM `{$wpdb->prefix}bwwc_btc_addresses` WHERE `btc_address` = %s",
                 $clean_address
             )
         );
@@ -270,25 +283,26 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         //
         $current_time = time();
         $remote_addr  = $order_info['requested_by_ip'];
-        $query = $wpdb->prepare(
-            "UPDATE `$btc_addresses_table_name`
-                SET
-                    `total_received_funds` = %s,
-                    `received_funds_checked_at` = %d,
-                    `status` = %s,
-                    `assigned_at` = %d,
-                    `last_assigned_to_ip` = %s,
-                    `address_meta` = %s
-                WHERE `btc_address` = %s",
-            '0',
-            $current_time,
-            'assigned',
-            $current_time,
-            $remote_addr,
-            $address_meta_serialized,
-            $clean_address
+        $wpdb->query(
+            $wpdb->prepare(
+                "UPDATE `{$wpdb->prefix}bwwc_btc_addresses`
+                    SET
+                        `total_received_funds` = %s,
+                        `received_funds_checked_at` = %d,
+                        `status` = %s,
+                        `assigned_at` = %d,
+                        `last_assigned_to_ip` = %s,
+                        `address_meta` = %s
+                    WHERE `btc_address` = %s",
+                '0',
+                $current_time,
+                'assigned',
+                $current_time,
+                $remote_addr,
+                $address_meta_serialized,
+                $clean_address
+            )
         );
-        $wpdb->query($query);
 
         $ret_info_array = array(
          'result'                      => 'success',

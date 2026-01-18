@@ -1,0 +1,21 @@
+# Analysis and internal documentation (for AI assistant only)
+docs/PLUGIN_CHECK_ANALYSIS.md
+docs/WORDPRESS_PLUGIN_RESUBMISSION.md
+WORDPRESS_ORG_SUBMISSION_CHECKLIST.md
+PLUGIN_CHECK_ANALYSIS.md
+
+# Docker environment
+docker/wp-modern/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp

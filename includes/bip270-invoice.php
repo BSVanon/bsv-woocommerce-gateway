@@ -98,7 +98,7 @@ function BWWC__serve_bip270_invoice() {
     if ($expires_at && time() > $expires_at) {
         wp_send_json_error(array(
             'message' => 'Invoice expired',
-            'expires' => date('c', $expires_at)
+            'expires' => gmdate('c', $expires_at)
         ), 410);
         exit;
     }

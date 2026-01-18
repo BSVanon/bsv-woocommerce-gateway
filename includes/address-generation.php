@@ -45,21 +45,6 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
     $clean_address = null;
     $current_time = time();
 
-    if ($bwwc_settings['reuse_expired_addresses']) {
-        $reuse_expired_addresses_freshb_query_part = $wpdb->prepare(
-            "OR (`status`='assigned'
-                AND ((%d - `assigned_at`) > %d)
-                AND ((%d - `received_funds_checked_at`) < %d)
-            )",
-            $current_time,
-            $assigned_address_expires_in_secs,
-            $current_time,
-            $funds_received_value_expires_in_secs
-        );
-    } else {
-        $reuse_expired_addresses_freshb_query_part = "";
-    }
-
     //-------------------------------------------------------
     // Quick scan for ready-to-use address
     // NULL == not found
@@ -69,24 +54,44 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
     //
     // Hence - any returned address will be clean to use.
     
-    // Build WHERE clause safely
-    $where_clause = "`status` = 'unused'";
-    if ($reuse_expired_addresses_freshb_query_part) {
-        $where_clause .= " " . $reuse_expired_addresses_freshb_query_part;
+    if ($bwwc_settings['reuse_expired_addresses']) {
+        $clean_address = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT `btc_address` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                    WHERE `origin_id` = %s
+                      AND `total_received_funds` = %s
+                      AND (
+                        `status` = 'unused'
+                        OR (
+                          `status` = 'assigned'
+                          AND ((%d - `assigned_at`) > %d)
+                          AND ((%d - `received_funds_checked_at`) < %d)
+                        )
+                      )
+                    ORDER BY `index_in_wallet` ASC
+                    LIMIT 1",
+                $origin_id,
+                '0',
+                $current_time,
+                $assigned_address_expires_in_secs,
+                $current_time,
+                $funds_received_value_expires_in_secs
+            )
+        );
+    } else {
+        $clean_address = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT `btc_address` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                    WHERE `origin_id` = %s
+                      AND `total_received_funds` = %s
+                      AND `status` = 'unused'
+                    ORDER BY `index_in_wallet` ASC
+                    LIMIT 1",
+                $origin_id,
+                '0'
+            )
+        );
     }
-    
-    $clean_address = $wpdb->get_var(
-        $wpdb->prepare(
-            "SELECT `btc_address` FROM `{$wpdb->prefix}bwwc_btc_addresses`
-                WHERE `origin_id` = %s
-                  AND `total_received_funds` = %s
-                  AND ({$where_clause})
-                ORDER BY `index_in_wallet` ASC
-                LIMIT 1",
-            $origin_id,
-            '0'
-        )
-    );
 
     //-------------------------------------------------------
 
@@ -102,38 +107,44 @@ function BWWC__get_bitcoin_address_for_payment__electrum($electrum_mpk, $order_i
         //
         // Hence - any returned address with freshened balance==0 will be clean to use.
         if ($bwwc_settings['reuse_expired_addresses']) {
-            $reuse_expired_addresses_oldb_query_part = $wpdb->prepare(
-                "OR (`status`='assigned'
-                    AND ((%d - `assigned_at`) > %d)
-                    AND ((%d - `received_funds_checked_at`) > %d)
-                )",
-                $current_time,
-                $assigned_address_expires_in_secs,
-                $current_time,
-                $funds_received_value_expires_in_secs
-            );
+            $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                        WHERE `origin_id` = %s
+                          AND `total_received_funds` = %s
+                          AND (
+                            `status` = 'unused'
+                            OR `status` = 'unknown'
+                            OR (
+                              `status` = 'assigned'
+                              AND ((%d - `assigned_at`) > %d)
+                              AND ((%d - `received_funds_checked_at`) > %d)
+                            )
+                          )
+                        ORDER BY `index_in_wallet` ASC",
+                    $origin_id,
+                    '0',
+                    $current_time,
+                    $assigned_address_expires_in_secs,
+                    $current_time,
+                    $funds_received_value_expires_in_secs
+                ),
+                ARRAY_A
+            ); // Try to use lower indexes first
         } else {
-            $reuse_expired_addresses_oldb_query_part = "";
+            $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                        WHERE `origin_id` = %s
+                          AND `total_received_funds` = %s
+                          AND (`status` = 'unused' OR `status` = 'unknown')
+                        ORDER BY `index_in_wallet` ASC",
+                    $origin_id,
+                    '0'
+                ),
+                ARRAY_A
+            ); // Try to use lower indexes first
         }
-
-        // Build WHERE clause safely
-        $where_status = "`status`='unused' OR `status`='unknown'";
-        if ($reuse_expired_addresses_oldb_query_part) {
-            $where_status .= " " . $reuse_expired_addresses_oldb_query_part;
-        }
-        
-        $addresses_to_verify_for_zero_balances_rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
-                    WHERE `origin_id` = %s
-                      AND `total_received_funds` = %s
-                      AND ({$where_status})
-                    ORDER BY `index_in_wallet` ASC",
-                $origin_id,
-                '0'
-            ),
-            ARRAY_A
-        ); // Try to use lower indexes first
 
         if (!is_array($addresses_to_verify_for_zero_balances_rows)) {
             $addresses_to_verify_for_zero_balances_rows = array();

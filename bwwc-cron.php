@@ -315,16 +315,6 @@ function BWWC_cron_job_worker()
         $current_time = time();
         $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
 
-        if ($bwwc_settings['reuse_expired_addresses']) {
-            $reuse_expired_addresses_query_part = $wpdb->prepare(
-                "OR (`status`='assigned' AND ((%d - `assigned_at`) > %d))",
-                $current_time,
-                $assigned_address_expires_in_secs
-            );
-        } else {
-            $reuse_expired_addresses_query_part = "";
-        }
-
         // Calculate total number of currently unused addresses in a system. Make sure there aren't too many.
 
         // NULL == not found
@@ -334,22 +324,34 @@ function BWWC_cron_job_worker()
         //
         // Hence - any returned address will be clean to use.
         
-        // Build WHERE clause safely
-        $where_unused = "`status`='unused'";
-        if ($reuse_expired_addresses_query_part) {
-            $where_unused .= " " . $reuse_expired_addresses_query_part;
+        if ($bwwc_settings['reuse_expired_addresses']) {
+            $total_unused_addresses = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                       WHERE `origin_id` = %s
+                       AND `total_received_funds` = %s
+                       AND (
+                         `status` = 'unused'
+                         OR (`status` = 'assigned' AND ((%d - `assigned_at`) > %d))
+                       )",
+                    $origin_id,
+                    '0',
+                    $current_time,
+                    $assigned_address_expires_in_secs
+                )
+            );
+        } else {
+            $total_unused_addresses = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                       WHERE `origin_id` = %s
+                       AND `total_received_funds` = %s
+                       AND `status` = 'unused'",
+                    $origin_id,
+                    '0'
+                )
+            );
         }
-        
-        $total_unused_addresses = $wpdb->get_var(
-            $wpdb->prepare(
-                "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
-                   WHERE `origin_id` = %s
-                   AND `total_received_funds` = %s
-                   AND ({$where_unused})",
-                $origin_id,
-                '0'
-            )
-        );
 
 
         if ($total_unused_addresses < $bwwc_settings['max_unused_addresses_buffer']) {

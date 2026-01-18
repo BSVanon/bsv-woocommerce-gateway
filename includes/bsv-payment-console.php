@@ -364,7 +364,7 @@ function BWWC__render_payment_console($order) {
         ?>
         <div class="bsv-confirmation-notice" style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 12px; color: #856404;">
             <strong><?php esc_html_e('Note:', 'sendbsv-bsv-payments-for-woocommerce'); ?></strong>
-            <?php 
+            <?php
             /* translators: 1: number of confirmations required, 2: estimated minutes */
             printf(
                 esc_html__('Merchant requires %1$d confirmations (~%2$d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'sendbsv-bsv-payments-for-woocommerce'),

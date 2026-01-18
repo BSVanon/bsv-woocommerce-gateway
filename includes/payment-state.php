@@ -86,8 +86,9 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     BWWC__log_payment_state_transition($order_id, $old_state, $new_state, $reason);
     
     // Add order note
+    /* translators: 1: old payment state, 2: new payment state */
     $note = sprintf(
-        __('Payment state changed: %s → %s', 'sendbsv-bsv-payments-for-woocommerce'),
+        __('Payment state changed: %1$s → %2$s', 'sendbsv-bsv-payments-for-woocommerce'),
         BWWC__get_payment_state_label($old_state),
         BWWC__get_payment_state_label($new_state)
     );

@@ -58,13 +58,13 @@ This plugin connects to the following external services to function properly:
 
 **CoinGecko API** (https://www.coingecko.com)
 - Purpose: Fetches BSV exchange rates for currency conversion
-- Data transmitted: None (public API, no personal data sent)
+- Data transmitted: Server IP address and requested currency parameters; no customer PII
 - Privacy policy: https://www.coingecko.com/en/privacy
 - Terms of service: https://www.coingecko.com/en/terms
 
 **CoinPaprika API** (https://coinpaprika.com)
 - Purpose: Fallback exchange rate provider if CoinGecko is unavailable
-- Data transmitted: None (public API, no personal data sent)
+- Data transmitted: Server IP address and requested currency parameters; no customer PII
 - Privacy policy: https://coinpaprika.com/privacy-policy
 - Terms of service: https://coinpaprika.com/terms-of-use
 

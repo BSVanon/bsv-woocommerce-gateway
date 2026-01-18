@@ -26,5 +26,6 @@ require_once dirname(__FILE__) . '/providers/bitails.php';
 
 // Load payment state machine
 require_once dirname(__FILE__) . '/payment-state.php';
-require_once dirname(__FILE__) . '/payment-check.php';
-require_once dirname(__FILE__) . '/expiry.php';
+// payment-check.php and expiry.php removed in v6.0.0
+// These modules used incorrect meta keys (_bwwc_* vs actual keys)
+// and weren't HPOS-compatible. Will be refactored for v6.1

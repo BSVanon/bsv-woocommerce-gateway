@@ -87,7 +87,7 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     
     // Add order note
     $note = sprintf(
-        __('Payment state changed: %s → %s', 'bitcoin-payments-for-woocommerce'),
+        __('Payment state changed: %s → %s', 'bitcoin-sv-payments-for-woocommerce'),
         BWWC__get_payment_state_label($old_state),
         BWWC__get_payment_state_label($new_state)
     );
@@ -173,7 +173,7 @@ function BWWC__handle_payment_state_change($order_id, $old_state, $new_state)
             // Payment detected (0-conf or unconfirmed)
             // Update order status to 'processing' if configured
             if (!empty($settings['autocomplete_paid_orders'])) {
-                $order->update_status('processing', __('Payment detected on blockchain', 'bitcoin-payments-for-woocommerce'));
+                $order->update_status('processing', __('Payment detected on blockchain', 'bitcoin-sv-payments-for-woocommerce'));
             }
             break;
             
@@ -181,9 +181,9 @@ function BWWC__handle_payment_state_change($order_id, $old_state, $new_state)
             // Payment verified (confirmations met)
             // Complete the order
             if (!empty($settings['autocomplete_paid_orders'])) {
-                $order->update_status('completed', __('Payment verified with required confirmations', 'bitcoin-payments-for-woocommerce'));
+                $order->update_status('completed', __('Payment verified with required confirmations', 'bitcoin-sv-payments-for-woocommerce'));
             } else {
-                $order->update_status('processing', __('Payment verified with required confirmations', 'bitcoin-payments-for-woocommerce'));
+                $order->update_status('processing', __('Payment verified with required confirmations', 'bitcoin-sv-payments-for-woocommerce'));
             }
             $order->payment_complete();
             break;
@@ -193,24 +193,24 @@ function BWWC__handle_payment_state_change($order_id, $old_state, $new_state)
             if ($old_state === BWWC_PAYMENT_STATE_WAITING) {
                 // Only auto-cancel if configured and no payment detected
                 if (!empty($settings['delete_expired_unpaid_orders'])) {
-                    $order->update_status('cancelled', __('Payment window expired', 'bitcoin-payments-for-woocommerce'));
+                    $order->update_status('cancelled', __('Payment window expired', 'bitcoin-sv-payments-for-woocommerce'));
                 }
             }
             break;
             
         case BWWC_PAYMENT_STATE_UNDERPAID:
             // Partial payment received
-            $order->add_order_note(__('Partial payment received. Waiting for remaining amount.', 'bitcoin-payments-for-woocommerce'));
+            $order->add_order_note(__('Partial payment received. Waiting for remaining amount.', 'bitcoin-sv-payments-for-woocommerce'));
             break;
             
         case BWWC_PAYMENT_STATE_OVERPAID:
             // Overpayment received
-            $order->add_order_note(__('Overpayment received. Please contact customer to arrange refund.', 'bitcoin-payments-for-woocommerce'));
+            $order->add_order_note(__('Overpayment received. Please contact customer to arrange refund.', 'bitcoin-sv-payments-for-woocommerce'));
             break;
             
         case BWWC_PAYMENT_STATE_CONFLICT:
             // Conflicting transactions detected
-            $order->update_status('on-hold', __('Payment conflict detected. Manual review required.', 'bitcoin-payments-for-woocommerce'));
+            $order->update_status('on-hold', __('Payment conflict detected. Manual review required.', 'bitcoin-sv-payments-for-woocommerce'));
             break;
     }
     
@@ -218,7 +218,7 @@ function BWWC__handle_payment_state_change($order_id, $old_state, $new_state)
     if ($old_state === BWWC_PAYMENT_STATE_EXPIRED && 
         in_array($new_state, array(BWWC_PAYMENT_STATE_DETECTED, BWWC_PAYMENT_STATE_VERIFIED), true)) {
         
-        $order->update_status('on-hold', __('Late payment received after expiry. Manual review required.', 'bitcoin-payments-for-woocommerce'));
+        $order->update_status('on-hold', __('Late payment received after expiry. Manual review required.', 'bitcoin-sv-payments-for-woocommerce'));
         
         // Send admin notification
         BWWC__send_late_payment_notification($order_id);
@@ -238,19 +238,19 @@ function BWWC__send_late_payment_notification($order_id)
     }
     
     $to = get_option('admin_email');
-    $subject = sprintf(__('[%s] Late Payment Received - Order #%d', 'bitcoin-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
+    $subject = sprintf(__('[%s] Late Payment Received - Order #%d', 'bitcoin-sv-payments-for-woocommerce'), get_bloginfo('name'), $order_id);
     
     $message = sprintf(
-        __('A late payment has been received for order #%d after the payment window expired.', 'bitcoin-payments-for-woocommerce'),
+        __('A late payment has been received for order #%d after the payment window expired.', 'bitcoin-sv-payments-for-woocommerce'),
         $order_id
     ) . "\n\n";
     
-    $message .= __('Order Details:', 'bitcoin-payments-for-woocommerce') . "\n";
-    $message .= sprintf(__('Order ID: %d', 'bitcoin-payments-for-woocommerce'), $order_id) . "\n";
-    $message .= sprintf(__('Order Total: %s', 'bitcoin-payments-for-woocommerce'), $order->get_formatted_order_total()) . "\n";
-    $message .= sprintf(__('Order URL: %s', 'bitcoin-payments-for-woocommerce'), $order->get_edit_order_url()) . "\n\n";
+    $message .= __('Order Details:', 'bitcoin-sv-payments-for-woocommerce') . "\n";
+    $message .= sprintf(__('Order ID: %d', 'bitcoin-sv-payments-for-woocommerce'), $order_id) . "\n";
+    $message .= sprintf(__('Order Total: %s', 'bitcoin-sv-payments-for-woocommerce'), $order->get_formatted_order_total()) . "\n";
+    $message .= sprintf(__('Order URL: %s', 'bitcoin-sv-payments-for-woocommerce'), $order->get_edit_order_url()) . "\n\n";
     
-    $message .= __('Please review this order and decide whether to fulfill it.', 'bitcoin-payments-for-woocommerce') . "\n";
+    $message .= __('Please review this order and decide whether to fulfill it.', 'bitcoin-sv-payments-for-woocommerce') . "\n";
     
     wp_mail($to, $subject, $message);
 }

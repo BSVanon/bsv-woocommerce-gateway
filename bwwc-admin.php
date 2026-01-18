@@ -87,8 +87,7 @@ function BWWC__GetPluginNameVersionEdition($please_donate = true)
 {
     $return_data = '<h2 style="border-bottom:1px solid #DDD;padding-bottom:10px;margin-bottom:20px;">' .
             BWWC_PLUGIN_NAME . ', version: <span style="color:#EE0000;">' .
-            BWWC_VERSION. '</span> [<span style="color:#EE0000;background-color:#FFFF77;">&nbsp;' .
-            BWWC_EDITION . '&nbsp;</span> edition]' .
+            BWWC_VERSION . '</span>' .
           '</h2>';
 
     return $return_data;

@@ -494,10 +494,31 @@
         },
 
         updateExpiration: function(data) {
-            const expEl = $('.bsv-expiration-time');
-            if (!expEl.length || !data.expires_at) return;
+            const timerWrapper = $('.bsv-timer-wrapper');
+            const expEl = $('.bsv-expiration-timer');
 
-            const expiresAt = new Date(data.expires_at * 1000);
+            if (!timerWrapper.length || !expEl.length) {
+                return;
+            }
+
+            const activeStates = ['waiting', 'underpaid'];
+            if (!activeStates.includes(data.payment_state)) {
+                timerWrapper.addClass('bsv-timer-hidden');
+                return;
+            }
+
+            timerWrapper.removeClass('bsv-timer-hidden');
+
+            const expiresAttr = parseInt(expEl.data('expires'), 10);
+            const expiresFromData = parseInt(data.expires_at, 10);
+            const expiresTimestamp = expiresFromData || expiresAttr;
+
+            if (!expiresTimestamp) {
+                timerWrapper.addClass('bsv-timer-hidden');
+                return;
+            }
+
+            const expiresAt = new Date(expiresTimestamp * 1000);
             const now = new Date();
             const diff = expiresAt - now;
 
@@ -509,13 +530,7 @@
             const minutes = Math.floor(diff / 60000);
             const seconds = Math.floor((diff % 60000) / 1000);
 
-            let timeText = '';
-            if (minutes > 0) {
-                timeText = `${minutes}m ${seconds}s`;
-            } else {
-                timeText = `${seconds}s`;
-            }
-
+            const timeText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
             expEl.text(timeText);
 
             // Add warning class if less than 5 minutes

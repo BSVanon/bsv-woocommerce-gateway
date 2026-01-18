@@ -276,12 +276,13 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
   </tr>
   <tr class="bpit-table-row">
     <td style="vertical-align:middle;" class="bpit-td-name bpit-td-name-qr">
-	    QR Code:
+	    Payment Link:
     </td>
     <td class="bpit-td-value bpit-td-value-qr">
       <div style="border:1px solid #FCCA09;padding:5px;margin:2px;background-color:#FCF8E3;border-radius:4px;">
-        <a href="bitcoin:{{{BITCOINS_ADDRESS}}}?sv&amount={{{BITCOINS_AMOUNT}}}"><img src="https://api.qrserver.com/v1/create-qr-code/?color=000000&amp;bgcolor=FFFFFF&amp;data=bitcoin%3A{{{BITCOINS_ADDRESS}}}%3Fsv%26amount%3D{{{BITCOINS_AMOUNT}}}&amp;qzone=1&amp;margin=0&amp;size=180x180&amp;ecc=L" style="vertical-align:middle;border:1px solid #888;" /></a>
+        <a href="bitcoin:{{{BITCOINS_ADDRESS}}}?sv&amount={{{BITCOINS_AMOUNT}}}" style="color:#0073aa;text-decoration:none;font-weight:bold;">bitcoin:{{{BITCOINS_ADDRESS}}}?sv&amount={{{BITCOINS_AMOUNT}}}</a>
       </div>
+      <p style="margin:5px 0;font-size:90%;color:#666;">Click the link above or scan the QR code on the payment page</p>
     </td>
   </tr>
 </table>
@@ -517,7 +518,6 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 'order_datetime'  				=> gmdate('Y-m-d H:i:s T'),
                 'requested_by_ip'					=> isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
                 'requested_by_ua'					=> isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : '',
-                'requested_by_srv'				=> BWWC__base64_encode(serialize($_SERVER)),
                 );
 
             $ret_info_array = array();

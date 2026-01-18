@@ -60,9 +60,9 @@
     display: flex;
     gap: 0.25rem;
     padding: 0.25rem;
-    background: #f8fafc;
-    border-radius: 6px;
-    margin: 0.15rem 0 0.1rem;
+    background: #e2e8f0;
+    border-radius: 8px;
+    margin: 0 0 0.1rem;
 }
 
 .bsv-protocol-tab {
@@ -295,21 +295,25 @@
     font-size: 13px;
     color: #475569;
     text-align: center;
-    padding: 0.45rem 1.1rem;
+    padding: 0.5rem 1.1rem;
     background: #ffffff;
     border-radius: 8px;
     border: 1px solid #e2e8f0;
-    margin: 0;
+    margin: 0 0 0.85rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     min-width: 180px;
     max-width: 90%;
-    position: absolute;
-    top: 0;
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    top: auto;
+    left: auto;
+    transform: none;
     box-shadow: 0 6px 12px rgba(15, 23, 42, 0.08);
+}
+
+.bsv-timer-wrapper.bsv-timer-hidden {
+    display: none;
 }
 
 .bsv-expected strong {

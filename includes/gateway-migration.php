@@ -35,11 +35,15 @@ function BWWC__migrate_gateway_id()
         BWWC__log_event(__FILE__, __LINE__, 'Migrated gateway settings from bitcoin to bitcoin_sv', 'info');
     }
     
-    // Update payment method in existing orders (HPOS compatible)
+    // Update payment method in existing orders (HPOS compatible, batched)
     // Use WooCommerce CRUD to handle both legacy postmeta and HPOS tables
+    $batch_size = 50;
+    $offset = get_option('bwwc_migration_offset', 0);
+    
     $orders = wc_get_orders(array(
         'payment_method' => 'bitcoin',
-        'limit' => -1,
+        'limit' => $batch_size,
+        'offset' => $offset,
         'return' => 'ids',
     ));
     
@@ -54,8 +58,18 @@ function BWWC__migrate_gateway_id()
     }
     
     if ($updated > 0) {
-        BWWC__log_event(__FILE__, __LINE__, "Migrated payment method for {$updated} orders from bitcoin to bitcoin_sv", 'info');
+        BWWC__log_event(__FILE__, __LINE__, "Migrated payment method for {$updated} orders (batch offset: {$offset})", 'info');
+        
+        // If we got a full batch, there may be more - schedule next batch
+        if (count($orders) === $batch_size) {
+            update_option('bwwc_migration_offset', $offset + $batch_size);
+            // Migration will continue on next admin_init
+            return;
+        }
     }
+    
+    // Migration complete - clean up offset
+    delete_option('bwwc_migration_offset');
     
     // Mark migration as complete
     update_option('bwwc_gateway_id_migration_done', true);

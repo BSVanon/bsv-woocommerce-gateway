@@ -34,7 +34,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 = Benefits =
 
 * Accept payment directly into your personal ElectrumSV wallet.
-* ElectrumSV wallet payment option completely removes dependency on any third party service and middlemen.
+* No third-party payment processor required—payments settle directly to your wallet.
 * Accept payment in Bitcoin SV for physical and digital downloadable products.
 * Add Bitcoin SV  payments option to your existing online store with alternative main currency.
 * Flexible exchange rate calculations fully managed via administrative settings.

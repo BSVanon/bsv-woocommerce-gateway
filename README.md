@@ -119,12 +119,15 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 
 ## 🗺️ Roadmap
 
-### v6.1 (Future)
+### v6.1 (in Development)
 - Admin diagnostics panel UI (provider health monitoring)
 - PHPCS/PHPStan CI integration
+- BIP270 invoices + QR toggle (HandCash-ready)
+- HPOS/meta cleanup 
+- upgraded BRC-100 wallet flow + better receipts/instant “detected” UX
 - Enhanced address pool management
 - Multi-currency support improvements
-- Performance optimizations
+- Performance optimizations and more
 
 ## 🐛 Troubleshooting
 
@@ -166,7 +169,7 @@ https://www.gnu.org/licenses/gpl-2.0.html
 - BSVanon (2026 WordPress.org submission, v6.0 security hardening, and ongoing maintenance)
 
 ### Special Thanks
-- Bitcoin Dictionary @BitcoinDict
+- WooBSV @WooBSV
 - ElectrumSV team
 - WhatsOnChain
 - CoinGecko

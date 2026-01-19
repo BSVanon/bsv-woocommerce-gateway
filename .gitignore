@@ -1,11 +1,14 @@
 # Analysis and internal documentation (for AI assistant only)
-docs/PLUGIN_CHECK_ANALYSIS.md
-docs/WORDPRESS_PLUGIN_RESUBMISSION.md
-WORDPRESS_ORG_SUBMISSION_CHECKLIST.md
-PLUGIN_CHECK_ANALYSIS.md
+docs/
+
+# Development tools (not needed in WordPress.org submission)
+phpcs.xml
+phpstan.neon
+wordpress-stubs.php
 
 # Docker environment
-docker/wp-modern/
+docker/
+libs/
 .env
 
 # IDE

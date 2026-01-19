@@ -1,4 +1,4 @@
-# Bitcoin SV Payments for WooCommerce
+# SendBSV BSV Payments for WooCommerce
 
 **Version:** 6.0.0  
 **Status:** Production Ready - Major Security & Architecture Release  

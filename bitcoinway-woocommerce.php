@@ -1,18 +1,19 @@
 <?php
 /**
- * Plugin Name: Bitcoin SV Payments for WooCommerce
+ * Plugin Name: SendBSV BSV Payments for WooCommerce
  * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
- * Version: 5.3.4
+ * Version: 6.0.0
  * Author: BSVanon
- * Author URI: https://plugins.svn.wordpress.org/bitcoin-sv-payments-for-woocommerce/
+ * Author URI: https://sendbsv.com
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: bitcoin-sv-payments-for-woocommerce
+ * Text Domain: sendbsv-bsv-payments-for-woocommerce
  * Domain Path: /lang
  * Requires at least: 5.8
  * Tested up to: 6.9
  * Requires PHP: 7.4
+ * Requires Plugins: woocommerce
  * WC requires at least: 6.0
  * WC tested up to: 9.5
  */
@@ -54,8 +55,8 @@ add_action('admin_notices', 'BWWC__blocks_checkout_notice');
 
 add_action('init', 'BWWC_set_lang_file');
 
-// Add wallet top-up link to checkout page
-add_action('woocommerce_review_order_before_payment', 'BWWC__add_wallet_topup_link');
+// v6.0.0: Removed top-up link from checkout (A0.3 - merchant trust + WP.org concerns)
+// Top-up link now only appears on payment console page after checkout
 //---------------------------------------------------------------------------
 
 //===========================================================================
@@ -85,8 +86,7 @@ function BWWC_activate()
     // Setup cron jobs
 
     if ($bwwc_settings['enable_soft_cron_job'] && !wp_next_scheduled('BWWC_cron_action')) {
-        $http_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : '';
-        $cron_job_schedule_name = strpos($http_host, 'ttt.com')===false ? $bwwc_settings['soft_cron_job_schedule_name'] : 'seconds_30';
+        $cron_job_schedule_name = $bwwc_settings['soft_cron_job_schedule_name'];
         wp_schedule_event(time(), $cron_job_schedule_name, 'BWWC_cron_action');
     }
     //----------------------------------
@@ -95,10 +95,10 @@ function BWWC_activate()
 // Cron Subfunctions
 function BWWC__add_custom_scheduled_intervals($schedules)
 {
-    $schedules['seconds_30']     = array('interval'=>30,     'display'=>__('Once every 30 seconds', 'bitcoin-sv-payments-for-woocommerce'));     // For testing only.
-    $schedules['minutes_1']      = array('interval'=>1*60,   'display'=>__('Once every 1 minute', 'bitcoin-sv-payments-for-woocommerce'));
-    $schedules['minutes_2.5']    = array('interval'=>2.5*60, 'display'=>__('Once every 2.5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
-    $schedules['minutes_5']      = array('interval'=>5*60,   'display'=>__('Once every 5 minutes', 'bitcoin-sv-payments-for-woocommerce'));
+    $schedules['seconds_30']     = array('interval'=>30,  'display'=>__('Once every 30 seconds', 'sendbsv-bsv-payments-for-woocommerce'));     // For testing only.
+    $schedules['minutes_1']      = array('interval'=>60,  'display'=>__('Once every 1 minute', 'sendbsv-bsv-payments-for-woocommerce'));
+    $schedules['minutes_2.5']    = array('interval'=>150, 'display'=>__('Once every 2.5 minutes', 'sendbsv-bsv-payments-for-woocommerce'));
+    $schedules['minutes_5']      = array('interval'=>300, 'display'=>__('Once every 5 minutes', 'sendbsv-bsv-payments-for-woocommerce'));
 
     return $schedules;
 }
@@ -111,7 +111,7 @@ function BWWC__add_custom_scheduled_intervals($schedules)
  */
 function BWWC__plugin_action_links($links)
 {
-    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'bitcoin-sv-payments-for-woocommerce') . '</a>';
+    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'sendbsv-bsv-payments-for-woocommerce') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
@@ -119,33 +119,13 @@ function BWWC__plugin_action_links($links)
 
 //===========================================================================
 /**
- * Show admin notice if WooCommerce Blocks checkout is detected
+ * Admin notice if WooCommerce Blocks checkout is detected
+ * 
+ * v6.0.0: Blocks support is now complete via class-bsv-blocks-integration.php
+ * No warning needed - both classic and Blocks checkout work seamlessly
  */
-function BWWC__blocks_checkout_notice()
-{
-    // Only show on relevant admin pages
-    $screen = get_current_screen();
-    if (!$screen || !in_array($screen->id, array('plugins', 'woocommerce_page_wc-settings', 'dashboard'))) {
-        return;
-    }
-
-    // Check if WooCommerce is active
-    if (!class_exists('WooCommerce')) {
-        return;
-    }
-
-    // Check if checkout page uses Blocks
-    $checkout_page_id = wc_get_page_id('checkout');
-    if ($checkout_page_id > 0) {
-        $checkout_page = get_post($checkout_page_id);
-        if ($checkout_page && has_block('woocommerce/checkout', $checkout_page)) {
-            echo '<div class="notice notice-warning is-dismissible">';
-            echo '<p><strong>' . esc_html__('Bitcoin SV Gateway:', 'bitcoin-sv-payments-for-woocommerce') . '</strong> ';
-            echo esc_html__('Your checkout page uses WooCommerce Blocks, which is not yet supported. Please create a classic checkout page with the <code>[woocommerce_checkout]</code> shortcode.', 'bitcoin-sv-payments-for-woocommerce');
-            echo ' <a href="https://github.com/BSVanon/bsv-woocommerce-gateway#classic-checkout-required" target="_blank">' . esc_html__('Learn more', 'bitcoin-sv-payments-for-woocommerce') . '</a></p>';
-            echo '</div>';
-        }
-    }
+function BWWC__blocks_checkout_notice() {
+    return;
 }
 //---------------------------------------------------------------------------
 
@@ -185,8 +165,8 @@ function BWWC_create_menu()
     // create new top-level menu
     // http://www.fileformat.info/info/unicode/char/e3f/index.htm
     add_menu_page(
-        __('Woo Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'),                    // Page title
-        __('Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'),                        // Menu Title - lower corner of admin menu
+        __('Woo Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'),                    // Page title
+        __('Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'),                        // Menu Title - lower corner of admin menu
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page',                   // Function
@@ -196,8 +176,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __('WooCommerce Bitcoin SV Payments Gateway', 'bitcoin-sv-payments-for-woocommerce'),                   // Page title
-        __('General Settings', 'bitcoin-sv-payments-for-woocommerce'),               // Menu Title
+        __('WooCommerce Bitcoin SV Payments Gateway', 'sendbsv-bsv-payments-for-woocommerce'),                   // Page title
+        __('General Settings', 'sendbsv-bsv-payments-for-woocommerce'),               // Menu Title
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page'                    // Function
@@ -205,8 +185,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __('Bitcoin SV Plugin Advanced Settings', 'bitcoin-sv-payments-for-woocommerce'),       // Page title
-        __('Advanced Settings', 'bitcoin-sv-payments-for-woocommerce'),                // Menu title
+        __('Bitcoin SV Plugin Advanced Settings', 'sendbsv-bsv-payments-for-woocommerce'),       // Page title
+        __('Advanced Settings', 'sendbsv-bsv-payments-for-woocommerce'),                // Menu title
         'manage_options',                                        // Capability
         'BWWC-settings-advanced',                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_advanced_settings_page'            // Function
@@ -223,7 +203,7 @@ function BWWC_set_lang_file()
     if (!empty($currentLocale)) {
         $moFile = dirname(__FILE__) . "/lang/" . $currentLocale . ".mo";
         if (@file_exists($moFile) && is_readable($moFile)) {
-            load_textdomain('bitcoin-sv-payments-for-woocommerce', $moFile);
+            load_textdomain('sendbsv-bsv-payments-for-woocommerce', $moFile);
         }
     }
 }

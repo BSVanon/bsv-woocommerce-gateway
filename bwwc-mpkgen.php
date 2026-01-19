@@ -41,6 +41,21 @@ function BWWC__MATH_generate_bitcoin_address_from_mpk($master_public_key, $key_i
     }
 
     if (preg_match('/^xpub[a-zA-Z0-9]{107}$/', $master_public_key)) {
+        // Get derivation path setting
+        $bwwc_settings = BWWC__get_settings();
+        $derivation_path = isset($bwwc_settings['derivation_path_type']) ? $bwwc_settings['derivation_path_type'] : 'm/0/i';
+        
+        // Determine if this should be a change address based on derivation path setting
+        // m/0/i = receiving (is_for_change = false) - Default
+        // m/1/i = change (is_for_change = true)
+        
+        if ($derivation_path === 'm/1/i') {
+            $is_for_change = true;
+        } else {
+            // Default m/0/i (receiving)
+            $is_for_change = false;
+        }
+        
         return BWWC__MATH_generate_bitcoin_address_from_mpk_v2($master_public_key, $key_index, $is_for_change);
     }
 

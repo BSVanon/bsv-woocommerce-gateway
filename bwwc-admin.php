@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -30,14 +30,15 @@ $g_BWWC__config_defaults = array(
    'database_schema_version'              =>  1.4,
    'assigned_address_expires_in_mins'     =>  4*60,   // 4 hours to pay for order and receive necessary number of confirmations.
    'funds_received_value_expires_in_mins' =>  '5',		// 'received_funds_checked_at' is fresh (considered to be a valid value) if it was last checked within 'funds_received_value_expires_in_mins' minutes.
+   'derivation_path_type'                 =>  'm/0/i', // BIP32 derivation path: m/0/i (receiving), m/1/i (change), or m/i (root)
    'starting_index_for_new_btc_addresses' =>  '2',    // Generate new addresses for the wallet starting from this index.
    'max_blockchains_api_failures'         =>  '3',    // Return error after this number of sequential failed attempts to retrieve blockchain data.
    'max_unusable_generated_addresses'     =>  '20',   // Return error after this number of unusable (non-empty) bitcoin addresses were sequentially generated
    'blockchain_api_timeout_secs'          =>  '20',   // Connection and request timeouts for curl operations dealing with blockchain requests.
    'exchange_rate_api_timeout_secs'       =>  '10',   // Connection and request timeouts for curl operations dealing with exchange rate API requests.
    'soft_cron_job_schedule_name'          =>  'minutes_2.5',   // WP cron job frequency
-   'delete_expired_unpaid_orders'         =>  '1',   // Automatically delete expired, unpaid orders from WooCommerce->Orders database
-   'reuse_expired_addresses'              =>  '1',   // True - may reduce anonymouty of store customers (someone may click/generate bunch of fake orders to list many addresses that in a future will be used by real customers).
+   'delete_expired_unpaid_orders'         =>  '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Automatically delete expired, unpaid orders from WooCommerce->Orders database
+   'reuse_expired_addresses'              =>  '0',   // v6.0.0: Changed to OFF by default (better privacy). True - may reduce anonymouty of store customers (someone may click/generate bunch of fake orders to list many addresses that in a future will be used by real customers).
                                                       // False - better anonymouty but may leave many addresses in wallet unused (and hence will require very high 'gap limit') due to many unpaid order clicks.
                                                       //        In this case it is recommended to regenerate new wallet after 'gap limit' reaches 1000.
    'max_unused_addresses_buffer'          =>  10,     // Do not pre-generate more than these number of unused addresses. Pregeneration is done only by hard cron job or manually at plugin settings.
@@ -58,7 +59,7 @@ $g_BWWC__config_defaults = array(
    'exchange_multiplier'                  =>  '1.00',
 
    'delete_db_tables_on_uninstall'        =>  '0',
-   'autocomplete_paid_orders'							=>  '1',
+   'autocomplete_paid_orders'							=>  '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Merchants should manually review orders before marking complete.
    'enable_soft_cron_job'                 =>  '1',    // Enable "soft" Wordpress-driven cron jobs.
 
     // New BSV settings
@@ -86,8 +87,7 @@ function BWWC__GetPluginNameVersionEdition($please_donate = true)
 {
     $return_data = '<h2 style="border-bottom:1px solid #DDD;padding-bottom:10px;margin-bottom:20px;">' .
             BWWC_PLUGIN_NAME . ', version: <span style="color:#EE0000;">' .
-            BWWC_VERSION. '</span> [<span style="color:#EE0000;background-color:#FFFF77;">&nbsp;' .
-            BWWC_EDITION . '&nbsp;</span> edition]' .
+            BWWC_VERSION . '</span>' .
           '</h2>';
 
     return $return_data;
@@ -95,14 +95,9 @@ function BWWC__GetPluginNameVersionEdition($please_donate = true)
 //===========================================================================
 
 //===========================================================================
-function BWWC__GetProUrl()
-{
-    return 'http://google.com';
-}
-function BWWC__GetProLabel()
-{
-    return '<span style="background-color:#FF4;color:#F44;border:1px solid #F44;padding:2px 6px;font-family:\'Open Sans\',sans-serif;font-size:14px;border-radius:6px;"><a href="' . BWWC__GetProUrl() . '">PRO Only</a></span>';
-}
+// Pro version functions removed in v6.0.0
+// This is a free, open-source plugin with no Pro version
+//===========================================================================
 
 /**
  * Recursively sanitize incoming values from forms.
@@ -131,15 +126,15 @@ function BWWC__get_persistent_settings($key=false)
 {
     global $wpdb;
 
-    $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
-    $sql_query = $wpdb->prepare(
-        "SELECT * FROM `$persistent_settings_table_name` WHERE `id` = %d",
-        1
+    $row = $wpdb->get_row(
+        $wpdb->prepare(
+            "SELECT * FROM `{$wpdb->prefix}bwwc_persistent_settings` WHERE `id` = %d",
+            1
+        ),
+        ARRAY_A
     );
-
-    $row = $wpdb->get_row($sql_query, ARRAY_A);
     if ($row) {
-        $settings = @unserialize($row['settings']);
+        $settings = @unserialize($row['settings'], ['allowed_classes' => false]);
         if ($key) {
             return $settings[$key];
         } else {
@@ -181,18 +176,17 @@ function BWWC__reset_all_persistent_settings()
     global $wpdb;
     global $g_BWWC__config_defaults;
 
-    $persistent_settings_table_name = $wpdb->prefix . 'bwwc_persistent_settings';
-
     $initial_settings = BWWC__safe_string_escape(serialize($g_BWWC__config_defaults));
 
-    $wpdb->query("TRUNCATE TABLE `$persistent_settings_table_name`");
+    $wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}bwwc_persistent_settings`");
 
-    $insert_sql = $wpdb->prepare(
-        "INSERT INTO `$persistent_settings_table_name` (`id`, `settings`) VALUES ( %d, %s )",
-        1,
-        $initial_settings
+    $wpdb->query(
+        $wpdb->prepare(
+            "INSERT INTO `{$wpdb->prefix}bwwc_persistent_settings` (`id`, `settings`) VALUES ( %d, %s )",
+            1,
+            $initial_settings
+        )
     );
-    $wpdb->query($insert_sql);
 }
 //===========================================================================
 
@@ -388,8 +382,7 @@ function BWWC__create_database_tables($bwwc_settings)
     $must_update_settings = false;
 
     ///$persistent_settings_table_name       = $wpdb->prefix . 'bwwc_persistent_settings';
-    ///$electrum_wallets_table_name          = $wpdb->prefix . 'bwwc_electrum_wallets';
-    $btc_addresses_table_name             = $wpdb->prefix . 'bwwc_btc_addresses';
+    $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
 
     if ($wpdb->get_var("SHOW TABLES LIKE '$btc_addresses_table_name'") != $btc_addresses_table_name) {
         $b_first_time = true;
@@ -399,23 +392,7 @@ function BWWC__create_database_tables($bwwc_settings)
 
     //----------------------------------------------------------
     // Create tables
-    /// NOT NEEDED YET
-    /// $query = "CREATE TABLE IF NOT EXISTS `$persistent_settings_table_name` (
-    ///   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    ///   `settings` text,
-    ///   PRIMARY KEY  (`id`)
-    ///   );";
-    /// $wpdb->query ($query);
-
-    /// $query = "CREATE TABLE IF NOT EXISTS `$electrum_wallets_table_name` (
-    ///   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-    ///   `master_public_key` varchar(255) NOT NULL,
-    ///   PRIMARY KEY  (`id`),
-    ///   UNIQUE KEY  `master_public_key` (`master_public_key`)
-    ///   );";
-    /// $wpdb->query ($query);
-
-    $query = "CREATE TABLE IF NOT EXISTS `$btc_addresses_table_name` (
+    $wpdb->query("CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}bwwc_btc_addresses` (
     `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
     `btc_address` char(36) NOT NULL,
     `origin_id` char(128) NOT NULL DEFAULT '',
@@ -431,53 +408,13 @@ function BWWC__create_database_tables($bwwc_settings)
     KEY `index_in_wallet` (`index_in_wallet`),
     KEY `origin_id` (`origin_id`),
     KEY `status` (`status`)
-    );";
-    $wpdb->query($query);
+    )");
     //----------------------------------------------------------
 
-    // upgrade bwwc_btc_addresses table, add additional indexes
-    if (!$b_first_time) {
-        $version = floatval($bwwc_settings['database_schema_version']);
-
-        if ($version < 1.1) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` ADD INDEX `origin_id` (`origin_id` ASC) , ADD INDEX `status` (`status` ASC)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.1;
-            $must_update_settings = true;
-        }
-
-        if ($version < 1.2) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` DROP INDEX `index_in_wallet`, ADD INDEX `index_in_wallet` (`index_in_wallet` ASC)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.2;
-            $must_update_settings = true;
-        }
-
-        if ($version < 1.3) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` CHANGE COLUMN `origin_id` `origin_id` char(128)", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.3;
-            $must_update_settings = true;
-
-            $mpk = @$bwwc_settings['gateway_settings']['electrum_master_public_key'];
-            if ($mpk) {
-                // Replace hashed values of MPK in DB with real MPK values.
-                $mpk_old_value = 'electrum.mpk.' . md5($mpk);
-                // UPDATE table_name SET field = REPLACE(field, 'foo', 'bar') WHERE INSTR(field, 'foo') > 0;
-                // UPDATE [table_name] SET [field_name] = REPLACE([field_name], "foo", "bar");
-                $wpdb->query($wpdb->prepare("UPDATE `%s` SET `origin_id` = %s WHERE `origin_id` = %s", $btc_addresses_table_name, $mpk, $mpk_old_value));
-
-                // Copy settings from old location to new, if new is empty.
-                if (!@$bwwc_settings['electrum_mpk_saved']) {
-                    $bwwc_settings['electrum_mpk_saved'] = $mpk;
-                    // 'BWWC__update_settings()' will populate $bwwc_settings['electrum_mpks'].
-                }
-            }
-        }
-
-        if ($version < 1.4) {
-            $wpdb->query($wpdb->prepare("ALTER TABLE `%s` MODIFY `address_meta` MEDIUMBLOB", $btc_addresses_table_name));
-            $bwwc_settings['database_schema_version'] = 1.4;
-            $must_update_settings = true;
-        }
-    }
+    // v6.0.0: Removed ancient migration code (A15)
+    // Support floor: v5.3.4+ with database schema version 1.4
+    // Users on older versions must upgrade to v5.3.4 first before upgrading to v6.0.0
+    // No migration path from pre-v5.3.4 versions
 
     if ($must_update_settings) {
         BWWC__update_settings($bwwc_settings);
@@ -564,7 +501,7 @@ class BWWC_Fix_Legacy_Metadata_Command {
             if ( $order_id ) {
                 // Get order details
                 $order_total = floatval( get_post_meta( $order_id, 'order_total_in_btc', true ) );
-                $order_datetime = date( 'Y-m-d H:i:s T' );
+                $order_datetime = gmdate( 'Y-m-d H:i:s' ) . ' UTC';
 
                 // Build normalized entry
                 $normalized_order_entry = array(

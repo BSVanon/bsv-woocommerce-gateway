@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 // Include everything
@@ -33,21 +33,21 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(esc_html__('Security check failed. Please try again.', 'bitcoin-sv-payments-for-woocommerce'));
+            wp_die(esc_html__('Security check failed. Please try again.', 'sendbsv-bsv-payments-for-woocommerce'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
             BWWC__update_settings("", false);
-            $action_message = __('Settings updated!', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('Settings updated!', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_bwwc_settings'])) {
             BWWC__reset_all_settings(false);
-            $action_message = __('All settings reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('All settings reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
             BWWC__reset_partial_settings(false);
-            $action_message = __('Settings on this page reverted to defaults.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('Settings on this page reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
         } elseif (isset($_POST['validate_bwwc-license'])) {
             BWWC__update_settings("", false);
-            $action_message = __('License validated.', 'bitcoin-sv-payments-for-woocommerce');
+            $action_message = __('License validated.', 'sendbsv-bsv-payments-for-woocommerce');
         }
     }
 
@@ -115,22 +115,13 @@ function BWWC__render_general_settings_page_html()
     $bwwc_settings = BWWC__get_settings();
     global $g_BWWC__cron_script_url; ?>
 
-    <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+    <form method="post" action="">
       <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce'); ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'bitcoin-sv-payments-for-woocommerce')); ?>');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'sendbsv-bsv-payments-for-woocommerce')); ?>');" />
       </p>
       <table class="form-table">
-
-
-        <tr valign="top">
-          <th scope="row">Delete all plugin-specific settings, database tables and data on uninstall:</th>
-          <td>
-            <input type="hidden" name="delete_db_tables_on_uninstall" value="0" /><input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], 1); ?> />
-            <p class="description">If checked - all plugin-specific settings, database tables and data will be removed from Wordpress database upon plugin uninstall (but not upon deactivation or upgrade).</p>
-          </td>
-        </tr>
 
         <tr valign="top">
           <th scope="row">Bitcoin SV Address Generation:</th>
@@ -252,23 +243,15 @@ function BWWC__render_general_settings_page_html()
         <tr valign="top">
             <th scope="row">Cron job type:</th>
             <td>
-              <select name="enable_soft_cron_job" class="select ">
-                <option <?php selected($bwwc_settings['enable_soft_cron_job'], '1'); ?> value="1">Soft Cron (Wordpress-driven)</option>
-                <option <?php selected($bwwc_settings['enable_soft_cron_job'], '0'); ?> value="0">Hard Cron (Cpanel-driven)</option>
-              </select>
-              <p class="description">
-                <?php if ($bwwc_settings['enable_soft_cron_job'] != '1') {
-        echo '<p style="background-color:#FFC;color:#2A2;"><b>NOTE</b>: Hard Cron job is enabled: make sure to follow instructions below to enable hard cron job at your hosting panel.</p>';
-    } ?>
-                Cron job will take care of all regular Bitcoin SV payment processing tasks, like checking if payments are made and automatically completing the orders.<br />
-                <b>Soft Cron</b>: WordPress-driven (runs on behalf of a random site visitor).
-                <br />
-                <b>Hard Cron</b>: Cron job driven by the website hosting system/server (usually via cPanel). <br />
-                When enabling Hard Cron job - make this script to run every 5 minutes at your hosting panel cron job scheduler:<br />
-                <?php echo '<tt style="background-color:#FFA;color:#B00;padding:0px 6px;">wget -O /dev/null ' . esc_url($g_BWWC__cron_script_url . '?hardcron=1') . '</tt>'; ?>
-                <br /><b style="color:red;">NOTE:</b> Cron jobs <b>might not work</b> if your site is password protected with HTTP Basic authentication or other methods. This will result in WooCommerce store not seeing received payments (even though funds will arrive correctly to your Bitcoin SV addresses).
-                <br /><u>Note:</u> You will need to deactivate/reactivate plugin after changing this setting for it to have effect.<br />
-                "Hard" cron jobs may not be properly supported by all hosting plans (many shared hosting plans have restrictions in place).               
+              <p class="description" style="padding: 10px; background: #f0f0f1; border-left: 4px solid #2271b1;">
+                <strong>WordPress Cron (Automatic)</strong><br>
+                Payment processing runs automatically via WordPress scheduled events.<br><br>
+                <strong>Optional - For High-Traffic Sites:</strong> For more reliable processing on busy sites, configure your server to run <code>wp-cron.php</code> every 5 minutes via system cron, then disable WordPress page-load cron by adding this to <code>wp-config.php</code>:<br>
+                <code style="background: #fff; padding: 2px 6px; display: inline-block; margin-top: 5px;">define('DISABLE_WP_CRON', true);</code><br><br>
+                <strong>System Cron Command (replace with your domain):</strong><br>
+                <code style="background: #fff; padding: 2px 6px; display: inline-block; margin-top: 5px;">*/5 * * * * wget -q -O - https://yourdomain.com/wp-cron.php &>/dev/null</code>
+              </p>
+              <input type="hidden" name="enable_soft_cron_job" value="1" />               
               </p>
             </td>
         </tr>
@@ -276,18 +259,9 @@ function BWWC__render_general_settings_page_html()
           <th scope="row">Email Payment Instructions:</th>
           <td>
             <input type="hidden" name="email_instructions_enabled" value="0" /><input type="checkbox" name="email_instructions_enabled" value="1" <?php checked($bwwc_settings['email_instructions_enabled'], 1); ?> />
-            <p class="description">Include payment instructions with QR code in WooCommerce order emails (new orders, on-hold status).
-              <br />When enabled, customers receive a beautifully formatted payment block with amount, address, QR code, and direct payment link.
-            </p>
-          </td>
-        </tr>
-
-        <tr valign="top">
-          <th scope="row">Include QR Code in Emails:</th>
-          <td>
-            <input type="hidden" name="email_instructions_include_qr" value="0" /><input type="checkbox" name="email_instructions_include_qr" value="1" <?php checked($bwwc_settings['email_instructions_include_qr'], 1); ?> />
-            <p class="description">Include QR code image in email payment instructions for easy mobile wallet scanning.
-              <br />Disable if email size is a concern or if your email provider blocks external images.
+            <p class="description">Include payment instructions in WooCommerce order emails (new orders, on-hold status).
+              <br />When enabled, customers receive a beautifully formatted payment block with amount, address, and direct payment link.
+              <br /><strong>Note:</strong> QR codes are NOT included in emails (privacy/security). Customers can scan QR codes on the payment page.
             </p>
           </td>
         </tr>
@@ -345,8 +319,8 @@ function BWWC__render_general_settings_page_html()
       </table>
 
       <p class="submit">
-          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>"             />
-          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bitcoin-sv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>"             />
+          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
       </p>
     </form>
 <?php
@@ -358,7 +332,7 @@ function BWWC__render_advanced_settings_page_html()
 {
     $bwwc_settings = BWWC__get_settings();
  ?>
- <form method="post" action="<?php echo esc_url($_SERVER['REQUEST_URI']); ?>">
+ <form method="post" action="">
  <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
  <h3>Advanced Configuration</h3>
  <p>These settings control technical aspects of the plugin. Only modify if you understand the implications.</p>
@@ -399,7 +373,13 @@ function BWWC__render_advanced_settings_page_html()
             <span class="description">Enable automatic payment detection via WordPress cron. Disable if using external cron job.</span>
         </td>
     </tr>
-    
+ </table>
+ 
+ <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
+    <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
+ </p>
+ 
+ <table class="form-table">
     <tr valign="top">
         <th scope="row">Delete Data on Uninstall</th>
         <td>
@@ -417,12 +397,64 @@ function BWWC__render_advanced_settings_page_html()
     </tr>
  </table>
  
- <p style="margin-top: 20px; padding: 10px; background: #f0f0f1; border-left: 4px solid #0073aa;">
-    <strong>Note:</strong> Changes to cron settings require deactivating and reactivating the plugin to take effect.
- </p>
+ <h3 style="margin-top: 40px; color: #d63638;">⚠️ Advanced Derivation Settings</h3>
+ <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #d63638; margin-bottom: 20px;">
+    <p style="margin: 0 0 10px 0; font-weight: bold; color: #d63638;">WARNING: Only modify these settings if you fully understand BIP32/BIP44 derivation paths!</p>
+    <p style="margin: 0 0 10px 0;">Incorrect settings can cause transactions to appear "lost" or invisible in your wallet, even though they exist on the blockchain.</p>
+    <p style="margin: 0 0 10px 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Tracker</a> to locate your funds.</p>
+    <p style="margin: 0; font-weight: bold; color: #d63638;">DISCLAIMER: Merchant uses these advanced settings at their own risk. The plugin developers are not responsible for lost or inaccessible funds due to incorrect derivation configuration.</p>
+ </div>
+ 
+ <table class="form-table">
+    <tr valign="top">
+        <th scope="row">Derivation Path</th>
+        <td>
+            <select name="derivation_path_type">
+                <option value="m/0/i" <?php selected($bwwc_settings['derivation_path_type'], 'm/0/i'); ?>>m/0/i (Receiving - Default)</option>
+                <option value="m/1/i" <?php selected($bwwc_settings['derivation_path_type'], 'm/1/i'); ?>>m/1/i (Change)</option>
+            </select>
+            <p class="description">
+                <strong>Default: m/0/i (Receiving)</strong> - Standard ElectrumSV receiving addresses.<br />
+                Only change if your wallet uses a non-standard derivation scheme.<br />
+                <em>Note: ElectrumSV typically uses m/0/i for receiving and m/1/i for change addresses.</em>
+            </p>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Starting Address Index</th>
+        <td>
+            <input type="number" name="starting_index_for_new_btc_addresses" value="<?php echo esc_attr($bwwc_settings['starting_index_for_new_btc_addresses']); ?>" min="0" max="1000" size="6" />
+            <p class="description">
+                <strong>Default: 2</strong> - Start generating addresses from index 2 (skips first two addresses).<br />
+                Increase this if you've used many addresses in your wallet and want to avoid reusing old addresses.<br />
+                <strong>Warning:</strong> If set too high, addresses may be outside your wallet's scanning range!<br />
+                <em>Example: If your wallet has used addresses 0-50, you might set this to 51 or higher.</em>
+            </p>
+        </td>
+    </tr>
+    
+    <tr valign="top">
+        <th scope="row">Address Generation Limit</th>
+        <td>
+            <input type="number" name="max_unusable_generated_addresses" value="<?php echo esc_attr($bwwc_settings['max_unusable_generated_addresses']); ?>" min="5" max="100" size="6" />
+            <p class="description">
+                <strong>Default: 20</strong> - Stop after generating this many consecutive unused addresses.<br />
+                This prevents infinite loops if your xPub has many used addresses.<br />
+                Increase if you have a wallet with large gaps between used addresses.<br />
+                <em>Note: This is a safety limit, not a gap limit for scanning.</em>
+            </p>
+        </td>
+    </tr>
+ </table>
+ 
+ <div style="padding: 15px; background: #e7f3ff; border-left: 4px solid #0073aa; margin: 20px 0;">
+    <p style="margin: 0 0 10px 0; font-weight: bold;">Need Help Finding "Lost" Transactions?</p>
+    <p style="margin: 0;">If you've changed derivation settings and can't see payments in ElectrumSV, use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to scan your xPub with different derivation paths and find your addresses.</p>
+ </div>
  
  <p class="submit">
-    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bitcoin-sv-payments-for-woocommerce') ?>" />
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>" />
  </p>
  </form>
 <?php

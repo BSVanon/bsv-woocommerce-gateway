@@ -30,8 +30,14 @@
                 return;
             }
 
+            // Generate QR code
+            this.generateQRCode();
+
             // Bind event handlers
             this.bindEvents();
+            
+            // BIP270 protocol tab switching removed - deferred to v6.1
+            // See V6.1_ROADMAP.md for restoration instructions
 
             // Initial status check to determine if we should poll
             this.checkStatus().done((response) => {
@@ -250,6 +256,9 @@
             
             // Update button state
             this.updateButtonState(data);
+            
+            // Hide Open Wallet button when payment detected
+            this.updateWalletButton(data);
 
             // Stop polling on final states
             const shouldStopPolling = this.shouldStopPolling(data);
@@ -333,10 +342,25 @@
                 btn.css('cursor', 'pointer');
             }
         },
+        
+        updateWalletButton: function(data) {
+            const walletBtn = $('#bsv-brc100-pay-button');
+            if (!walletBtn.length) return;
+            
+            const state = data.payment_state || 'waiting';
+            
+            // Hide wallet button when payment is detected/pending/confirmed
+            if (state === 'detected' || state === 'pending' || state === 'confirmed') {
+                walletBtn.hide();
+            } else if (state === 'waiting' || state === 'underpaid') {
+                // Show wallet button only in waiting/underpaid states (if wallet was detected)
+                // Button visibility is controlled by BRC-100 script on initial load
+            }
+        },
 
         updateStatusBox: function(data) {
-            const statusBox = $('.bsv-status-box');
-            if (!statusBox.length) return;
+            const statusStrip = $('.bsv-status-strip');
+            if (!statusStrip.length) return;
 
             const state = data.payment_state || 'waiting';
             const statusMessages = {
@@ -350,7 +374,7 @@
                 },
                 pending: {
                     label: 'Payment Received',
-                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). This usually takes a few minutes—no action needed.`
+                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
                 },
                 confirmed: {
                     label: 'Payment Confirmed',
@@ -375,17 +399,17 @@
             const statusInfo = statusMessages[state] || statusMessages.waiting;
 
             // Update classes
-            statusBox.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid');
-            statusBox.addClass('status-' + state);
+            statusStrip.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid status-pending');
+            statusStrip.addClass('status-' + state);
 
-            // Update content
-            statusBox.find('.bsv-status-label').text(statusInfo.label);
-            statusBox.find('.bsv-status-message').text(statusInfo.message);
+            // Update content - find strong and span within .bsv-status-text
+            statusStrip.find('.bsv-status-text strong').text(statusInfo.label);
+            statusStrip.find('.bsv-status-text span').text(statusInfo.message);
         },
 
         createStepper: function(requiredConfs) {
-            const statusBox = $('.bsv-status-box');
-            if (!statusBox.length) return;
+            const statusStrip = $('.bsv-status-strip');
+            if (!statusStrip.length) return;
             
             const maxDots = Math.max(requiredConfs, 3);
             let dotsHtml = '';
@@ -400,7 +424,7 @@
                 '<div class="bsv-conf-progress">' + dotsHtml + '</div>' +
                 '</div>';
             
-            statusBox.after(stepperHtml);
+            statusStrip.after(stepperHtml);
             console.log('BSV: Stepper created with ' + maxDots + ' dots');
         },
         
@@ -470,10 +494,31 @@
         },
 
         updateExpiration: function(data) {
-            const expEl = $('.bsv-expiration-time');
-            if (!expEl.length || !data.expires_at) return;
+            const timerWrapper = $('.bsv-timer-wrapper');
+            const expEl = $('.bsv-expiration-timer');
 
-            const expiresAt = new Date(data.expires_at * 1000);
+            if (!timerWrapper.length || !expEl.length) {
+                return;
+            }
+
+            const activeStates = ['waiting', 'underpaid'];
+            if (!activeStates.includes(data.payment_state)) {
+                timerWrapper.addClass('bsv-timer-hidden');
+                return;
+            }
+
+            timerWrapper.removeClass('bsv-timer-hidden');
+
+            const expiresAttr = parseInt(expEl.data('expires'), 10);
+            const expiresFromData = parseInt(data.expires_at, 10);
+            const expiresTimestamp = expiresFromData || expiresAttr;
+
+            if (!expiresTimestamp) {
+                timerWrapper.addClass('bsv-timer-hidden');
+                return;
+            }
+
+            const expiresAt = new Date(expiresTimestamp * 1000);
             const now = new Date();
             const diff = expiresAt - now;
 
@@ -485,13 +530,7 @@
             const minutes = Math.floor(diff / 60000);
             const seconds = Math.floor((diff % 60000) / 1000);
 
-            let timeText = '';
-            if (minutes > 0) {
-                timeText = `${minutes}m ${seconds}s`;
-            } else {
-                timeText = `${seconds}s`;
-            }
-
+            const timeText = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
             expEl.text(timeText);
 
             // Add warning class if less than 5 minutes
@@ -537,7 +576,85 @@
                 explorerEl.html(`<a href="${explorerUrl}" target="_blank" rel="noopener">View Address On BSV Blockchain ↗</a>`);
                 explorerEl.show();
             }
+        },
+
+        generateQRCode: function(protocol) {
+            const qrEl = $('#bsv-qr-code');
+            if (!qrEl.length) return;
+
+            const address = qrEl.data('address') || bsvPaymentData.bsvAddress;
+            const amount = qrEl.data('amount') || bsvPaymentData.bsvAmount;
+            const orderId = qrEl.data('order-id') || bsvPaymentData.orderId;
+            const orderKey = qrEl.data('order-key') || bsvPaymentData.orderKey;
+
+            if (!address || !amount) {
+                console.warn('BSV: Missing address or amount for QR code');
+                qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable</div>');
+                return;
+            }
+
+            // BIP21: Standard bitcoin: URI with address and amount
+            // Amount MUST be in BSV decimal, not sats
+            // BIP270 support deferred to v6.1 - see V6.1_ROADMAP.md
+            const qrPayload = `bitcoin:${address}?amount=${amount}`;
+            console.log('BSV: Generating BIP21 QR:', qrPayload);
+
+            try {
+                // Clear existing QR
+                qrEl.empty();
+                
+                // Generate QR code using jQuery QRCode
+                qrEl.qrcode({
+                    text: qrPayload,
+                    width: 256,
+                    height: 256,
+                    correctLevel: window.QRErrorCorrectLevel ? QRErrorCorrectLevel.H : undefined
+                });
+            } catch (error) {
+                console.error('BSV: QR code generation failed', error);
+                qrEl.html('<div style="padding: 40px; text-align: center; color: #999;">QR Code Unavailable<br><small>Please use copy buttons below</small></div>');
+            }
+        },
+
+        // BIP270 functions removed for v6.0.0 - restore in v6.1
+        // See V6.1_ROADMAP.md for restoration instructions
+        
+        /* RESTORE FOR v6.1:
+        getInvoiceUrl: function(orderId, orderKey) {
+            // Generate signed invoice URL for BIP270
+            // Server will verify signature to prevent tampering
+            const baseUrl = window.location.origin;
+            const params = new URLSearchParams({
+                order_id: orderId,
+                key: orderKey,
+                sig: 'placeholder' // Server generates real signature
+            });
+            
+            // Note: Real signature is generated server-side
+            // This is just for QR generation - actual URL comes from localized data
+            return bsvPaymentData.invoiceUrl || `${baseUrl}/wc-api/bsv_invoice?${params.toString()}`;
+        },
+
+        bindProtocolTabs: function() {
+            const self = this;
+            
+            $('.bsv-protocol-tab, .bsv-wallet-tab').on('click', function() {
+                const $tab = $(this);
+                const protocol = $tab.data('protocol');
+                
+                // Update active state
+                $('.bsv-protocol-tab, .bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
+                $tab.addClass('active').attr('aria-selected', 'true');
+                
+                // Update QR code
+                self.generateQRCode(protocol);
+                
+                // Update protocol description/hint
+                $('.bsv-protocol-description, .bsv-qr-hint').hide();
+                $(`.bsv-protocol-description[data-protocol="${protocol}"], .bsv-qr-hint[data-protocol="${protocol}"]`).show();
+            });
         }
+        END RESTORE FOR v6.1 */
     };
 
     // Initialize on document ready

@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -11,15 +11,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 define('BWWC_MUST_LOAD_WP', '1');
 include(dirname(__FILE__) . '/bwwc-include-all.php');
 
-// Cpanel-scheduled cron job call
-if (@$_REQUEST['hardcron']=='1') {
-    BWWC_cron_job_worker(true);
-}
+// REMOVED: Public hardcron trigger (DoS vulnerability - A0.6)
+// This file is now only called by WP-Cron scheduled events
+// For reliable cron, configure server cron to call wp-cron.php directly
 
 //===========================================================================
-// '$hardcron' == true if job is ran by Cpanel's cron job.
+// Cron job worker - called by WP-Cron scheduled events
 
-function BWWC_cron_job_worker($hardcron=false)
+function BWWC_cron_job_worker()
 {
     global $wpdb;
 
@@ -29,9 +28,6 @@ function BWWC_cron_job_worker($hardcron=false)
     if (@$bwwc_settings['service_provider'] != 'electrum_wallet') {
         return; // Only active electrum wallet as a service provider needs cron job
     }
-
-    // status = "unused", "assigned", "used"
-    $btc_addresses_table_name     = $wpdb->prefix . 'bwwc_btc_addresses';
 
     $funds_received_value_expires_in_secs = $bwwc_settings['funds_received_value_expires_in_mins'] * 60;
     $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
@@ -47,23 +43,24 @@ function BWWC_cron_job_worker($hardcron=false)
     //     'assigned'   - unexpired, with old balances (due for revalidation. Fresh balances and still 'assigned' means no [full] payment received yet)
     //     'revalidate' - all
     //        order results by most recently assigned
-    $query = $wpdb->prepare(
-        "SELECT * FROM `$btc_addresses_table_name`
-            WHERE
-            (
-              (`status`='assigned' AND ((%d - `assigned_at`) < %d))
-              OR
-              (`status`='revalidate')
-            )
-            AND ((%d - `received_funds_checked_at`) > %d)
-            ORDER BY `received_funds_checked_at` ASC",
-        $current_time,
-        $assigned_address_expires_in_secs,
-        $current_time,
-        $funds_received_value_expires_in_secs
+    $rows_for_balance_check = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT * FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                WHERE
+                (
+                  (`status`='assigned' AND ((%d - `assigned_at`) < %d))
+                  OR
+                  (`status`='revalidate')
+                )
+                AND ((%d - `received_funds_checked_at`) > %d)
+                ORDER BY `received_funds_checked_at` ASC",
+            $current_time,
+            $assigned_address_expires_in_secs,
+            $current_time,
+            $funds_received_value_expires_in_secs
+        ),
+        ARRAY_A
     ); // Check the ones that haven't been checked for longest time
-
-    $rows_for_balance_check = $wpdb->get_results($query, ARRAY_A);
 
     if (is_array($rows_for_balance_check)) {
         $count_rows_for_balance_check = count($rows_for_balance_check);
@@ -240,8 +237,8 @@ function BWWC_cron_job_worker($hardcron=false)
                                 array (
                                    'order_id'     => $order_id,
                                    'order_total'  => $order_total_in_btc,
-                                   'order_datetime'  => date('Y-m-d H:i:s T'),
-                                   'requested_by_ip' => isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '',
+                                   'order_datetime'  => gmdate('Y-m-d H:i:s T'),
+                                   'requested_by_ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
                                 ),
                                 array (
                                    ...
@@ -308,49 +305,57 @@ function BWWC_cron_job_worker($hardcron=false)
     // Pre-generate new Bitcoin SV address for ElectrumSV wallet
 
     // Try to retrieve mpk from copy of settings.
-    if ($hardcron) {
-        $electrum_mpk = BWWC__get_next_available_mpk();
+    $electrum_mpk = BWWC__get_next_available_mpk();
 
-        if ($electrum_mpk && @$bwwc_settings['service_provider'] == 'electrum_wallet') {
-            // Calculate number of unused addresses belonging to currently active ElectrumSV wallet
+    if ($electrum_mpk && @$bwwc_settings['service_provider'] == 'electrum_wallet') {
+        // Calculate number of unused addresses belonging to currently active ElectrumSV wallet
 
-            $origin_id = $electrum_mpk;
+        $origin_id = $electrum_mpk;
 
-            $current_time = time();
-            $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
+        $current_time = time();
+        $assigned_address_expires_in_secs     = $bwwc_settings['assigned_address_expires_in_mins'] * 60;
 
-            if ($bwwc_settings['reuse_expired_addresses']) {
-                $reuse_expired_addresses_query_part = $wpdb->prepare(
-                    "OR (`status`='assigned' AND ((%d - `assigned_at`) > %d))",
+        // Calculate total number of currently unused addresses in a system. Make sure there aren't too many.
+
+        // NULL == not found
+        // Retrieve:
+        //     'unused'   - with fresh zero balances
+        //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
+        //
+        // Hence - any returned address will be clean to use.
+        
+        if ($bwwc_settings['reuse_expired_addresses']) {
+            $total_unused_addresses = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                       WHERE `origin_id` = %s
+                       AND `total_received_funds` = %s
+                       AND (
+                         `status` = 'unused'
+                         OR (`status` = 'assigned' AND ((%d - `assigned_at`) > %d))
+                       )",
+                    $origin_id,
+                    '0',
                     $current_time,
                     $assigned_address_expires_in_secs
-                );
-            } else {
-                $reuse_expired_addresses_query_part = "";
-            }
-
-            // Calculate total number of currently unused addresses in a system. Make sure there aren't too many.
-
-            // NULL == not found
-            // Retrieve:
-            //     'unused'   - with fresh zero balances
-            //     'assigned' - expired, with fresh zero balances (if 'reuse_expired_addresses' is true)
-            //
-            // Hence - any returned address will be clean to use.
-            $query = $wpdb->prepare(
-                "SELECT COUNT(*) as `total_unused_addresses` FROM `$btc_addresses_table_name`
-                   WHERE `origin_id` = %s
-                   AND `total_received_funds` = %s
-                   AND (`status`='unused' $reuse_expired_addresses_query_part)",
-                $origin_id,
-                '0'
+                )
             );
-            $total_unused_addresses = $wpdb->get_var($query);
+        } else {
+            $total_unused_addresses = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT COUNT(*) as `total_unused_addresses` FROM `{$wpdb->prefix}bwwc_btc_addresses`
+                       WHERE `origin_id` = %s
+                       AND `total_received_funds` = %s
+                       AND `status` = 'unused'",
+                    $origin_id,
+                    '0'
+                )
+            );
+        }
 
 
-            if ($total_unused_addresses < $bwwc_settings['max_unused_addresses_buffer']) {
-                BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings, $electrum_mpk);
-            }
+        if ($total_unused_addresses < $bwwc_settings['max_unused_addresses_buffer']) {
+            BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings, $electrum_mpk);
         }
     }
     //-----------------------------------------------------

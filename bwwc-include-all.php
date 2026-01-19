@@ -3,13 +3,13 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/bitcoin-sv-payments-for-woocommerce
+https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 */
 
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '5.3.4');
+    define('BWWC_VERSION', '6.0.0');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');
@@ -21,7 +21,7 @@ if (!defined('BWWC_PLUGIN_NAME')) {
 
 
     // i18n plugin domain for language files
-    define('BWWC_I18N_DOMAIN', 'bitcoin-sv-payments-for-woocommerce');
+    define('BWWC_I18N_DOMAIN', 'sendbsv-bsv-payments-for-woocommerce');
 }
 
 // Determine which math extension is available (runs on every load so upgrades are detected).
@@ -34,6 +34,9 @@ if (!defined('BWWC_USE_EXT')) {
         define('BWWC_USE_EXT', 'NONE');
     }
 }
+
+// Load gateway ID migration (v6.0.0)
+require_once(dirname(__FILE__) . '/includes/gateway-migration.php');
 //---------------------------------------------------------------------------
 
 //------------------------------------------
@@ -59,6 +62,9 @@ require_once(dirname(__FILE__) . '/libs/CurveFp.php');
 require_once(dirname(__FILE__) . '/libs/Point.php');
 require_once(dirname(__FILE__) . '/libs/NumberTheory.php');
 require_once(dirname(__FILE__) . '/libs/ElectrumHelper.php');
+
+// Load v6 modular architecture
+require_once(dirname(__FILE__) . '/includes/bootstrap.php');
 
 require_once(dirname(__FILE__) . '/bwwc-cron.php');
 require_once(dirname(__FILE__) . '/bwwc-mpkgen.php');

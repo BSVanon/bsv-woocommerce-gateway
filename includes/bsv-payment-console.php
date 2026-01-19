@@ -27,7 +27,7 @@ function BWWC__render_payment_console($order) {
     $confirmations = get_post_meta($order_id, 'best_confirmations', true);
     
     $bwwc_settings = BWWC__get_settings();
-    $required_confirmations = isset($bwwc_settings['confirmations']) ? intval($bwwc_settings['confirmations']) : 1;
+    $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
     $polling_interval = isset($bwwc_settings['status_polling_interval']) ? intval($bwwc_settings['status_polling_interval']) : 10;
     
     if (!$bsv_address || !$bsv_amount) {
@@ -52,59 +52,196 @@ function BWWC__render_payment_console($order) {
     // Get store currency for fiat display
     $store_currency = get_woocommerce_currency();
     $order_total = $order->get_total();
+    
+    // Calculate time remaining for display
+    $time_remaining = '';
+    $is_expired = false;
+    if ($expires_at) {
+        $seconds_remaining = $expires_at - time();
+        $time_remaining = BWWC__format_time_remaining($seconds_remaining);
+        $is_expired = ($seconds_remaining <= 0);
+    }
+    
+    // If order is expired and no payment detected, show expiration message and hide payment UI
+    if ($is_expired && $payment_state === 'waiting') {
+        echo '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+        echo '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Window Expired', 'sendbsv-bsv-payments-for-woocommerce') . '</h2>';
+        echo '<p>' . esc_html__('The payment window for this order has expired. The payment address is no longer active.', 'sendbsv-bsv-payments-for-woocommerce') . '</p>';
+        echo '<p><strong>' . esc_html__('What you can do:', 'sendbsv-bsv-payments-for-woocommerce') . '</strong></p>';
+        echo '<ul>';
+        echo '<li>' . esc_html__('Place a new order to receive a fresh payment address', 'sendbsv-bsv-payments-for-woocommerce') . '</li>';
+        echo '<li>' . esc_html__('Contact the store owner if you need assistance', 'sendbsv-bsv-payments-for-woocommerce') . '</li>';
+        echo '</ul>';
+        echo '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_page_permalink('shop')) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Shop', 'sendbsv-bsv-payments-for-woocommerce') . '</a></p>';
+        echo '</div>';
+        return;
+    }
 
-    // Generate QR code
-    $qr_code_svg = BWWC__generate_qr_code($bsv_address, $bsv_amount);
-
-    // Enqueue assets
+    // Enqueue assets with AGGRESSIVE cache busting
     $plugin_base_dir = dirname(plugin_dir_path(__FILE__));
+    
+    // CSS versions with filemtime() for proper cache busting
+    $css_clean_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-clean.css';
+    $css_clean_version = BWWC_VERSION;
+    if (file_exists($css_clean_path)) {
+        $css_clean_version .= '.' . filemtime($css_clean_path);
+    }
+    
+    $css_grid_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-grid.css';
+    $css_grid_version = BWWC_VERSION;
+    if (file_exists($css_grid_path)) {
+        $css_grid_version .= '.' . filemtime($css_grid_path);
+    }
+    
+    $css_console_path = trailingslashit($plugin_base_dir) . 'assets/css/bsv-payment-console.css';
+    $css_console_version = BWWC_VERSION;
+    if (file_exists($css_console_path)) {
+        $css_console_version .= '.' . filemtime($css_console_path);
+    }
+    
+    // JS versions with filemtime()
     $script_file_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-payment-console.js';
     $script_version = BWWC_VERSION;
     if (file_exists($script_file_path)) {
         $script_version .= '.' . filemtime($script_file_path);
     }
+    
+    $qr_script_path = trailingslashit($plugin_base_dir) . 'assets/js/vendor/jquery-qrcode.min.js';
+    $qr_script_version = BWWC_VERSION;
+    if (file_exists($qr_script_path)) {
+        $qr_script_version .= '.' . filemtime($qr_script_path);
+    }
 
-    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), BWWC_VERSION);
-    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery'), $script_version, true);
+    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), $css_console_version);
+    wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), $css_grid_version);
+    wp_enqueue_style('bsv-payment-clean', plugins_url('/assets/css/bsv-payment-clean.css', dirname(__FILE__)), array('bsv-payment-grid'), $css_clean_version);
+    
+    // Use bundled jQuery QR code library (avoids WooCommerce dependency)
+    if (wp_script_is('jquery-qrcode', 'registered')) {
+        wp_deregister_script('jquery-qrcode');
+    }
+    wp_register_script('jquery-qrcode', plugins_url('/assets/js/vendor/jquery.qrcode.js', dirname(__FILE__)), array('jquery'), $qr_script_version, true);
+    wp_enqueue_script('jquery-qrcode');
+    
+    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
+    
+    // Enqueue BRC-100 payment integration (desktop wallets)
+    $brc100_script_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-brc100-payment.js';
+    $brc100_version = BWWC_VERSION;
+    if (file_exists($brc100_script_path)) {
+        $brc100_version .= '.' . filemtime($brc100_script_path);
+    }
+    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), $brc100_version, true);
+    
+    // Include BIP270 invoice endpoint
+    require_once(dirname(__FILE__) . '/bip270-invoice.php');
+    
+    // Generate signed invoice URL for BIP270
+    $invoice_url = BWWC__get_invoice_url($order_id, $order->get_order_key());
     
     // Localize script
     wp_localize_script('bsv-payment-console', 'bsvPaymentData', array(
         'statusEndpoint' => admin_url('admin-ajax.php?action=bsv_check_payment_status'),
         'nonce' => wp_create_nonce('bsv_payment_status_' . $order_id),
         'orderId' => $order_id,
-        'orderKey' => $order->get_order_key()
+        'bsvAddress' => $bsv_address,
+        'bsvAmount' => $bsv_amount,
+        'orderKey' => $order->get_order_key(),
+        'invoiceUrl' => $invoice_url
     ));
 
     // Render console
     ?>
     <div class="bsv-payment-console" data-order-id="<?php echo esc_attr($order_id); ?>" data-order-key="<?php echo esc_attr($order->get_order_key()); ?>" data-polling-interval="<?php echo esc_attr($polling_interval); ?>">
         
+        <!-- Header with title and timer badge -->
         <div class="bsv-payment-header">
-            <h2><?php esc_html_e('Pay with Bitcoin SV', 'bitcoin-sv-payments-for-woocommerce'); ?></h2>
-            <div class="bsv-payment-steps">
-                <?php esc_html_e('1. Scan the QR code or copy the address below', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
-                <?php esc_html_e('2. Send the exact amount shown', 'bitcoin-sv-payments-for-woocommerce'); ?><br>
-                <?php esc_html_e('3. Wait for blockchain confirmation', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            <div class="bsv-header-left">
+                <h2><?php esc_html_e('Pay with Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'); ?></h2>
+                <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+                <p class="bsv-instruction"><?php esc_html_e('Scan the QR with a BSV wallet and send the exact amount.', 'sendbsv-bsv-payments-for-woocommerce'); ?></p>
+                <?php endif; ?>
+            </div>
+            <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+            <div class="bsv-timer-wrapper">
+                <div class="bsv-timer-label"><?php esc_html_e('Order Expires in:', 'sendbsv-bsv-payments-for-woocommerce'); ?></div>
+                <div class="bsv-timer-badge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="bsv-expiration-timer" data-expires="<?php echo esc_attr($expires_at); ?>">
+                        <?php echo esc_html($time_remaining); ?>
+                    </span>
+                </div>
+            </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Main payment card -->
+        <div class="bsv-payment-card">
+            
+            <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+            <div class="bsv-card-top">
+                <button id="bsv-brc100-pay-button" class="bsv-wallet-button" type="button" style="display: none;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path>
+                    </svg>
+                    <span><?php esc_html_e('Open Wallet', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                </button>
+            </div>
+            <?php endif; ?>
+            
+            <!-- Two-column grid: QR left, details right -->
+            <div class="bsv-payment-grid">
+                
+                <!-- Left: QR Code -->
+                <div class="bsv-qr-column">
+                
+                    <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+                    <div class="bsv-expected">
+                        <?php esc_html_e('Expected:', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                        <strong><?php echo esc_html(number_format($expected_sats, 0, '.', ',')); ?> sats</strong>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- QR Code (hero element) -->
+                    <div class="bsv-qr-wrapper">
+                        <div id="bsv-qr-code" 
+                             data-address="<?php echo esc_attr($bsv_address); ?>" 
+                             data-amount="<?php echo esc_attr($bsv_amount); ?>" 
+                             data-order-id="<?php echo esc_attr($order_id); ?>"
+                             data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
+                             data-protocol="bip21"
+                             style="display: inline-block;"></div>
+                    </div>
+                    
+                    <!-- One-line hint below QR -->
+                    <p class="bsv-qr-hint">
+                        <?php esc_html_e('Scan with your BSV wallet', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                    </p>
+                </div>
+
+                <!-- Right: Details -->
+                <div class="bsv-details-column">
+                
+                <div class="bsv-address-section">
+            <div class="bsv-address-label"><?php esc_html_e('Payment Address', 'sendbsv-bsv-payments-for-woocommerce'); ?></div>
+            <div class="bsv-address-wrapper">
+                <div class="bsv-address"><?php echo esc_html($bsv_address); ?></div>
+                <button class="bsv-copy-btn" data-copy="<?php echo esc_attr($bsv_address); ?>">
+                    <?php esc_html_e('Copy', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                </button>
             </div>
         </div>
 
-        <div class="bsv-qr-container">
-            <div class="bsv-qr-card">
-                <?php 
-                // Output QR code SVG directly - it comes from trusted external API
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                echo $qr_code_svg;
-                ?>
-            </div>
-        </div>
-
-        <div class="bsv-amount-section">
+                <div class="bsv-amount-section">
             <div class="bsv-amount" 
                  data-bsv="<?php echo esc_attr($bsv_amount); ?>" 
                  data-sats="<?php echo esc_attr($expected_sats); ?>" 
                  data-mode="bsv"
                  style="cursor: pointer;"
-                 title="<?php esc_attr_e('Click to toggle between BSV and sats', 'bitcoin-sv-payments-for-woocommerce'); ?>">
+                 title="<?php esc_attr_e('Click to toggle between BSV and sats', 'sendbsv-bsv-payments-for-woocommerce'); ?>">
                 <span class="bsv-amount-value"><?php echo esc_html($bsv_amount); ?></span>
                 <span class="bsv-unit">BSV</span>
             </div>
@@ -112,115 +249,98 @@ function BWWC__render_payment_console($order) {
                 <?php echo esc_html(sprintf('≈ %s %s', number_format($order_total, 2), $store_currency)); ?>
             </div>
             <button class="bsv-copy-btn bsv-copy-amount" data-copy="<?php echo esc_attr($bsv_amount); ?>" data-copy-sats="<?php echo esc_attr($expected_sats); ?>" style="margin-top: 0.75rem;">
-                <?php esc_html_e('Copy Amount', 'bitcoin-sv-payments-for-woocommerce'); ?>
+                <?php esc_html_e('Copy Amount', 'sendbsv-bsv-payments-for-woocommerce'); ?>
             </button>
         </div>
+                    
+                </div><!-- end details column -->
+            </div><!-- end payment grid -->
+            
+            <!-- Status strip (bottom of card) -->
+            <div class="bsv-status-strip status-<?php echo esc_attr($payment_state); ?>">
+                <div class="bsv-status-indicator"></div>
+                <div class="bsv-status-text">
+                    <strong><?php echo esc_html(BWWC__get_payment_state_label($payment_state)); ?></strong>
+                    <span><?php echo esc_html(BWWC__get_payment_console_state_message($payment_state, $received_sats, $expected_sats)); ?></span>
+                </div>
+            </div>
 
-        <div class="bsv-address-section">
-            <div class="bsv-address-label"><?php esc_html_e('Payment Address', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
-            <div class="bsv-address-wrapper">
-                <div class="bsv-address"><?php echo esc_html($bsv_address); ?></div>
-                <button class="bsv-copy-btn" data-copy="<?php echo esc_attr($bsv_address); ?>">
-                    <?php esc_html_e('Copy', 'bitcoin-sv-payments-for-woocommerce'); ?>
-                </button>
-            </div>
-        </div>
-
-        <?php if ($expires_at): ?>
-        <div class="bsv-expiration">
-            <div class="bsv-expiration-label"><?php esc_html_e('Time Remaining', 'bitcoin-sv-payments-for-woocommerce'); ?></div>
-            <div class="bsv-expiration-time" data-expires="<?php echo esc_attr($expires_at); ?>">
-                <?php echo esc_html(BWWC__format_time_remaining($expires_at)); ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <div class="bsv-status-box status-<?php echo esc_attr($payment_state); ?>">
-            <div class="bsv-status-label">
-                <?php echo esc_html(BWWC__get_payment_state_label($payment_state)); ?>
-            </div>
-            <div class="bsv-status-message">
-                <?php echo esc_html(BWWC__get_payment_state_message($payment_state, $received_sats, $expected_sats)); ?>
-            </div>
-        </div>
-
-        <?php 
-        // Show stepper for all states except initial waiting
-        $show_stepper = !in_array($payment_state, array('waiting'));
-        if ($show_stepper): 
-        ?>
-        <div class="bsv-confirmations" data-state="<?php echo esc_attr($payment_state); ?>">
-            <div style="font-size: 14px; opacity: 0.7; margin-bottom: 0.5rem;">
-                <?php 
-                if ($payment_state === 'expired' && $received_sats == 0) {
-                    esc_html_e('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce');
-                } elseif ($payment_state === 'underpaid') {
-                    esc_html_e('Partial Payment Received', 'bitcoin-sv-payments-for-woocommerce');
-                } else {
-                    esc_html_e('Confirmations:', 'bitcoin-sv-payments-for-woocommerce');
-                    echo ' <strong class="bsv-conf-current">' . esc_html($confirmations ?: 0) . '</strong> / ';
-                    echo '<span class="bsv-conf-required">' . esc_html($required_confirmations) . '</span>';
-                }
-                ?>
-            </div>
-            <div class="bsv-conf-progress">
-                <?php 
-                $max_dots = max($required_confirmations, 3);
-                for ($i = 0; $i < $max_dots; $i++): 
-                    $dot_class = '';
+            <!-- Stepper (inside card, after status strip) -->
+            <?php 
+            $show_stepper = !in_array($payment_state, array('waiting'));
+            if ($show_stepper): 
+            ?>
+            <div class="bsv-confirmations" data-state="<?php echo esc_attr($payment_state); ?>">
+                <div class="bsv-conf-label">
+                    <?php 
                     if ($payment_state === 'expired' && $received_sats == 0) {
-                        $dot_class = 'failed';
+                        esc_html_e('Payment Window Expired', 'sendbsv-bsv-payments-for-woocommerce');
                     } elseif ($payment_state === 'underpaid') {
-                        $dot_class = ($i == 0) ? 'partial' : '';
-                    } elseif ($payment_state === 'detected' || $payment_state === 'pending') {
-                        if ($i < $confirmations) {
-                            $dot_class = 'confirmed';
-                        } elseif ($i == 0 && $received_sats >= $expected_sats) {
-                            $dot_class = 'pending';
-                        }
-                    } elseif ($payment_state === 'confirmed') {
-                        $dot_class = ($i < $confirmations) ? 'confirmed' : '';
+                        esc_html_e('Partial Payment Received', 'sendbsv-bsv-payments-for-woocommerce');
+                    } else {
+                        esc_html_e('Confirmations:', 'sendbsv-bsv-payments-for-woocommerce');
+                        echo ' <strong class="bsv-conf-current">' . esc_html($confirmations ?: 0) . '</strong> / ';
+                        echo '<span class="bsv-conf-required">' . esc_html($required_confirmations) . '</span>';
                     }
-                ?>
-                    <div class="bsv-conf-dot <?php echo esc_attr($dot_class); ?>" data-index="<?php echo esc_attr($i); ?>"></div>
-                <?php endfor; ?>
-            </div>
-        </div>
-        <?php endif; ?>
-
-        <?php if ($payment_state === 'underpaid' || $payment_state === 'waiting' || $payment_state === 'pending' || $payment_state === 'detected'): ?>
-        <div class="bsv-payment-details">
-            <?php if ($received_sats > 0): ?>
-            <div class="bsv-detail-row">
-                <span class="bsv-detail-label"><?php esc_html_e('Received', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                <span class="bsv-detail-value bsv-detail-received"><?php echo esc_html(number_format($received_sats, 0, '.', ',')); ?> sats</span>
+                    ?>
+                </div>
+                <div class="bsv-conf-progress">
+                    <?php 
+                    $max_dots = max($required_confirmations, 3);
+                    for ($i = 0; $i < $max_dots; $i++): 
+                        $dot_class = '';
+                        if ($payment_state === 'expired' && $received_sats == 0) {
+                            $dot_class = 'failed';
+                        } elseif ($payment_state === 'underpaid') {
+                            $dot_class = ($i == 0) ? 'partial' : '';
+                        } elseif ($payment_state === 'detected' || $payment_state === 'pending') {
+                            if ($i < $confirmations) {
+                                $dot_class = 'confirmed';
+                            } elseif ($i == 0 && $received_sats >= $expected_sats) {
+                                $dot_class = 'pending';
+                            }
+                        } elseif ($payment_state === 'confirmed') {
+                            $dot_class = ($i < $confirmations) ? 'confirmed' : '';
+                        }
+                    ?>
+                        <div class="bsv-conf-dot <?php echo esc_attr($dot_class); ?>" data-index="<?php echo esc_attr($i); ?>"></div>
+                    <?php endfor; ?>
+                </div>
             </div>
             <?php endif; ?>
-            <?php if ($payment_state === 'pending' || $payment_state === 'detected' || $payment_state === 'confirmed'): ?>
-            <div class="bsv-detail-row bsv-detail-confirmed-row">
-                <span class="bsv-detail-label"><?php esc_html_e('Confirmed', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                <span class="bsv-detail-value bsv-detail-confirmed"><?php echo esc_html(number_format($confirmed_sats, 0, '.', ',')); ?> sats</span>
+
+            <!-- Payment details (inside card) -->
+            <?php if ($received_sats > 0 && ($payment_state === 'underpaid' || $payment_state === 'pending' || $payment_state === 'detected')): ?>
+            <div class="bsv-payment-details">
+                <div class="bsv-detail-row">
+                    <span class="bsv-detail-label"><?php esc_html_e('Received', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <span class="bsv-detail-value"><?php echo esc_html(number_format($received_sats, 0, '.', ',')); ?> sats</span>
+                </div>
+                <?php if ($payment_state === 'pending' || $payment_state === 'detected' || $payment_state === 'confirmed'): ?>
+                <div class="bsv-detail-row">
+                    <span class="bsv-detail-label"><?php esc_html_e('Confirmed', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <span class="bsv-detail-value"><?php echo esc_html(number_format($confirmed_sats, 0, '.', ',')); ?> sats</span>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
-            <div class="bsv-detail-row">
-                <span class="bsv-detail-label"><?php esc_html_e('Expected', 'bitcoin-sv-payments-for-woocommerce'); ?></span>
-                <span class="bsv-detail-value bsv-detail-expected"><?php echo esc_html(number_format($expected_sats, 0, '.', ',')); ?> sats</span>
-            </div>
-        </div>
-        <?php endif; ?>
+            
+        </div><!-- .bsv-payment-card -->
 
-        <div class="bsv-actions">
-            <button class="bsv-btn bsv-btn-primary bsv-recheck-btn" data-paid-state="<?php echo esc_attr($payment_state); ?>">
+        <!-- Footer actions (tertiary links) -->
+        <div class="bsv-footer-actions">
+            <button class="bsv-link-btn bsv-recheck-btn" data-paid-state="<?php echo esc_attr($payment_state); ?>">
                 <?php 
                 if ($payment_state === 'detected' || $payment_state === 'confirmed') {
-                    esc_html_e('Payment Received!', 'bitcoin-sv-payments-for-woocommerce');
+                    esc_html_e('✓ Payment Received', 'sendbsv-bsv-payments-for-woocommerce');
                 } else {
-                    esc_html_e("I've Paid", 'bitcoin-sv-payments-for-woocommerce');
+                    esc_html_e("I've Paid", 'sendbsv-bsv-payments-for-woocommerce');
                 }
                 ?>
             </button>
-            <a href="<?php echo esc_url($order->get_view_order_url()); ?>" class="bsv-btn bsv-btn-secondary">
-                <?php esc_html_e('View Order', 'bitcoin-sv-payments-for-woocommerce'); ?>
+            <span class="bsv-footer-separator">•</span>
+            <a href="<?php echo esc_url($order->get_view_order_url()); ?>" class="bsv-link-btn">
+                <?php esc_html_e('View Order', 'sendbsv-bsv-payments-for-woocommerce'); ?>
             </a>
         </div>
 
@@ -229,12 +349,9 @@ function BWWC__render_payment_console($order) {
         </div>
         
         <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-        <div class="bsv-wallet-topup" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; text-align: center;">
-            <p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">
-                <?php esc_html_e('Need to top up your BSV wallet?', 'bitcoin-sv-payments-for-woocommerce'); ?>
-            </p>
-            <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" style="display: inline-block; padding: 8px 16px; background: #FCCA09; color: #000; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 13px;">
-                <?php esc_html_e('Get BSV', 'bitcoin-sv-payments-for-woocommerce'); ?> ↗
+        <div class="bsv-get-bsv">
+            <a href="https://swap.sendbsv.com/" target="_blank" rel="noopener" class="bsv-get-bsv-button">
+                <?php esc_html_e('Need BSV? Get BSV', 'sendbsv-bsv-payments-for-woocommerce'); ?> ↗
             </a>
         </div>
         <?php endif; ?>
@@ -246,11 +363,11 @@ function BWWC__render_payment_console($order) {
         $estimated_minutes = $required_confs * 10;
         ?>
         <div class="bsv-confirmation-notice" style="margin-top: 15px; padding: 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; font-size: 12px; color: #856404;">
-            <strong><?php esc_html_e('Note:', 'bitcoin-sv-payments-for-woocommerce'); ?></strong>
-            <?php 
-            /* translators: 1: number of confirmations required, 2: estimated minutes */
+            <strong><?php esc_html_e('Note:', 'sendbsv-bsv-payments-for-woocommerce'); ?></strong>
+            <?php
             printf(
-                esc_html__('Merchant requires %1$d confirmations (~%2$d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'bitcoin-sv-payments-for-woocommerce'),
+                /* translators: 1: number of confirmations required, 2: estimated minutes */
+                esc_html__('Merchant requires %1$d confirmations (~%2$d minutes) before order is finalized. You will receive email confirmation once payment is verified. Payments to the above address must be in BitcoinSV only—BTC or BCH sent here will be lost.', 'sendbsv-bsv-payments-for-woocommerce'),
                 esc_html($required_confs),
                 esc_html($estimated_minutes)
             );
@@ -261,101 +378,42 @@ function BWWC__render_payment_console($order) {
     <?php
 }
 
-/**
- * Generate QR code as SVG
- */
-function BWWC__generate_qr_code($address, $amount) {
-    // Use BIP21 format for compact QR
-    $bip21_uri = 'bitcoin:' . $address . '?amount=' . $amount;
-    
-    // Use phpqrcode library if available, otherwise fall back to simple implementation
-    if (function_exists('QRcode')) {
-        ob_start();
-        QRcode::svg($bip21_uri, false, QR_ECLEVEL_M, 8, 4);
-        return ob_get_clean();
-    }
-    
-    // Fallback: use external QR service (Google Charts API alternative)
-    // For production, consider bundling a QR library
-    $qr_size = 300;
-    $qr_url = 'https://api.qrserver.com/v1/create-qr-code/?size=' . $qr_size . 'x' . $qr_size . '&data=' . urlencode($bip21_uri) . '&format=svg';
-    
-    // Try to fetch SVG
-    $response = wp_remote_get($qr_url, array('timeout' => 5));
-    if (!is_wp_error($response) && wp_remote_retrieve_response_code($response) === 200) {
-        return wp_remote_retrieve_body($response);
-    }
-    
-    // Final fallback: simple image tag
-    return '<img src="' . esc_url($qr_url) . '" alt="QR Code" style="max-width: 280px; height: auto;" />';
-}
+// v6.0.0: QR code generation moved to JavaScript using WooCommerce's jQuery QRCode library
+// This eliminates the need for server-side QR generation and provides better browser compatibility
+
+// v6.0.0: Helper functions now provided by includes/constants.php and includes/expiry.php
+// - BWWC__format_time_remaining() from expiry.php
+// - BWWC__get_payment_state_label() from constants.php
+// - BWWC__get_payment_state_message() from constants.php
 
 /**
- * Format time remaining
+ * Get payment state message (local version for payment console)
  */
-function BWWC__format_time_remaining($expires_at) {
-    $now = time();
-    $diff = $expires_at - $now;
-    
-    if ($diff <= 0) {
-        return __('Expired', 'bitcoin-sv-payments-for-woocommerce');
-    }
-    
-    $minutes = floor($diff / 60);
-    $seconds = $diff % 60;
-    
-    if ($minutes > 0) {
-        return sprintf('%dm %ds', $minutes, $seconds);
-    }
-    
-    return sprintf('%ds', $seconds);
-}
-
-/**
- * Get payment state label
- */
-function BWWC__get_payment_state_label($state) {
-    $labels = array(
-        'waiting' => __('Waiting for Payment', 'bitcoin-sv-payments-for-woocommerce'),
-        'detected' => __('Payment Detected!', 'bitcoin-sv-payments-for-woocommerce'),
-        'confirmed' => __('Payment Confirmed', 'bitcoin-sv-payments-for-woocommerce'),
-        'pending' => __('Awaiting Confirmation', 'bitcoin-sv-payments-for-woocommerce'),
-        'expired' => __('Payment Window Expired', 'bitcoin-sv-payments-for-woocommerce'),
-        'underpaid' => __('Underpaid', 'bitcoin-sv-payments-for-woocommerce'),
-        'overpaid' => __('Overpaid (Thank You!)', 'bitcoin-sv-payments-for-woocommerce')
-    );
-    
-    return isset($labels[$state]) ? $labels[$state] : $labels['waiting'];
-}
-
-/**
- * Get payment state message
- */
-function BWWC__get_payment_state_message($state, $received_sats = 0, $expected_sats = 0) {
+function BWWC__get_payment_console_state_message($state, $received_sats = 0, $expected_sats = 0) {
     // Ensure numeric values
     $received_sats = floatval($received_sats);
     $expected_sats = floatval($expected_sats);
     
     $messages = array(
-        'waiting' => __('Send the exact amount to the address above. Payment will be detected within seconds.', 'bitcoin-sv-payments-for-woocommerce'),
-        'detected' => __('Your payment has been detected on the blockchain. Waiting for confirmation...', 'bitcoin-sv-payments-for-woocommerce'),
-        'pending' => __('Payment broadcast detected. Waiting for miners to confirm—no action needed.', 'bitcoin-sv-payments-for-woocommerce'),
-        'confirmed' => __('Your payment has been confirmed. Thank you!', 'bitcoin-sv-payments-for-woocommerce'),
-        'expired' => __('The payment window has expired. If you already paid, support will verify and update your order shortly.', 'bitcoin-sv-payments-for-woocommerce')
+        'waiting' => __('Send the exact amount to the address above. Payment will be detected within seconds.', 'sendbsv-bsv-payments-for-woocommerce'),
+        'detected' => __('Your payment has been detected on the blockchain. Waiting for confirmation...', 'sendbsv-bsv-payments-for-woocommerce'),
+        'pending' => __('Payment broadcast detected. Waiting for miners to confirm—no action needed.', 'sendbsv-bsv-payments-for-woocommerce'),
+        'confirmed' => __('Your payment has been confirmed. Thank you!', 'sendbsv-bsv-payments-for-woocommerce'),
+        'expired' => __('The payment window has expired. If you already paid, support will verify and update your order shortly.', 'sendbsv-bsv-payments-for-woocommerce')
     );
     
     // Build dynamic messages for underpaid/overpaid states
     if ($state === 'underpaid' && $expected_sats > 0) {
-        /* translators: 1: received satoshis, 2: expected satoshis */
         $messages['underpaid'] = sprintf(
-            __('Received %1$s sats but expected %2$s sats. Please send the remaining amount.', 'bitcoin-sv-payments-for-woocommerce'),
+            /* translators: 1: received satoshis, 2: expected satoshis */
+            __('Received %1$s sats but expected %2$s sats. Please send the remaining amount.', 'sendbsv-bsv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($expected_sats, 0, '.', ',')
         );
     } elseif ($state === 'overpaid' && $expected_sats > 0) {
-        /* translators: 1: received satoshis, 2: extra satoshis */
         $messages['overpaid'] = sprintf(
-            __('Received %1$s sats (%2$s sats extra). Payment accepted!', 'bitcoin-sv-payments-for-woocommerce'),
+            /* translators: 1: received satoshis, 2: extra satoshis */
+            __('Received %1$s sats (%2$s sats extra). Payment accepted!', 'sendbsv-bsv-payments-for-woocommerce'),
             number_format($received_sats, 0, '.', ','),
             number_format($received_sats - $expected_sats, 0, '.', ',')
         );
@@ -409,23 +467,25 @@ function BWWC__ajax_check_payment_status() {
             __FILE__,
             __LINE__,
             sprintf(
-                'AJAX status error: Order %d key mismatch (expected %s got %s)',
-                $order_id,
-                $expected_order_key,
-                $order_key
+                'AJAX status error: Order %d key mismatch (keys redacted for security)',
+                $order_id
             )
         );
         wp_send_json_error(array('message' => 'Invalid order'));
         return;
     }
     
-    // Force recheck if requested (with cooldown)
-    if ($force) {
-        $last_check = get_post_meta($order_id, 'last_manual_check', true);
-        $cooldown = 3; // 3 seconds
+    // Trigger blockchain check for pending orders
+    // For waiting/pending/underpaid states, check blockchain on every poll (with cooldown)
+    $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $should_check_blockchain = $force || in_array($payment_state, array('waiting', 'pending', 'underpaid', 'detected'));
+    
+    if ($should_check_blockchain) {
+        $last_check = get_post_meta($order_id, 'last_blockchain_check', true);
+        $cooldown = $force ? 3 : 10; // 3 seconds for manual, 10 seconds for auto
         
         if (!$last_check || (time() - $last_check) >= $cooldown) {
-            update_post_meta($order_id, 'last_manual_check', time());
+            update_post_meta($order_id, 'last_blockchain_check', time());
             
             // Trigger immediate payment check
             BWWC__check_payment_for_order($order_id);
@@ -444,7 +504,7 @@ function BWWC__ajax_check_payment_status() {
     $last_checked = get_post_meta($order_id, 'last_checked_at', true);
     
     $bwwc_settings = BWWC__get_settings();
-    $required_confirmations = isset($bwwc_settings['confirmations']) ? intval($bwwc_settings['confirmations']) : 1;
+    $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
     $explorer_base = 'https://whatsonchain.com';
     
     // Parse txids if string

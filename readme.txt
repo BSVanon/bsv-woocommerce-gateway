@@ -1,10 +1,10 @@
-=== Bitcoin SV Payments for WooCommerce ===
+=== SendBSV BSV Payments for WooCommerce ===
 Contributors: BSVanon
 Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 5.3.4
+Stable tag: 6.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -34,7 +34,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 = Benefits =
 
 * Accept payment directly into your personal ElectrumSV wallet.
-* ElectrumSV wallet payment option completely removes dependency on any third party service and middlemen.
+* No third-party payment processor required—payments settle directly to your wallet.
 * Accept payment in Bitcoin SV for physical and digital downloadable products.
 * Add Bitcoin SV  payments option to your existing online store with alternative main currency.
 * Flexible exchange rate calculations fully managed via administrative settings.
@@ -52,7 +52,39 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 
 **Checkout Compatibility**: This plugin supports both classic shortcode checkout `[woocommerce_checkout]` and modern WooCommerce Blocks checkout. No special configuration needed.
 
+== External Services ==
 
+This plugin connects to the following external services to function properly:
+
+**CoinGecko API** (https://www.coingecko.com)
+- Purpose: Fetches BSV exchange rates for currency conversion
+- Data transmitted: Server IP address and requested currency parameters; no customer PII
+- Privacy policy: https://www.coingecko.com/en/privacy
+- Terms of service: https://www.coingecko.com/en/terms
+
+**CoinPaprika API** (https://coinpaprika.com)
+- Purpose: Fallback exchange rate provider if CoinGecko is unavailable
+- Data transmitted: Server IP address and requested currency parameters; no customer PII
+- Privacy policy: https://coinpaprika.com/privacy-policy
+- Terms of service: https://coinpaprika.com/terms-of-use
+
+**WhatsOnChain API** (https://whatsonchain.com)
+- Purpose: Primary blockchain data provider for transaction verification
+- Data transmitted: Your server IP address and BSV addresses/transaction IDs for lookup
+- Privacy policy: https://whatsonchain.com/privacy
+- Terms of service: https://whatsonchain.com/terms
+
+**Bitails API** (https://bitails.io)
+- Purpose: Backup blockchain data provider for transaction verification
+- Data transmitted: Your server IP address and BSV addresses/transaction IDs for lookup
+- Privacy policy: https://bitails.io/privacy
+- Terms of service: https://bitails.io/terms
+
+**Important Notes:**
+- All API calls are made server-side only (your server to the API)
+- No customer personal information is transmitted to these services
+- Only your server IP address and BSV payment addresses are sent for blockchain lookups
+- No tracking or analytics data is collected by this plugin
 
 == Screenshots ==
 
@@ -77,6 +109,91 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 6.0.0 - 2026-01-17 =
+**Major security, architecture, and feature update**
+
+**SECURITY FIXES:**
+* CRITICAL: Gateway ID changed from 'bitcoin' to 'bitcoin_sv' to prevent plugin collisions (auto-migrates existing installations)
+* CRITICAL: Enabled TLS verification for all external API calls (fixes MITM vulnerability)
+* CRITICAL: Removed public hardcron trigger (DoS vulnerability)
+* CRITICAL: Disabled legacy IPN callback (security risk)
+* CRITICAL: Removed external QR code services - all QR generation now client-side via jquery.qrcode.js
+* Hardened all unserialize() calls with ['allowed_classes' => false]
+* Replaced date() with gmdate() for WP.org compliance
+* Added External Services disclosure section in readme.txt
+
+**ARCHITECTURE & MODULARIZATION:**
+* Reduced core utilities file from 1,215 LOC to 75 LOC (94% reduction)
+* Created 12 focused modules in includes/ directory:
+  - address-generation.php (529 LOC) - BIP32 address derivation
+  - blockchain-api.php (157 LOC) - WhatsOnChain/Bitails integration
+  - exchange-rates.php (142 LOC) - Rate fetching with caching
+  - payment-state.php (257 LOC) - Canonical state machine
+  - expiry.php (193 LOC) - Payment window enforcement
+  - http.php (130 LOC) - Secure WordPress HTTP API wrapper
+  - logging.php (155 LOC) - WooCommerce logger integration
+  - gateway-validation.php (126 LOC) - Settings validation
+  - string-utilities.php (196 LOC) - String helpers
+  - gateway-migration.php - Auto-migration for gateway ID change
+  - providers/* - Modular API provider system (CoinGecko, CoinPaprika, WhatsOnChain, Bitails)
+  - And more...
+
+**PAYMENT STATE MACHINE:**
+* 7 canonical states: waiting, detected, verified, expired, underpaid, overpaid, conflict
+* Idempotent state transitions with validation
+* Automatic state logging and order notes
+* Payment state displayed in admin order metabox
+
+**EXPIRY & LATE PAYMENT:**
+* Scheduled sweep finds and expires unpaid orders automatically
+* Late payment monitoring with configurable 7-30 day watch window
+* Proper handling of payments received after expiry/cancellation
+
+**MULTI-FORMAT PAYMENT CONSOLE:**
+* Single QR code with BIP21/BIP270 protocol tab switching
+* Local QR generation (no external services)
+* Real-time payment status updates
+* Countdown timer with expiry display
+* Copy buttons for address and amount
+
+**EMAIL IMPROVEMENTS:**
+* Payment instructions with address, amount, and pay link
+* Note directing to payment page for QR code (no external QR in email)
+* Clean, modern styling with responsive design
+
+**ADMIN FEATURES:**
+* Order metabox showing payment state, expected/received amounts
+* Force recheck button with cooldown protection
+* Transaction ID display and blockchain explorer links
+
+**RATE PROVIDERS:**
+* CoinGecko primary with correct BSV ID (bitcoin-cash-sv)
+* CoinPaprika fallback provider
+* 60-second chain height caching to reduce API calls
+* Removed legacy/broken providers (Blockchair, etc.)
+
+**SETTINGS & DEFAULTS:**
+* Unified on confs_num with legacy compatibility
+* Minimum 1 confirmation enforced (no 0-conf)
+* Safe defaults: autocomplete OFF, delete expired OFF, reuse addresses OFF
+
+**CODE QUALITY:**
+* PHPCS configuration (WordPress coding standards)
+* PHPStan configuration (level 5)
+* WordPress stubs for static analysis
+* All PHP files pass syntax validation
+
+**REMOVED:**
+* Legacy XXXbitcoinway.com dead code
+* Public unauthenticated endpoints
+* Insecure cURL with disabled TLS verification
+* File-based logging (replaced with WooCommerce logger)
+
+= 5.3.4 - 2026-01-14 =
+* WordPress.org submission fixes
+* All escaping, sanitization, and security issues resolved
+* Plugin-check compliant
 
 = 5.3.3 - 2026-01-13 =
 * CRITICAL FIX: Infinite page reload loop eliminated using sessionStorage persistence
@@ -241,20 +358,19 @@ Your support helps maintain and improve this plugin for the entire BSV community
 
 == Upgrade Notice ==
 
-soon
+= 6.0.0 =
+Major security and architecture update. Gateway ID changed from 'bitcoin' to 'bitcoin_sv' (auto-migrates). All external API calls now enforce TLS verification. Modular architecture with 94% code reduction. Payment state machine, expiry enforcement, and multi-format payment console added.
 
 == Frequently Asked Questions ==
 
 = Why doesn't the Bitcoin SV payment option appear at checkout? =
 
-If you're using WooCommerce 8.3+ with the new Blocks-based checkout, you need to switch to classic checkout:
+The plugin supports both WooCommerce Blocks checkout and classic shortcode checkout. Ensure:
 
-1. Create a new page with the shortcode: [woocommerce_checkout]
-2. Go to WooCommerce → Settings → Advanced → Page setup
-3. Set your new page as the Checkout page
-4. Save changes
-
-The plugin currently requires classic checkout. Blocks support is coming in v5.1.
+1. Your checkout page contains either the WooCommerce Checkout block OR the [woocommerce_checkout] shortcode
+2. The gateway is enabled in WooCommerce → Settings → Payments → Bitcoin SV
+3. Your Master Public Key is configured correctly
+4. PHP extension gmp or bcmath is loaded
 
 = What are the minimum requirements? =
 

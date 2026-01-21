@@ -20,27 +20,35 @@ function BWWC__check_payment_for_order($order_id) {
         return false;
     }
     
+    $order = wc_get_order($order_id);
+    
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = max(1, intval($bwwc_settings['confs_num']));
     $address_cache_group = 'bwwc_btc_addresses';
     
     // Get the Bitcoin address for this order
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    $bsv_address = $order->get_meta('_bwwc_address', true);
+    if (empty($bsv_address)) {
+        $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    }
     if (!$bsv_address) {
         BWWC__log_event(__FILE__, __LINE__, "Payment check: No BSV address found for order {$order_id}");
         return false;
     }
     
     // Get expected amount
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+    $expected_sats = $order->get_meta('_bwwc_expected_sats', true);
     if (!$expected_sats) {
-        // Try to calculate from order total
-        $order = wc_get_order($order_id);
-        if ($order) {
-            $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
+        $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+        if (!$expected_sats) {
+            // Try to calculate from order total
+            $order_total_btc = floatval($order->get_meta('_bwwc_order_total_in_btc', true));
+            if ($order_total_btc <= 0) {
+                $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
+            }
             if ($order_total_btc > 0) {
                 $expected_sats = intval(round($order_total_btc * 100000000));
-                update_post_meta($order_id, 'expected_sats', $expected_sats);
+                $order->update_meta_data('_bwwc_expected_sats', $expected_sats);
             }
         }
     }
@@ -58,7 +66,8 @@ function BWWC__check_payment_for_order($order_id) {
     
     if ($balance_info['result'] !== 'success') {
         BWWC__log_event(__FILE__, __LINE__, "Payment check: API error for order {$order_id}: " . $balance_info['message']);
-        update_post_meta($order_id, 'last_checked_at', time());
+        $order->update_meta_data('_bwwc_last_checked_at', time());
+        $order->save();
         return false;
     }
     
@@ -71,12 +80,12 @@ function BWWC__check_payment_for_order($order_id) {
     BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} - Confirmed: {$confirmed_sats} sats, Total (incl. mempool): {$total_sats} sats, Expected: {$expected_sats} sats");
     
     // Update received amount and last checked time
-    update_post_meta($order_id, 'received_sats', $total_sats);
-    update_post_meta($order_id, 'confirmed_sats', $confirmed_sats);
-    update_post_meta($order_id, 'last_checked_at', time());
+    $order->update_meta_data('_bwwc_received_sats', $total_sats);
+    $order->update_meta_data('_bwwc_confirmed_sats', $confirmed_sats);
+    $order->update_meta_data('_bwwc_last_checked_at', time());
     
     // Fetch transaction history if payment detected
-    $best_confirmations = intval(get_post_meta($order_id, 'best_confirmations', true));
+    $best_confirmations = intval($order->get_meta('_bwwc_best_confirmations', true));
     if ($total_sats > 0) {
         $tx_history_response = BWWC__file_get_contents(
             'https://api.whatsonchain.com/v1/bsv/main/address/' . $bsv_address . '/history',
@@ -105,9 +114,9 @@ function BWWC__check_payment_for_order($order_id) {
                 }
                 
                 if (!empty($txids)) {
-                    update_post_meta($order_id, 'txids', implode(',', $txids));
+                    $order->update_meta_data('_bwwc_txids', $txids);
                     $best_confirmations = $max_confirmations;
-                    update_post_meta($order_id, 'best_confirmations', $best_confirmations);
+                    $order->update_meta_data('_bwwc_best_confirmations', $best_confirmations);
                     BWWC__log_event(__FILE__, __LINE__, "Payment check: Stored " . count($txids) . " transaction ID(s) for order {$order_id}");
                 }
             }
@@ -115,45 +124,48 @@ function BWWC__check_payment_for_order($order_id) {
     }
     
     // Determine payment state using consistent logic
-    $order_total_btc = floatval(get_post_meta($order_id, 'order_total_in_btc', true));
+    $order_total_btc = floatval($order->get_meta('_bwwc_order_total_in_btc', true));
     
     // Extend expiration if funds detected
     if ($total_sats > 0) {
-        $expires_at = intval(get_post_meta($order_id, 'address_expires_at', true));
+        $expires_at = intval($order->get_meta('_bwwc_expires_at', true));
         $assigned_address_expires_in_secs = intval($bwwc_settings['assigned_address_expires_in_mins']) * 60;
         $pending_extension_secs = max($assigned_address_expires_in_secs, intval($bwwc_settings['confs_num']) * 10 * 60);
         $proposed_expiration = time() + $pending_extension_secs;
         if ($proposed_expiration > $expires_at) {
-            update_post_meta($order_id, 'address_expires_at', $proposed_expiration);
+            $order->update_meta_data('_bwwc_expires_at', $proposed_expiration);
         }
     }
     
     // Consistent state machine logic
     if ($total_sats == 0) {
-        update_post_meta($order_id, 'payment_state', 'waiting');
+        BWWC__set_payment_state($order_id, 'waiting', 'Payment check: no payment detected');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = waiting (no payment detected)");
+        $order->save();
         return false;
     }
 
     if ($total_sats < $expected_sats) {
-        update_post_meta($order_id, 'payment_state', 'underpaid');
+        BWWC__set_payment_state($order_id, 'underpaid', 'Payment check: underpayment detected');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = underpaid (received {$total_sats} of {$expected_sats} sats)");
+        $order->save();
         return false;
     }
 
     // Full amount received - check if confirmed
     if ($confirmed_sats >= $expected_sats && $best_confirmations >= $required_confirmations) {
-        update_post_meta($order_id, 'payment_state', 'confirmed');
+        BWWC__set_payment_state($order_id, 'confirmed', 'Payment check: payment confirmed');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = confirmed (confirmed {$confirmed_sats} sats, {$best_confirmations} confirmations)");
+        $order->save();
     } else {
-        update_post_meta($order_id, 'payment_state', 'pending');
+        BWWC__set_payment_state($order_id, 'pending', 'Payment check: payment pending confirmation');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = pending (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$best_confirmations}/{$required_confirmations} confirmations)");
+        $order->save();
         return true;
     }
     
     // Payment detected - check if order needs to be completed
-    $order = wc_get_order($order_id);
-    if ($order && $order->get_status() === 'on-hold') {
+    if ($order->get_status() === 'on-hold') {
         // Get address record from database
         $address_cache_key = 'bsv_addr_' . md5($bsv_address);
         $address_record = wp_cache_get($address_cache_key, $address_cache_group);
@@ -174,7 +186,7 @@ function BWWC__check_payment_for_order($order_id) {
         
         if ($address_record && $address_record['status'] !== 'used') {
             // Update payment state to confirmed
-            update_post_meta($order_id, 'payment_state', 'confirmed');
+            BWWC__set_payment_state($order_id, 'confirmed', 'Payment check: confirmed');
             
             // Update address metadata
             $address_meta = BWWC_unserialize_address_meta($address_record['address_meta']);
@@ -202,9 +214,11 @@ function BWWC__check_payment_for_order($order_id) {
             BWWC__process_payment_completed_for_order($order_id, $confirmed_btc);
             
             BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} payment confirmed and processed");
+            $order->save();
             return true;
         }
     }
     
+    $order->save();
     return $total_sats > 0;
 }

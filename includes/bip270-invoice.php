@@ -102,7 +102,7 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Check if order is still payable
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $payment_state = BWWC__get_payment_state($order_id);
     if (!in_array($payment_state, array('waiting', 'underpaid', 'pending', 'detected'))) {
         BWWC__log_bip270_invoice('Invoice request rejected due to order state', array(
             'orderId' => $order_id,
@@ -116,10 +116,22 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Get payment details
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+    $bsv_address = $order->get_meta('_bwwc_address', true);
+    if (empty($bsv_address)) {
+        $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    }
+    $bsv_amount = $order->get_meta('_bwwc_order_total_in_btc', true);
+    if (empty($bsv_amount)) {
+        $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
+    }
+    $expected_sats = $order->get_meta('_bwwc_expected_sats', true);
+    if (empty($expected_sats)) {
+        $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+    }
+    $expires_at = $order->get_meta('_bwwc_expires_at', true);
+    if (empty($expires_at)) {
+        $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+    }
 
     if (!$bsv_address || !$bsv_amount || !$expected_sats) {
         BWWC__log_bip270_invoice('Invoice request failed: missing payment details', array(

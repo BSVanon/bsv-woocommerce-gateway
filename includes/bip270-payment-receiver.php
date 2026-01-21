@@ -54,10 +54,13 @@ function BWWC__receive_bip270_payment() {
     }
 
     // Load payment details
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $expected_sats = (int) get_post_meta($order_id, 'expected_sats', true);
+    $bsv_address = $order->get_meta('_bwwc_address', true);
+    if (empty($bsv_address)) {
+        $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    }
+    $expected_sats = (int) $order->get_meta('_bwwc_expected_sats', true);
     if (!$expected_sats) {
-        $expected_sats = (int) $order->get_meta('_bwwc_expected_sats', true);
+        $expected_sats = (int) get_post_meta($order_id, 'expected_sats', true);
     }
 
     if (!$bsv_address || $expected_sats <= 0) {
@@ -156,15 +159,15 @@ function BWWC__receive_bip270_payment() {
         $order->update_meta_data('_bwwc_txids', $legacy_txids);
 
         // Store payment metadata
-        update_post_meta($order_id, 'received_sats', $paid_sats);
+        $order->update_meta_data('_bwwc_received_sats', $paid_sats);
         $order->update_meta_data('_bwwc_amount_received', $paid_sats);
         $order->update_meta_data('_bwwc_detected_source', 'bip270');
         $order->update_meta_data('_bwwc_last_payment_activity', time());
 
         if ($paid_sats > $expected_sats) {
-            update_post_meta($order_id, 'payment_state', 'overpaid');
+            BWWC__set_payment_state($order_id, 'overpaid', 'BIP270 overpayment detected');
         } else {
-            update_post_meta($order_id, 'payment_state', 'pending');
+            BWWC__set_payment_state($order_id, 'pending', 'BIP270 payment detected');
         }
 
         BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'BIP270 payment submission');

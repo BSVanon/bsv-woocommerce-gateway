@@ -552,63 +552,28 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             BWWC__log_event(__FILE__, __LINE__, "     Generated unique Bitcoin SV address: '{$bitcoins_address}' for order_id " . $order_id);
 
-            if ($this->service_provider == 'blockchain_info') {
-                update_post_meta(
-                 $order_id, 			// post id ($order_id)
-                 'secret_key', 	// meta key
-                 $secret_key 		// meta value. If array - will be auto-serialized
-                 );
-            }
-
-            update_post_meta(
-             $order_id, 			// post id ($order_id)
-             'order_total_in_btc', 	// meta key
-             $order_total_in_btc 	// meta value. If array - will be auto-serialized
-             );
-            update_post_meta(
-             $order_id, 			// post id ($order_id)
-             'bitcoins_address',	// meta key
-             $bitcoins_address 	// meta value. If array - will be auto-serialized
-             );
-            update_post_meta(
-             $order_id, 			// post id ($order_id)
-             'bitcoins_paid_total',	// meta key
-             "0" 	// meta value. If array - will be auto-serialized
-             );
-            update_post_meta(
-             $order_id, 			// post id ($order_id)
-             'bitcoins_refunded',	// meta key
-             "0" 	// meta value. If array - will be auto-serialized
-             );
-             update_post_meta(
-              $order_id, 			// post id ($order_id)
-              'bsv_exchange_rate',	// meta key
-              $exchange_rate 	// meta value. If array - will be auto-serialized
-              );
+            // Removed legacy blockchain_info support (security vulnerability A0.6)
+            $order->update_meta_data('_bwwc_address', $bitcoins_address);
+            $order->update_meta_data('_bwwc_paid_total', 0);
+            $order->update_meta_data('_bwwc_refunded', 0);
+            $order->update_meta_data('_bwwc_exchange_rate', $exchange_rate);
             
             // Store expected amount in satoshis for UI
             $expected_sats = intval(round($order_total_in_btc * 100000000));
-            update_post_meta($order_id, 'expected_sats', $expected_sats);
+            $order->update_meta_data('_bwwc_expected_sats', $expected_sats);
             
             // Store expiration timestamp
             $bwwc_settings = BWWC__get_settings();
             $expires_at = time() + ($bwwc_settings['assigned_address_expires_in_mins'] * 60);
-            update_post_meta($order_id, 'address_expires_at', $expires_at);
+            $order->update_meta_data('_bwwc_expires_at', $expires_at);
             
             // Initialize payment state
-            update_post_meta($order_id, 'payment_state', 'waiting');
-            update_post_meta($order_id, 'received_sats', 0);
-            update_post_meta($order_id, 'confirmed_sats', 0);
-            update_post_meta(
-             $order_id, 				// post id ($order_id)
-             '_incoming_payments',	// meta key. Starts with '_' - hidden from UI.
-             array()					// array (array('datetime'=>'', 'from_addr'=>'', 'amount'=>''),)
-             );
-            update_post_meta(
-             $order_id, 				// post id ($order_id)
-             '_payment_completed',	// meta key. Starts with '_' - hidden from UI.
-             0					// array (array('datetime'=>'', 'from_addr'=>'', 'amount'=>''),)
-             );
+            BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_WAITING, 'Payment initialized');
+            $order->update_meta_data('_bwwc_received_sats', 0);
+            $order->update_meta_data('_bwwc_confirmed_sats', 0);
+            $order->update_meta_data('_bwwc_incoming_payments', array());
+            $order->update_meta_data('_bwwc_payment_completed', 0);
+            $order->save();
             //-----------------------------------
 
             // The bitcoin gateway does not take payment immediately, but it does need to change the orders status to on-hold
@@ -679,9 +644,14 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // Render modern payment console
             BWWC__render_payment_console($order);
             
-            // Add order note
-            $order_total_in_btc = get_post_meta($order->get_id(), 'order_total_in_btc', true);
-            $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
+            $order_total_in_btc = $order->get_meta('_bwwc_order_total_in_btc', true);
+            if (empty($order_total_in_btc)) {
+                $order_total_in_btc = get_post_meta($order->get_id(), 'order_total_in_btc', true);
+            }
+            $bitcoins_address = $order->get_meta('_bwwc_address', true);
+            if (empty($bitcoins_address)) {
+                $bitcoins_address = get_post_meta($order->get_id(), 'bitcoins_address', true);
+            }
             $order->add_order_note(
                 sprintf(
                     /* translators: 1: price in BSV, 2: Bitcoin address */
@@ -722,10 +692,22 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             // Get payment details
             $order_id = $order->get_id();
-            $order_total_in_btc = get_post_meta($order_id, 'order_total_in_btc', true);
-            $bitcoins_address = get_post_meta($order_id, 'bitcoins_address', true);
-            $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-            $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+            $order_total_in_btc = $order->get_meta('_bwwc_order_total_in_btc', true);
+            if (empty($order_total_in_btc)) {
+                $order_total_in_btc = get_post_meta($order_id, 'order_total_in_btc', true);
+            }
+            $bitcoins_address = $order->get_meta('_bwwc_address', true);
+            if (empty($bitcoins_address)) {
+                $bitcoins_address = get_post_meta($order_id, 'bitcoins_address', true);
+            }
+            $expected_sats = $order->get_meta('_bwwc_expected_sats', true);
+            if (empty($expected_sats)) {
+                $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+            }
+            $expires_at = $order->get_meta('_bwwc_expires_at', true);
+            if (empty($expires_at)) {
+                $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+            }
             
             if (!$bitcoins_address || !$order_total_in_btc) {
                 return;
@@ -935,19 +917,21 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 //===========================================================================
 function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=false)
 {
+    $order = wc_get_order($order_id);
     if ($bitcoins_paid) {
-        update_post_meta($order_id, 'bitcoins_paid_total', $bitcoins_paid);
+        $order->update_meta_data('_bwwc_paid_total', $bitcoins_paid);
     }
 
     // Payment completed
     // Make sure this logic is done only once, in case customer keep sending payments :)
-    if (!get_post_meta($order_id, '_payment_completed', true)) {
-        update_post_meta($order_id, '_payment_completed', '1');
+    if (!$order->get_meta('_bwwc_payment_completed', true)) {
+        $order->update_meta_data('_bwwc_payment_completed', 1);
 
         BWWC__log_event(__FILE__, __LINE__, "Success: order '{$order_id}' paid in full. Processing and notifying customer ...");
 
         // Instantiate order object.
-        $order = new WC_Order($order_id);
+        // $order = new WC_Order($order_id); // Deprecated, using wc_get_order above
+
         $order->add_order_note(__('Order paid in full', 'sendbsv-bsv-payments-for-woocommerce'));
 
         $order->payment_complete();
@@ -970,6 +954,7 @@ function BWWC__process_payment_completed_for_order($order_id, $bitcoins_paid=fal
                 );
         }
     }
+    $order->save();
 }
 //===========================================================================
 

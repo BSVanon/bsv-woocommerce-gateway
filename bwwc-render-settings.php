@@ -35,22 +35,53 @@ function BWWC__render_diagnostics_page() {
         'CoinPaprika' => 'https://api.coinpaprika.com/v1/tickers/bsv-bitcoin-sv'
     );
     
+    // Check for cached results (5-minute TTL)
+    $cache_key = 'bwwc_diagnostics_results';
+    $force_refresh = isset($_GET['refresh']) && $_GET['refresh'] === '1';
+    $cached_results = $force_refresh ? false : get_transient($cache_key);
+    
+    if ($cached_results === false) {
+        // Run fresh diagnostics
+        $results = array();
+        foreach ($providers as $name => $url) {
+            $start = microtime(true);
+            $response = wp_remote_get($url, array('timeout' => 10));
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $status = is_wp_error($response) ? 'Error' : wp_remote_retrieve_response_code($response);
+            $message = is_wp_error($response) ? $response->get_error_message() : 'OK';
+            $status_class = $status == 200 ? 'success' : 'error';
+            
+            $results[$name] = array(
+                'status' => $status,
+                'time' => $time,
+                'message' => $message,
+                'status_class' => $status_class
+            );
+        }
+        
+        // Cache for 5 minutes
+        set_transient($cache_key, $results, 5 * MINUTE_IN_SECONDS);
+        $cache_timestamp = time();
+    } else {
+        $results = $cached_results;
+        $cache_timestamp = get_option('_transient_timeout_' . $cache_key, time()) - (5 * MINUTE_IN_SECONDS);
+    }
+    
+    // Display cache info and refresh button
+    echo '<p style="margin-bottom: 15px;">';
+    echo '<strong>Last checked:</strong> ' . esc_html(human_time_diff($cache_timestamp, time())) . ' ago | ';
+    echo '<a href="' . esc_url(add_query_arg('refresh', '1')) . '" class="button">Refresh Now</a>';
+    echo '</p>';
+    
     echo '<table class="wp-list-table widefat fixed striped">';
     echo '<thead><tr><th>Provider</th><th>Status</th><th>Response Time (ms)</th><th>Message</th></tr></thead><tbody>';
     
-    foreach ($providers as $name => $url) {
-        $start = microtime(true);
-        $response = wp_remote_get($url, array('timeout' => 10));
-        $time = round((microtime(true) - $start) * 1000, 2);
-        $status = is_wp_error($response) ? 'Error' : wp_remote_retrieve_response_code($response);
-        $message = is_wp_error($response) ? $response->get_error_message() : 'OK';
-        $status_class = $status == 200 ? 'success' : 'error';
-        
+    foreach ($results as $name => $result) {
         echo '<tr>';
         echo '<td>' . esc_html($name) . '</td>';
-        echo '<td class="' . esc_attr($status_class) . '">' . esc_html($status) . '</td>';
-        echo '<td>' . esc_html($time) . '</td>';
-        echo '<td>' . esc_html($message) . '</td>';
+        echo '<td class="' . esc_attr($result['status_class']) . '">' . esc_html($result['status']) . '</td>';
+        echo '<td>' . esc_html($result['time']) . '</td>';
+        echo '<td>' . esc_html($result['message']) . '</td>';
         echo '</tr>';
     }
     

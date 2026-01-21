@@ -94,9 +94,9 @@ function BWWC_cron_job_worker()
                 $order = wc_get_order($last_order_info['order_id']);
                 if ($order && in_array($order->get_status(), array('completed', 'processing', 'cancelled', 'refunded', 'failed'))) {
                     // Ensure payment_state reflects final status to stop frontend polling
-                    $current_payment_state = get_post_meta($last_order_info['order_id'], 'payment_state', true);
+                    $current_payment_state = BWWC__get_payment_state($last_order_info['order_id']);
                     if (($order->get_status() === 'completed' || $order->get_status() === 'processing') && $current_payment_state !== 'confirmed') {
-                        update_post_meta($last_order_info['order_id'], 'payment_state', 'confirmed');
+                        BWWC__set_payment_state($last_order_info['order_id'], 'confirmed', 'Cron detected completed order');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Updated payment_state to 'confirmed' for order {$last_order_info['order_id']} (status: {$order->get_status()})");
                     }
                     

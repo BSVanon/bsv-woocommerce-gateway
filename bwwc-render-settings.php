@@ -422,6 +422,22 @@ function BWWC__render_advanced_settings_page_html()
         <p class="description">Optional: Comma-separated list of allowed origins for BRC-100 wallet postMessage communications. Leave empty to allow all.</p>
       </td>
     </tr>
+
+    <tr valign="top">
+      <th scope="row">Payment Verified Webhook URL</th>
+      <td>
+        <input type="url" name="bwwc_settings[webhook_url]" value="<?php echo esc_attr($bwwc_settings['webhook_url']); ?>" style="width: 75%;" placeholder="https://yourapp.com/webhook/bsv-payment" />
+        <p class="description">Optional: URL to receive webhook notifications when payments are verified. Leave empty to disable.</p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">Webhook Secret</th>
+      <td>
+        <input type="password" name="bwwc_settings[webhook_secret]" value="<?php echo esc_attr($bwwc_settings['webhook_secret']); ?>" style="width: 75%;" />
+        <p class="description">Secret key for webhook signature verification. Keep secure.</p>
+      </td>
+    </tr>
   </table>
  
  <h3 style="margin-top: 40px; color: #d63638;">⚠️ Advanced Derivation Settings</h3>

@@ -82,6 +82,11 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     $order->update_meta_data('_bwwc_payment_state_changed_at', time());
     $order->save();
     
+    // Send webhook if payment just became verified
+    if ($new_state === 'confirmed' && $old_state !== 'confirmed') {
+        BWWC__send_payment_verified_webhook($order_id);
+    }
+
     // Log transition
     BWWC__log_payment_state_transition($order_id, $old_state, $new_state, $reason);
     
@@ -101,6 +106,52 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     BWWC__handle_payment_state_change($order_id, $old_state, $new_state);
     
     return true;
+}
+
+/**
+ * Send webhook notification when payment is verified
+ *
+ * @param int $order_id Order ID
+ */
+function BWWC__send_payment_verified_webhook($order_id) {
+    $settings = BWWC__get_settings();
+    $url = $settings['webhook_url'];
+    if (empty($url)) {
+        return;
+    }
+
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        return;
+    }
+
+    $payload = array(
+        'event' => 'payment_verified',
+        'order_id' => $order_id,
+        'order_key' => $order->get_order_key(),
+        'amount_sats' => $order->get_meta('_bwwc_expected_sats', true),
+        'txids' => $order->get_meta('_bwwc_txids', true),
+        'timestamp' => time()
+    );
+
+    $secret = $settings['webhook_secret'];
+    $headers = array('Content-Type' => 'application/json');
+    if ($secret) {
+        $signature = hash_hmac('sha256', wp_json_encode($payload), $secret);
+        $headers['X-BSV-Signature'] = $signature;
+    }
+
+    $response = wp_remote_post($url, array(
+        'body' => wp_json_encode($payload),
+        'headers' => $headers,
+        'timeout' => 10
+    ));
+
+    if (is_wp_error($response)) {
+        BWWC__log_event(__FILE__, __LINE__, 'Webhook send failed: ' . $response->get_error_message());
+    } else {
+        BWWC__log_event(__FILE__, __LINE__, 'Webhook sent to ' . $url . ' with status ' . wp_remote_retrieve_response_code($response));
+    }
 }
 
 /**

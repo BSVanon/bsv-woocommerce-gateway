@@ -730,12 +730,17 @@
 
             // Regenerate QR for selected protocol
             this.generateQRCode(protocol);
-        }
+        },
+
+        // Expose globally for BRC-100 integration
+        window.bsvPaymentData = bsvPaymentData;
     };
 
     // Initialize on document ready
     $(document).ready(function() {
-        BSVPaymentConsole.init();
+        if (typeof bsvPaymentData !== 'undefined') {
+            BSVPaymentConsole.init();
+        }
     });
 
 })(jQuery);

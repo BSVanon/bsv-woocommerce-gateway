@@ -15,18 +15,18 @@
 
     const BSVBRC7Payment = {
         init: async function() {
-            console.log('[BRC-7] Initializing wallet payment integration...');
-            console.log('[BRC-7] Current URL:', window.location.href);
+            if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] Initializing wallet payment integration...');
+            if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] Current URL:', window.location.href);
             
             this.bindPaymentButton();
             
             // Try to detect wallet using all available methods
             try {
                 const walletInfo = await this.ensureWallet();
-                console.log('[BRC-7] ✅ Wallet detected:', walletInfo.type);
+                if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] ✅ Wallet detected:', walletInfo.type);
                 $('#bsv-brc100-pay-button').prop('disabled', false).show();
             } catch (error) {
-                console.log('[BRC-7] ⚠️ No wallet detected:', error.message);
+                if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] ⚠️ No wallet detected:', error.message);
                 console.log('[BRC-7] Button will remain hidden until wallet is available');
             }
         },

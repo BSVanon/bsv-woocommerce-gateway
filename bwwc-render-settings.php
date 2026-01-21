@@ -395,13 +395,40 @@ function BWWC__render_advanced_settings_page_html()
             <span class="description">minutes. How long customers have to complete payment before order expires. Default: 240 minutes (4 hours).</span>
         </td>
     </tr>
- </table>
+
+    <tr valign="top">
+      <th scope="row">BIP270 Payment Protocol</th>
+      <td>
+        <label><input type="checkbox" name="bwwc_settings[bip270_enabled]" value="1" <?php checked($bwwc_settings['bip270_enabled'], '1'); ?> /> Enable BIP270 invoice payments</label>
+        <p class="description">Allow customers to use BIP270 Direct Payment Protocol for invoice-based payments.</p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">Preferred Broadcaster</th>
+      <td>
+        <select name="bwwc_settings[broadcaster_preference]">
+          <option value="whatsonchain" <?php selected($bwwc_settings['broadcaster_preference'], 'whatsonchain'); ?>>Whatsonchain</option>
+          <option value="bitails" <?php selected($bwwc_settings['broadcaster_preference'], 'bitails'); ?>>Bitails</option>
+        </select>
+        <p class="description">Choose the primary blockchain broadcaster for transaction submissions.</p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">BRC-100 Origin Allowlist</th>
+      <td>
+        <textarea name="bwwc_settings[brc100_origin_allowlist]" rows="3" cols="50"><?php echo esc_textarea($bwwc_settings['brc100_origin_allowlist']); ?></textarea>
+        <p class="description">Optional: Comma-separated list of allowed origins for BRC-100 wallet postMessage communications. Leave empty to allow all.</p>
+      </td>
+    </tr>
+  </table>
  
  <h3 style="margin-top: 40px; color: #d63638;">⚠️ Advanced Derivation Settings</h3>
  <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #d63638; margin-bottom: 20px;">
     <p style="margin: 0 0 10px 0; font-weight: bold; color: #d63638;">WARNING: Only modify these settings if you fully understand BIP32/BIP44 derivation paths!</p>
     <p style="margin: 0 0 10px 0;">Incorrect settings can cause transactions to appear "lost" or invisible in your wallet, even though they exist on the blockchain.</p>
-    <p style="margin: 0 0 10px 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Tracker</a> to locate your funds.</p>
+    <p style="margin: 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to locate your funds.</p>
     <p style="margin: 0; font-weight: bold; color: #d63638;">DISCLAIMER: Merchant uses these advanced settings at their own risk. The plugin developers are not responsible for lost or inaccessible funds due to incorrect derivation configuration.</p>
  </div>
  

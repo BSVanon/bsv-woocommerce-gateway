@@ -23,6 +23,43 @@ function BWWC__render_advanced_settings_page()
 //===========================================================================
 
 //===========================================================================
+function BWWC__render_diagnostics_page() {
+    echo '<div class="wrap">';
+    echo '<h1>BSV Diagnostics</h1>';
+    echo '<p>Check the health of BSV blockchain providers and APIs.</p>';
+    
+    $providers = array(
+        'Whatsonchain' => 'https://api.whatsonchain.com/v1/bsv/main/chain/info',
+        'Bitails' => 'https://api.bitails.io/v1/bsv/main/chain/info',
+        'CoinGecko' => 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+        'CoinPaprika' => 'https://api.coinpaprika.com/v1/tickers/bsv-bitcoin-sv'
+    );
+    
+    echo '<table class="wp-list-table widefat fixed striped">';
+    echo '<thead><tr><th>Provider</th><th>Status</th><th>Response Time (ms)</th><th>Message</th></tr></thead><tbody>';
+    
+    foreach ($providers as $name => $url) {
+        $start = microtime(true);
+        $response = wp_remote_get($url, array('timeout' => 10));
+        $time = round((microtime(true) - $start) * 1000, 2);
+        $status = is_wp_error($response) ? 'Error' : wp_remote_retrieve_response_code($response);
+        $message = is_wp_error($response) ? $response->get_error_message() : 'OK';
+        $status_class = $status == 200 ? 'success' : 'error';
+        
+        echo '<tr>';
+        echo '<td>' . esc_html($name) . '</td>';
+        echo '<td class="' . esc_attr($status_class) . '">' . esc_html($status) . '</td>';
+        echo '<td>' . esc_html($time) . '</td>';
+        echo '<td>' . esc_html($message) . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</tbody></table>';
+    echo '</div>';
+}
+//===========================================================================
+
+//===========================================================================
 function BWWC__render_settings_page($menu_page_name)
 {
     $bwwc_settings = BWWC__get_settings();

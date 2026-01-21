@@ -533,3 +533,18 @@ class BWWC_Fix_Legacy_Metadata_Command {
     }
 }
 //===========================================================================
+
+//===========================================================================
+add_action('admin_menu', 'BWWC__admin_menu');
+
+function BWWC__admin_menu() {
+    add_submenu_page(
+        'woocommerce',
+        'BSV Diagnostics',
+        'BSV Diagnostics',
+        'manage_options',
+        'bsv-diagnostics',
+        'BWWC__render_diagnostics_page'
+    );
+}
+//===========================================================================

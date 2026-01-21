@@ -30,14 +30,15 @@
                 return;
             }
 
-            // Generate QR code
-            this.generateQRCode();
+            // Restore protocol selection (defaults to Invoice when available)
+            this.currentProtocol = this.getInitialProtocol();
 
             // Bind event handlers
             this.bindEvents();
-            
-            // BIP270 protocol tab switching removed - deferred to v6.1
-            // See V6.1_ROADMAP.md for restoration instructions
+            this.bindProtocolTabs();
+
+            // Sync initial tab states & QR
+            this.applyProtocolSelection(this.currentProtocol, { skipStorage: true });
 
             // Initial status check to determine if we should poll
             this.checkStatus().done((response) => {
@@ -578,7 +579,42 @@
             }
         },
 
-        generateQRCode: function(protocol) {
+        getInitialProtocol: function() {
+            const stored = this.getStoredProtocol();
+
+            if (stored === 'bip270' && this.isProtocolAvailable('bip270')) {
+                return 'bip270';
+            }
+
+            if (!this.isProtocolAvailable('bip270')) {
+                return 'bip21';
+            }
+
+            // Default to invoice for better UX on supporting wallets
+            return 'bip270';
+        },
+
+        getStoredProtocol: function() {
+            try {
+                const stored = window.localStorage.getItem('bsv_protocol_preference');
+                if (stored && (stored === 'bip21' || stored === 'bip270')) {
+                    return stored;
+                }
+            } catch (err) {
+                // Ignore storage errors (private mode, etc.)
+            }
+            return 'bip21';
+        },
+
+        storeProtocolPreference: function(protocol) {
+            try {
+                window.localStorage.setItem('bsv_protocol_preference', protocol);
+            } catch (err) {
+                // Storage failure is non-fatal
+            }
+        },
+
+        generateQRCode: function(protocol = 'bip21') {
             const qrEl = $('#bsv-qr-code');
             if (!qrEl.length) return;
 
@@ -593,11 +629,21 @@
                 return;
             }
 
-            // BIP21: Standard bitcoin: URI with address and amount
-            // Amount MUST be in BSV decimal, not sats
-            // BIP270 support deferred to v6.1 - see V6.1_ROADMAP.md
-            const qrPayload = `bitcoin:${address}?amount=${amount}`;
-            console.log('BSV: Generating BIP21 QR:', qrPayload);
+            let qrPayload;
+            if (protocol === 'bip270' && bsvPaymentData.invoiceUrl) {
+                // BIP270 DPP format: pay:?r=<HTTPS_URL_TO_PAYMENTTERMS>
+                qrPayload = `pay:?r=${bsvPaymentData.invoiceUrl}`;
+                console.log('BSV: Generating BIP270 DPP invoice QR (pay:?r=):', qrPayload);
+            } else if (protocol === 'address-only') {
+                // Raw address only - HandCash compatible
+                // User must manually enter amount after scanning
+                qrPayload = address;
+                console.log('BSV: Generating raw address QR (HandCash-safe):', qrPayload);
+            } else {
+                // BIP21 Standard format: bitcoin:<address>?sv&amount=<bsv>
+                qrPayload = `bitcoin:${address}?sv&amount=${amount}`;
+                console.log('BSV: Generating BIP21 Standard QR:', qrPayload);
+            }
 
             try {
                 // Clear existing QR
@@ -616,45 +662,58 @@
             }
         },
 
-        // BIP270 functions removed for v6.0.0 - restore in v6.1
-        // See V6.1_ROADMAP.md for restoration instructions
-        
-        /* RESTORE FOR v6.1:
-        getInvoiceUrl: function(orderId, orderKey) {
-            // Generate signed invoice URL for BIP270
-            // Server will verify signature to prevent tampering
-            const baseUrl = window.location.origin;
-            const params = new URLSearchParams({
-                order_id: orderId,
-                key: orderKey,
-                sig: 'placeholder' // Server generates real signature
-            });
-            
-            // Note: Real signature is generated server-side
-            // This is just for QR generation - actual URL comes from localized data
-            return bsvPaymentData.invoiceUrl || `${baseUrl}/wc-api/bsv_invoice?${params.toString()}`;
-        },
-
         bindProtocolTabs: function() {
             const self = this;
-            
+
+            // Disable BIP270 tab if invoice URL missing
+            if (!this.isProtocolAvailable('bip270')) {
+                $('.bsv-protocol-tab[data-protocol="bip270"]').prop('disabled', true).attr('aria-disabled', 'true');
+            }
+
             $('.bsv-protocol-tab, .bsv-wallet-tab').on('click', function() {
                 const $tab = $(this);
                 const protocol = $tab.data('protocol');
-                
-                // Update active state
-                $('.bsv-protocol-tab, .bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
-                $tab.addClass('active').attr('aria-selected', 'true');
-                
-                // Update QR code
-                self.generateQRCode(protocol);
-                
-                // Update protocol description/hint
-                $('.bsv-protocol-description, .bsv-qr-hint').hide();
-                $(`.bsv-protocol-description[data-protocol="${protocol}"], .bsv-qr-hint[data-protocol="${protocol}"]`).show();
+                if (!protocol) {
+                    return;
+                }
+                self.applyProtocolSelection(protocol);
             });
+        },
+
+        isProtocolAvailable: function(protocol) {
+            if (protocol === 'bip270') {
+                return Boolean(bsvPaymentData.invoiceUrl);
+            }
+            return true;
+        },
+
+        applyProtocolSelection: function(protocol, options = {}) {
+            if (!this.isProtocolAvailable(protocol)) {
+                protocol = 'bip21';
+            }
+
+            this.currentProtocol = protocol;
+
+            if (!options.skipStorage) {
+                this.storeProtocolPreference(protocol);
+            }
+
+            // Update tab active state
+            $('.bsv-protocol-tab, .bsv-wallet-tab')
+                .removeClass('active')
+                .attr('aria-selected', 'false');
+
+            $(`.bsv-protocol-tab[data-protocol="${protocol}"], .bsv-wallet-tab[data-protocol="${protocol}"]`)
+                .addClass('active')
+                .attr('aria-selected', 'true');
+
+            // Toggle instruction text based on protocol
+            $('.bsv-instruction-bip21, .bsv-instruction-bip270, .bsv-instruction-address-only').hide();
+            $(`.bsv-instruction-${protocol}`).show();
+
+            // Regenerate QR for selected protocol
+            this.generateQRCode(protocol);
         }
-        END RESTORE FOR v6.1 */
     };
 
     // Initialize on document ready

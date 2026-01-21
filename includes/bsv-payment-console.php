@@ -133,10 +133,7 @@ function BWWC__render_payment_console($order) {
     }
     wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), $brc100_version, true);
     
-    // Include BIP270 invoice endpoint
-    require_once(dirname(__FILE__) . '/bip270-invoice.php');
-    
-    // Generate signed invoice URL for BIP270
+    // Generate signed invoice URL for BIP270 (endpoint loaded in bootstrap.php)
     $invoice_url = BWWC__get_invoice_url($order_id, $order->get_order_key());
     
     // Localize script
@@ -147,7 +144,10 @@ function BWWC__render_payment_console($order) {
         'bsvAddress' => $bsv_address,
         'bsvAmount' => $bsv_amount,
         'orderKey' => $order->get_order_key(),
-        'invoiceUrl' => $invoice_url
+        'invoiceUrl' => $invoice_url,
+        'siteName' => get_bloginfo('name'),
+        'siteUrl' => home_url(),
+        'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', dirname(__FILE__)))
     ));
 
     // Render console
@@ -159,7 +159,11 @@ function BWWC__render_payment_console($order) {
             <div class="bsv-header-left">
                 <h2><?php esc_html_e('Pay with Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'); ?></h2>
                 <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
-                <p class="bsv-instruction"><?php esc_html_e('Scan the QR with a BSV wallet and send the exact amount.', 'sendbsv-bsv-payments-for-woocommerce'); ?></p>
+                <p class="bsv-instruction">
+                    <span class="bsv-instruction-bip21" style="display: none;"><?php esc_html_e('Scan the QR with your BSV wallet. Amount and address are included.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <span class="bsv-instruction-bip270"><?php esc_html_e('Scan the QR to fetch invoice details and complete payment.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <span class="bsv-instruction-address-only" style="display: none;"><?php esc_html_e('Scan the QR to get the address, then manually enter the amount shown below. (HandCash-safe)', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                </p>
                 <?php endif; ?>
             </div>
             <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
@@ -212,19 +216,27 @@ function BWWC__render_payment_console($order) {
                              data-amount="<?php echo esc_attr($bsv_amount); ?>" 
                              data-order-id="<?php echo esc_attr($order_id); ?>"
                              data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
-                             data-protocol="bip21"
+                             data-protocol="bip270"
                              style="display: inline-block;"></div>
                     </div>
                     
-                    <!-- One-line hint below QR -->
-                    <p class="bsv-qr-hint">
-                        <?php esc_html_e('Scan with your BSV wallet', 'sendbsv-bsv-payments-for-woocommerce'); ?>
-                    </p>
+                    <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
+                    <div class="bsv-protocol-tabs" role="tablist" aria-label="<?php esc_attr_e('Payment protocol', 'sendbsv-bsv-payments-for-woocommerce'); ?>">
+                        <button class="bsv-protocol-tab" data-protocol="bip21" role="tab" aria-selected="false" type="button">
+                            <?php esc_html_e('Standard', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                        </button>
+                        <button class="bsv-protocol-tab active" data-protocol="bip270" role="tab" aria-selected="true" type="button">
+                            <?php esc_html_e('Invoice', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                        </button>
+                        <button class="bsv-protocol-tab" data-protocol="address-only" role="tab" aria-selected="false" type="button">
+                            <?php esc_html_e('Address-only', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </div>
 
                 <!-- Right: Details -->
                 <div class="bsv-details-column">
-                
                 <div class="bsv-address-section">
             <div class="bsv-address-label"><?php esc_html_e('Payment Address', 'sendbsv-bsv-payments-for-woocommerce'); ?></div>
             <div class="bsv-address-wrapper">

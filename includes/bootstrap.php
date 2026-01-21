@@ -28,3 +28,7 @@ require_once dirname(__FILE__) . '/providers/bitails.php';
 require_once dirname(__FILE__) . '/payment-state.php';
 require_once dirname(__FILE__) . '/payment-check.php';
 require_once dirname(__FILE__) . '/expiry.php';
+
+// Load BIP270 protocol endpoints
+require_once dirname(__FILE__) . '/bip270-invoice.php';
+require_once dirname(__FILE__) . '/bip270-payment-receiver.php';

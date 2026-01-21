@@ -33,8 +33,24 @@ function BWWC__get_logger()
  */
 function BWWC__is_debug_mode()
 {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
     $settings = BWWC__get_settings();
-    return !empty($settings['debug_mode']);
+    $enabled = !empty($settings['debug_mode']);
+
+    if (defined('BWWC_DEBUG')) {
+        $enabled = $enabled || (bool) BWWC_DEBUG;
+    }
+
+    if (defined('WP_DEBUG') && WP_DEBUG) {
+        $enabled = true;
+    }
+
+    $cached = $enabled;
+    return $cached;
 }
 
 /**

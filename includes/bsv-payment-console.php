@@ -16,15 +16,42 @@ function BWWC__render_payment_console($order) {
     }
 
     $order_id = $order->get_id();
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-    $received_sats = get_post_meta($order_id, 'received_sats', true);
-    $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
-    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
-    $txids = get_post_meta($order_id, 'txids', true);
-    $confirmations = get_post_meta($order_id, 'best_confirmations', true);
+    $bsv_address = $order->get_meta('_bwwc_address', true);
+    if (empty($bsv_address)) {
+        $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    }
+    $bsv_amount = $order->get_meta('_bwwc_order_total_in_btc', true);
+    if (empty($bsv_amount)) {
+        $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
+    }
+    $expected_sats = $order->get_meta('_bwwc_expected_sats', true);
+    if (empty($expected_sats)) {
+        $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+    }
+    $received_sats = $order->get_meta('_bwwc_received_sats', true);
+    if (empty($received_sats)) {
+        $received_sats = get_post_meta($order_id, 'received_sats', true);
+    }
+    $confirmed_sats = $order->get_meta('_bwwc_confirmed_sats', true);
+    if (empty($confirmed_sats)) {
+        $confirmed_sats = get_post_meta($order_id, 'confirmed_sats', true);
+    }
+    $expires_at = $order->get_meta('_bwwc_expires_at', true);
+    if (empty($expires_at)) {
+        $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+    }
+    $payment_state = BWWC__get_payment_state($order_id);
+    $txids = $order->get_meta('_bwwc_txids', true);
+    if (empty($txids)) {
+        $txids_str = get_post_meta($order_id, 'txids', true);
+        if (is_string($txids_str)) {
+            $txids = array_filter(explode(',', $txids_str));
+        }
+    }
+    $confirmations = $order->get_meta('_bwwc_best_confirmations', true);
+    if (empty($confirmations)) {
+        $confirmations = get_post_meta($order_id, 'best_confirmations', true);
+    }
     
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
@@ -335,6 +362,20 @@ function BWWC__render_payment_console($order) {
                     <span class="bsv-detail-value"><?php echo esc_html(number_format($confirmed_sats, 0, '.', ',')); ?> sats</span>
                 </div>
                 <?php endif; ?>
+            </div>
+            <?php endif; ?>
+
+            <!-- Receipt download -->
+            <?php
+            $has_raw_tx = $order->get_meta('_bwwc_raw_tx', true);
+            $has_beef = $order->get_meta('_bwwc_beef', true);
+            if ($has_raw_tx || $has_beef):
+                $receipt_url = BWWC__get_receipt_url($order_id, $order->get_order_key());
+            ?>
+            <div class="bsv-receipt-download" style="text-align: center; margin: 15px 0;">
+                <a href="<?php echo esc_url($receipt_url); ?>" download class="bsv-link-btn">
+                    <?php esc_html_e('Download Receipt', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                </a>
             </div>
             <?php endif; ?>
             

@@ -266,9 +266,9 @@ function BWWC__generate_invoice_signature($order_id, $order_key) {
 }
 
 /**
- * Generate signed invoice URL for BIP270 QR code
+ * Generate signed receipt download URL
  */
-function BWWC__get_invoice_url($order_id, $order_key) {
+function BWWC__get_receipt_url($order_id, $order_key) {
     $signature = BWWC__generate_invoice_signature($order_id, $order_key);
     
     $params = array(
@@ -277,7 +277,84 @@ function BWWC__get_invoice_url($order_id, $order_key) {
         'sig' => $signature
     );
     
-    return add_query_arg($params, home_url('/wc-api/bsv_invoice'));
+    return add_query_arg($params, home_url('/wc-api/bsv_receipt'));
+}
+
+/**
+ * Serve receipt download
+ */
+function BWWC__serve_receipt_download() {
+    BWWC__log_bip270_invoice('Incoming receipt download request', array());
+
+    $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
+    $order_key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+    $signature = isset($_GET['sig']) ? sanitize_text_field(wp_unslash($_GET['sig'])) : '';
+
+    if (!$order_id || !$order_key || !$signature) {
+        BWWC__log_bip270_invoice('Receipt download request missing parameters', array());
+        wp_die(esc_html__('Invalid request', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 400));
+    }
+
+    // Load order
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        BWWC__log_bip270_invoice('Receipt download failed: order not found', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Order not found', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 404));
+    }
+
+    // Verify order key
+    if ($order->get_order_key() !== $order_key) {
+        BWWC__log_bip270_invoice('Receipt download failed: invalid order key', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Invalid order key', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 403));
+    }
+
+    // Verify signature
+    $expected_sig = BWWC__generate_invoice_signature($order_id, $order_key);
+    if (!hash_equals($expected_sig, $signature)) {
+        BWWC__log_bip270_invoice('Receipt download failed: invalid signature', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Invalid signature', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 403));
+    }
+
+    // Get receipt data
+    $raw_tx = $order->get_meta('_bwwc_raw_tx', true);
+    $beef = $order->get_meta('_bwwc_beef', true);
+
+    if (!$raw_tx && !$beef) {
+        BWWC__log_bip270_invoice('Receipt download failed: no receipt data', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('No receipt available', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 404));
+    }
+
+    // Serve the receipt
+    if ($beef) {
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="receipt-' . $order_id . '.json"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        echo $beef;
+    } else {
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="receipt-' . $order_id . '.hex"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        echo $raw_tx;
+    }
+
+    BWWC__log_bip270_invoice('Served receipt download', array(
+        'orderId' => $order_id,
+        'type' => $beef ? 'beef' : 'raw_tx'
+    ));
+
+    exit;
 }
 
 /**

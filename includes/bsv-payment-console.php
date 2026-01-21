@@ -147,7 +147,8 @@ function BWWC__render_payment_console($order) {
         'invoiceUrl' => $invoice_url,
         'siteName' => get_bloginfo('name'),
         'siteUrl' => home_url(),
-        'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', dirname(__FILE__)))
+        'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', dirname(__FILE__))),
+        'debugEnabled' => BWWC__is_debug_mode(),
     ));
 
     // Render console

@@ -15,6 +15,7 @@
         maxPollingDuration: 7200000, // 2 hours in milliseconds
         pollCount: 0,
         reloadScheduled: false,
+        debugEnabled: false,
 
         init: function() {
             // Get order data from DOM
@@ -24,6 +25,7 @@
             this.orderId = consoleEl.data('order-id') || bsvPaymentData.orderId || null;
             this.orderKey = consoleEl.data('order-key') || bsvPaymentData.orderKey || null;
             this.pollingDelay = (consoleEl.data('polling-interval') || 10) * 1000;
+            this.debugEnabled = Boolean(bsvPaymentData && bsvPaymentData.debugEnabled);
 
             if (!this.orderId || !this.orderKey) {
                 console.warn('BSV Payment Console: Missing order ID or key');
@@ -49,10 +51,16 @@
                         this.pollingStartTime = Date.now();
                         this.startPolling();
                     } else {
-                        console.log('BSV: Order in final state, polling not started - ' + shouldStop.reason);
+                        this.debugLog('Order in final state, polling not started -', shouldStop.reason);
                     }
                 }
             });
+        },
+
+        debugLog: function(...args) {
+            if (this.debugEnabled && console && console.log) {
+                console.log('BSV:', ...args);
+            }
         },
 
         bindEvents: function() {
@@ -200,7 +208,7 @@
                 // Check if polling has exceeded max duration (2 hours)
                 const elapsed = Date.now() - this.pollingStartTime;
                 if (elapsed > this.maxPollingDuration) {
-                    console.log('BSV: Polling stopped after 2 hours');
+                    this.debugLog('Polling stopped after 2 hours');
                     this.stopPolling();
                     return;
                 }
@@ -264,7 +272,7 @@
             // Stop polling on final states
             const shouldStopPolling = this.shouldStopPolling(data);
             if (shouldStopPolling.stop) {
-                console.log('BSV: Polling stopped - ' + shouldStopPolling.reason);
+                this.debugLog('Polling stopped -', shouldStopPolling.reason);
                 this.stopPolling();
             }
 
@@ -286,7 +294,7 @@
             // CRITICAL: Check order_status FIRST - this is the source of truth
             // WooCommerce order status indicates actual order state
             if (data.order_status === 'completed' || data.order_status === 'processing') {
-                console.log('BSV: Stopping - order status is ' + data.order_status);
+                this.debugLog('Stopping - order status is', data.order_status);
                 return { stop: true, reason: 'order ' + data.order_status };
             }
             
@@ -298,7 +306,12 @@
             const confirmedSats = parseInt(data.confirmed_sats) || 0;
             
             // Log current state for debugging
-            console.log('BSV: Poll check - state=' + data.payment_state + ' confirmed=' + confirmedSats + '/' + expectedSats + ' confs=' + current + '/' + required + ' order_status=' + data.order_status);
+            this.debugLog('Poll check', {
+                state: data.payment_state,
+                confirmed: confirmedSats + '/' + expectedSats,
+                confirmations: current + '/' + required,
+                orderStatus: data.order_status
+            });
             
             // Stop if payment is confirmed AND order should be completed
             // This catches cases where payment is confirmed but order status hasn't updated yet
@@ -306,13 +319,13 @@
                 confirmedSats >= expectedSats && 
                 current >= required && 
                 expectedSats > 0) {
-                console.log('BSV: Stopping - payment fully confirmed');
+                this.debugLog('Stopping - payment fully confirmed');
                 return { stop: true, reason: 'payment confirmed (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
             }
             
             // Stop if expired with no funds received
             if (data.payment_state === 'expired' && receivedSats == 0) {
-                console.log('BSV: Stopping - expired with no payment');
+                this.debugLog('Stopping - expired with no payment');
                 return { stop: true, reason: 'payment window expired with no payment' };
             }
             
@@ -426,7 +439,7 @@
                 '</div>';
             
             statusStrip.after(stepperHtml);
-            console.log('BSV: Stepper created with ' + maxDots + ' dots');
+            this.debugLog('Stepper created with', maxDots, 'dots');
         },
         
         updateConfirmations: function(data) {
@@ -446,7 +459,7 @@
             
             // If stepper doesn't exist but should show, create it
             if (!confEl.length && state !== 'waiting') {
-                console.log('BSV: Creating stepper dynamically for state: ' + state);
+                this.debugLog('Creating stepper dynamically for state:', state);
                 this.createStepper(required);
             }
             
@@ -586,8 +599,12 @@
                 return 'bip270';
             }
 
+            if (stored === 'address-only') {
+                return 'address-only';
+            }
+
             if (!this.isProtocolAvailable('bip270')) {
-                return 'bip21';
+                return stored === 'bip21' ? 'bip21' : (stored === 'address-only' ? 'address-only' : 'bip21');
             }
 
             // Default to invoice for better UX on supporting wallets
@@ -597,13 +614,13 @@
         getStoredProtocol: function() {
             try {
                 const stored = window.localStorage.getItem('bsv_protocol_preference');
-                if (stored && (stored === 'bip21' || stored === 'bip270')) {
+                if (stored && (stored === 'bip21' || stored === 'bip270' || stored === 'address-only')) {
                     return stored;
                 }
             } catch (err) {
                 // Ignore storage errors (private mode, etc.)
             }
-            return 'bip21';
+            return this.isProtocolAvailable('bip270') ? 'bip270' : 'bip21';
         },
 
         storeProtocolPreference: function(protocol) {
@@ -633,16 +650,16 @@
             if (protocol === 'bip270' && bsvPaymentData.invoiceUrl) {
                 // BIP270 DPP format: pay:?r=<HTTPS_URL_TO_PAYMENTTERMS>
                 qrPayload = `pay:?r=${bsvPaymentData.invoiceUrl}`;
-                console.log('BSV: Generating BIP270 DPP invoice QR (pay:?r=):', qrPayload);
+                this.debugLog('Generating BIP270 DPP invoice QR (pay:?r=)', qrPayload);
             } else if (protocol === 'address-only') {
                 // Raw address only - HandCash compatible
                 // User must manually enter amount after scanning
                 qrPayload = address;
-                console.log('BSV: Generating raw address QR (HandCash-safe):', qrPayload);
+                this.debugLog('Generating raw address QR (HandCash-safe)', qrPayload);
             } else {
                 // BIP21 Standard format: bitcoin:<address>?sv&amount=<bsv>
                 qrPayload = `bitcoin:${address}?sv&amount=${amount}`;
-                console.log('BSV: Generating BIP21 Standard QR:', qrPayload);
+                this.debugLog('Generating BIP21 Standard QR', qrPayload);
             }
 
             try {

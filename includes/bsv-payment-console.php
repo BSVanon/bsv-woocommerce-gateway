@@ -560,3 +560,51 @@ function BWWC__ajax_check_payment_status() {
 }
 add_action('wp_ajax_bsv_check_payment_status', 'BWWC__ajax_check_payment_status');
 add_action('wp_ajax_nopriv_bsv_check_payment_status', 'BWWC__ajax_check_payment_status');
+
+/**
+ * AJAX handler for setting payment state to detected (BRC-100 instant feedback)
+ */
+function BWWC__ajax_set_payment_detected() {
+    $order_id = isset($_POST['order_id']) ? absint($_POST['order_id']) : 0;
+    $order_key = isset($_POST['order_key']) ? sanitize_text_field(wp_unslash($_POST['order_key'])) : '';
+    
+    $order = wc_get_order($order_id);
+    if (!$order || $order->get_order_key() !== $order_key) {
+        wp_send_json_error(array('message' => 'Invalid order'));
+        return;
+    }
+    
+    BWWC__set_payment_state($order_id, 'detected', 'BRC-100 payment submitted');
+    wp_send_json_success();
+}
+add_action('wp_ajax_bsv_set_payment_detected', 'BWWC__ajax_set_payment_detected');
+add_action('wp_ajax_nopriv_bsv_set_payment_detected', 'BWWC__ajax_set_payment_detected');
+
+/**
+ * AJAX handler for storing richer receipts (BRC-100)
+ */
+function BWWC__ajax_store_receipt() {
+    $order_id = isset($_POST['order_id']) ? absint($_POST['order_id']) : 0;
+    $order_key = isset($_POST['order_key']) ? sanitize_text_field(wp_unslash($_POST['order_key'])) : '';
+    
+    $order = wc_get_order($order_id);
+    if (!$order || $order->get_order_key() !== $order_key) {
+        wp_send_json_error(array('message' => 'Invalid order'));
+        return;
+    }
+    
+    if (isset($_POST['raw_tx'])) {
+        $order->update_meta_data('_bwwc_raw_tx', sanitize_text_field(wp_unslash($_POST['raw_tx'])));
+    }
+    if (isset($_POST['beef'])) {
+        $order->update_meta_data('_bwwc_beef', sanitize_text_field(wp_unslash($_POST['beef'])));
+    }
+    if (isset($_POST['txid'])) {
+        $order->update_meta_data('_bwwc_txid', sanitize_text_field(wp_unslash($_POST['txid'])));
+    }
+    
+    $order->save();
+    wp_send_json_success();
+}
+add_action('wp_ajax_bsv_store_receipt', 'BWWC__ajax_store_receipt');
+add_action('wp_ajax_nopriv_bsv_store_receipt', 'BWWC__ajax_store_receipt');

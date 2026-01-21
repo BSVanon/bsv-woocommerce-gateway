@@ -153,8 +153,14 @@
             // Build BRC-1 Transaction Creation request
             const brc1Request = {
                 description: `WooCommerce Order #${orderId} Payment`,
+                merchantData: {
+                    orderId: orderId,
+                    orderKey: bsvPaymentData.orderKey,
+                    expectedSats: amountSats,
+                    nonce: Math.random().toString(36).substr(2, 9)
+                },
                 outputs: [{
-                    satoshis: amountSats,
+                    satoshis: amountSats.toString(),
                     lockingScript: lockingScript,
                     outputDescription: `Order #${orderId} payment`
                 }]
@@ -177,6 +183,29 @@
             const txid = this.extractTxid(result);
             if (txid) {
                 console.log('[BRC-7] ✅ Payment successful, txid:', txid);
+                
+                // Store richer receipt if available
+                if (result.rawTx || result.beef) {
+                    $.ajax({
+                        url: bsvPaymentData.statusEndpoint.replace('bsv_check_payment_status', 'bsv_store_receipt'),
+                        method: 'POST',
+                        data: {
+                            order_id: bsvPaymentData.orderId,
+                            order_key: bsvPaymentData.orderKey,
+                            raw_tx: result.rawTx,
+                            beef: result.beef,
+                            txid: txid,
+                            nonce: bsvPaymentData.nonce
+                        },
+                        success: function() {
+                            console.log('[BRC-7] Receipt stored');
+                        },
+                        error: function() {
+                            console.warn('[BRC-7] Failed to store receipt');
+                        }
+                    });
+                }
+                
                 this.showSuccess(txid);
             } else {
                 throw new Error('Payment created but no transaction ID returned');
@@ -213,6 +242,7 @@
                 
                 const onMessage = (e) => {
                     if (!e.isTrusted) return;
+                    if (e.source !== target) return;
                     const d = e.data || {};
                     if (d.type !== 'CWI' || d.isInvocation || d.id !== id) return;
                     
@@ -463,21 +493,6 @@
                 if (firstSend.txid) return firstSend.txid;
             }
 
-            console.warn('[BRC-7] Could not extract txid from result:', result);
-            return null;
-        },
-
-        showSuccess: function(txid) {
-            const message = `Payment sent successfully!\n\nTransaction ID: ${txid}\n\nThe page will refresh to check payment status.`;
-            alert(message);
-            
-            // Trigger payment check and reload
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
-        },
-
-        showError: function(message) {
             alert(`Payment Error\n\n${message}\n\nPlease try again or use the QR code to pay with a mobile wallet.`);
         }
     };

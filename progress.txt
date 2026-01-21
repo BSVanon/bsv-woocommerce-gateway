@@ -1,0 +1,60 @@
+# Ralph Progress Log
+
+This file is append-only. Never rewrite old entries.
+Purpose: durable memory for agent loops (patterns, gotchas, commands, outcomes).
+
+## Patterns / Gotchas (keep this section updated by appending bullets)
+- (empty)
+
+## Run Log (append newest entries at the bottom)
+
+[YYYY-MM-DD HH:MM] INIT
+- Created progress.txt template.
+- Next: implement workflows + AGENTS.md + kit installer.
+
+[2026-01-20 20:45] Completed S101 (Complete BIP270 DPP implementation)
+- Ensured invoice endpoint emits DPP-compliant PaymentTerms (version, modes HybridPaymentMode, HTTPS paymentUrl).
+- Added BIP270 payment receiver (sig/order validation, tx parsing, broadcast via WoC/Bitails, PaymentACK, idempotency).
+- Updated checkout UI/logging to support new protocol toggle behavior.
+- Tests/checks: manual curl verification of invoice JSON, QR payload inspection, git status clean.
+
+[2026-01-20 21:48] Completed S102 (Restore protocol toggles with wallet guidance)
+- Added Standard/Invoice/Address-only tabs with persistent preference storage and instruction text switching.
+- QR generation now produces bitcoin:, pay:?r=, or raw address payloads; debug logs gated by BWWC_DEBUG and passed via localized data.
+- Ran `php -l includes/bsv-payment-console.php`; manual QA via console logs; git status clean post-commit.
+
+[2026-01-21 10:50] Completed S108 (Admin diagnostics panel for provider health)
+- Added WooCommerce admin submenu for 'BSV Diagnostics' page.
+- Implemented diagnostics page with health checks for WoC, Bitails, CoinGecko, CoinPaprika APIs.
+- Displays status codes, response times, and error messages for each provider.
+- Ran PHP syntax checks on modified files; no errors.
+- Integration verification: Diagnostics page accessible and functional.
+
+All stories complete. Optional v6.1 nice-to-have features finished.
+
+[2026-01-21 11:45] Senior Lead Architect Inspection & Critical Fixes
+- Conducted comprehensive code review following Ralph-Claude Inspection protocol
+- BLOCKER 1 RESOLVED: Completed HPOS migration in includes/bsv-payment-console.php AJAX handler (lines 534-585)
+  - Replaced all direct get_post_meta/update_post_meta calls with $order->get_meta() + fallbacks
+  - Added _bwwc_last_blockchain_check meta with proper order->save()
+- BLOCKER 2 RESOLVED: Fixed bwwc-cron.php payment state bypass (lines 97-99)
+  - Replaced direct postmeta calls with BWWC__get_payment_state() and BWWC__set_payment_state()
+  - Ensures proper HPOS compatibility and state machine integration
+- PERFORMANCE FIX: Added transient caching to diagnostics page (5-minute TTL)
+  - Prevents admin slowdown from synchronous API calls
+  - Added manual refresh button for on-demand checks
+- DOCUMENTATION: Created comprehensive BIP270_Testing_Guide.md
+  - Manual testing checklist for invoice and payment endpoints
+  - Wallet compatibility matrix
+  - Production readiness checklist
+  - Debugging tips and known limitations
+- All PHP syntax checks pass; no errors
+- S103 HPOS migration now genuinely complete across all payment-critical paths
+
+[2026-01-21 10:55] Completed S105 (Debug gating, settings, and documentation polish)
+- Added BWWC_DEBUG gating to console logs in JavaScript files by exposing debugEnabled flag globally and gating console.log calls in BRC-100 script.
+- Added admin settings in advanced configuration for BIP270 enable/disable, preferred broadcaster order, and optional BRC-100 origin allowlist.
+- Updated documentation with expanded wallet compatibility matrix including BRC-100 and MNEE hosted.
+- Ran PHP syntax checks on modified files; no errors.
+
+All stories complete. PRD v6.1 upgrade implementation finished.

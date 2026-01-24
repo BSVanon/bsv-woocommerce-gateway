@@ -139,14 +139,14 @@ function BWWC__check_payment_for_order($order_id) {
     
     // Consistent state machine logic
     if ($total_sats == 0) {
-        BWWC__set_payment_state($order_id, 'waiting', 'Payment check: no payment detected');
+        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_WAITING, 'Payment check: no payment detected');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = waiting (no payment detected)");
         $order->save();
         return false;
     }
 
     if ($total_sats < $expected_sats) {
-        BWWC__set_payment_state($order_id, 'underpaid', 'Payment check: underpayment detected');
+        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_UNDERPAID, 'Payment check: underpayment detected');
         BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = underpaid (received {$total_sats} of {$expected_sats} sats)");
         $order->save();
         return false;
@@ -154,12 +154,12 @@ function BWWC__check_payment_for_order($order_id) {
 
     // Full amount received - check if confirmed
     if ($confirmed_sats >= $expected_sats && $best_confirmations >= $required_confirmations) {
-        BWWC__set_payment_state($order_id, 'confirmed', 'Payment check: payment confirmed');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = confirmed (confirmed {$confirmed_sats} sats, {$best_confirmations} confirmations)");
+        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_VERIFIED, 'Payment check: payment verified');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = verified (confirmed {$confirmed_sats} sats, {$best_confirmations} confirmations)");
         $order->save();
     } else {
-        BWWC__set_payment_state($order_id, 'pending', 'Payment check: payment pending confirmation');
-        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = pending (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$best_confirmations}/{$required_confirmations} confirmations)");
+        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'Payment check: payment detected, awaiting confirmations');
+        BWWC__log_event(__FILE__, __LINE__, "Payment check: Order {$order_id} state = detected (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$best_confirmations}/{$required_confirmations} confirmations)");
         $order->save();
         return true;
     }
@@ -185,8 +185,8 @@ function BWWC__check_payment_for_order($order_id) {
         }
         
         if ($address_record && $address_record['status'] !== 'used') {
-            // Update payment state to confirmed
-            BWWC__set_payment_state($order_id, 'confirmed', 'Payment check: confirmed');
+            // Update payment state to verified
+            BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_VERIFIED, 'Payment check: verified');
             
             // Update address metadata
             $address_meta = BWWC_unserialize_address_meta($address_record['address_meta']);

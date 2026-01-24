@@ -9,7 +9,7 @@ https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
 //---------------------------------------------------------------------------
 // Global definitions
 if (!defined('BWWC_PLUGIN_NAME')) {
-    define('BWWC_VERSION', '6.0.0');
+    define('BWWC_VERSION', '6.1.0');
 
     //-----------------------------------------------
     define('BWWC_EDITION', 'BSV');

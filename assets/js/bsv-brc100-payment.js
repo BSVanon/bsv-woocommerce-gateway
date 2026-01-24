@@ -160,7 +160,7 @@
                     nonce: Math.random().toString(36).substr(2, 9)
                 },
                 outputs: [{
-                    satoshis: amountSats.toString(),
+                    satoshis: parseInt(amountSats),
                     lockingScript: lockingScript,
                     outputDescription: `Order #${orderId} payment`
                 }]
@@ -493,7 +493,39 @@
                 if (firstSend.txid) return firstSend.txid;
             }
 
-            alert(`Payment Error\n\n${message}\n\nPlease try again or use the QR code to pay with a mobile wallet.`);
+            return null;
+        },
+
+        showError: function(message) {
+            // Update status strip with error
+            const $status = $('.bsv-status-strip');
+            if ($status.length) {
+                $status.removeClass('status-waiting status-detected status-confirmed')
+                    .addClass('status-error')
+                    .find('.bsv-status-message')
+                    .text(message);
+            } else {
+                alert(`Payment Error\n\n${message}\n\nPlease try again or use the QR code to pay with a mobile wallet.`);
+            }
+        },
+
+        showSuccess: function(txid) {
+            // Hide wallet button, show success message
+            $('.bsv-wallet-payment').hide();
+            
+            // Update status strip
+            const $status = $('.bsv-status-strip');
+            if ($status.length) {
+                $status.removeClass('status-waiting status-error')
+                    .addClass('status-detected')
+                    .find('.bsv-status-message')
+                    .text('Payment submitted! Waiting for confirmation...');
+            }
+            
+            // Trigger status check
+            if (window.BSVPaymentConsole && typeof window.BSVPaymentConsole.checkStatus === 'function') {
+                window.BSVPaymentConsole.checkStatus();
+            }
         }
     };
 

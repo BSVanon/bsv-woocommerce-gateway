@@ -95,9 +95,9 @@ function BWWC_cron_job_worker()
                 if ($order && in_array($order->get_status(), array('completed', 'processing', 'cancelled', 'refunded', 'failed'))) {
                     // Ensure payment_state reflects final status to stop frontend polling
                     $current_payment_state = BWWC__get_payment_state($last_order_info['order_id']);
-                    if (($order->get_status() === 'completed' || $order->get_status() === 'processing') && $current_payment_state !== 'confirmed') {
-                        BWWC__set_payment_state($last_order_info['order_id'], 'confirmed', 'Cron detected completed order');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Updated payment_state to 'confirmed' for order {$last_order_info['order_id']} (status: {$order->get_status()})");
+                    if (($order->get_status() === 'completed' || $order->get_status() === 'processing') && $current_payment_state !== BWWC_PAYMENT_STATE_VERIFIED) {
+                        BWWC__set_payment_state($last_order_info['order_id'], BWWC_PAYMENT_STATE_VERIFIED, 'Cron detected completed order');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Updated payment_state to 'verified' for order {$last_order_info['order_id']} (status: {$order->get_status()})");
                     }
                     
                     // Mark address as used and skip further processing
@@ -206,14 +206,14 @@ function BWWC_cron_job_worker()
 
                     // Determine payment state using consistent logic
                     if ($total_sats < $expected_sats) {
-                        BWWC__set_payment_state($order_id, 'underpaid', 'Cron detected underpayment');
+                        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_UNDERPAID, 'Cron detected underpayment');
                         BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'underpaid' for order {$order_id} (received {$total_sats} of {$expected_sats} sats)");
                     } elseif ($confirmed_sats >= $expected_sats && $max_confirmations >= $confirmations_required) {
-                        BWWC__set_payment_state($order_id, 'confirmed', 'Cron confirmed payment');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$order_id} (confirmed {$confirmed_sats} sats, {$max_confirmations} confirmations)");
+                        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_VERIFIED, 'Cron confirmed payment');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'verified' for order {$order_id} (confirmed {$confirmed_sats} sats, {$max_confirmations} confirmations)");
                     } else {
-                        BWWC__set_payment_state($order_id, 'pending', 'Cron detected pending payment');
-                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'pending' for order {$order_id} (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$max_confirmations}/{$confirmations_required} confirmations)");
+                        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'Cron detected pending payment');
+                        BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'detected' for order {$order_id} (total {$total_sats} sats, confirmed {$confirmed_sats} sats, {$max_confirmations}/{$confirmations_required} confirmations)");
                     }
                     $order->save();
                 } else {
@@ -221,8 +221,8 @@ function BWWC_cron_job_worker()
                     $order->update_meta_data('_bwwc_received_sats', 0);
                     $order->update_meta_data('_bwwc_confirmed_sats', 0);
                     $current_state = BWWC__get_payment_state($last_order_info['order_id']);
-                    if (in_array($current_state, array('pending', 'underpaid'))) {
-                        BWWC__set_payment_state($last_order_info['order_id'], 'waiting', 'Cron: no funds detected');
+                    if (in_array($current_state, array(BWWC_PAYMENT_STATE_DETECTED, BWWC_PAYMENT_STATE_UNDERPAID))) {
+                        BWWC__set_payment_state($last_order_info['order_id'], BWWC_PAYMENT_STATE_WAITING, 'Cron: no funds detected');
                     }
                     $order->save();
                 }
@@ -258,10 +258,10 @@ function BWWC_cron_job_worker()
                     // Last order was fully paid! Complete it...
                     BWWC__log_event(__FILE__, __LINE__, "Cron job: NOTE: Full payment for order ID '{$last_order_info['order_id']}' detected at address: '{$row_for_balance_check['btc_address']}' (BTC '$received_btc'). Total was required for this order: '$expected_btc'. Processing order ...");
 
-                    // Update payment state to confirmed
-                    BWWC__set_payment_state($last_order_info['order_id'], 'confirmed', 'Cron: full payment confirmed');
+                    // Update payment state to verified
+                    BWWC__set_payment_state($last_order_info['order_id'], BWWC_PAYMENT_STATE_VERIFIED, 'Cron: full payment verified');
                     $order->update_meta_data('_bwwc_best_confirmations', 1);
-                    BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'confirmed' for order {$last_order_info['order_id']} - processing payment completion");
+                    BWWC__log_event(__FILE__, __LINE__, "Cron: Set payment_state to 'verified' for order {$last_order_info['order_id']} - processing payment completion");
                     $order->save();
 
                     // Update order' meta info

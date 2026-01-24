@@ -165,12 +165,10 @@ function BWWC__receive_bip270_payment() {
         $order->update_meta_data('_bwwc_last_payment_activity', time());
 
         if ($paid_sats > $expected_sats) {
-            BWWC__set_payment_state($order_id, 'overpaid', 'BIP270 overpayment detected');
+            BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_OVERPAID, 'BIP270 overpayment detected');
         } else {
-            BWWC__set_payment_state($order_id, 'pending', 'BIP270 payment detected');
+            BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'BIP270 payment detected');
         }
-
-        BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'BIP270 payment submission');
         $order->add_order_note(
             sprintf(
                 /* translators: 1: txid, 2: satoshis */

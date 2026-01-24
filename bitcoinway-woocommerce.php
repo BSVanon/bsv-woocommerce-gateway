@@ -3,7 +3,7 @@
  * Plugin Name: SendBSV BSV Payments for WooCommerce
  * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
- * Version: 6.0.0
+ * Version: 6.1.0
  * Author: BSVanon
  * Author URI: https://sendbsv.com
  * License: GPL-2.0-or-later
@@ -24,10 +24,11 @@ if (!defined('ABSPATH')) {
 }
 
 
-// Declare HPOS compatibility
+// Declare WooCommerce feature compatibilities - MUST be called inside before_woocommerce_init hook
 add_action('before_woocommerce_init', function() {
     if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
     }
 });
 

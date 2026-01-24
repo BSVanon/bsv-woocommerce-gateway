@@ -298,17 +298,6 @@ function BWWC__render_general_settings_page_html()
         </tr>
 
         <tr valign="top">
-          <th scope="row">Auto-complete paid orders:</th>
-          <td>
-            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php checked($bwwc_settings['autocomplete_paid_orders'], 1); ?> />
-            <p class="description">If checked - fully paid order will be marked as 'completed' and '<i>Your order is complete</i>' email will be immediately delivered to customer.
-            	<br />If unchecked: store admin will need to mark order as completed manually - assuming extra time needed to ship physical product after payment is received.
-            	<br />Note: virtual/downloadable products will automatically complete upon receiving full payment (so this setting does not have effect in this case).
-            </p>
-          </td>
-        </tr>
-
-        <tr valign="top">
             <th scope="row">Cron job type:</th>
             <td>
               <p class="description" style="padding: 10px; background: #f0f0f1; border-left: 4px solid #2271b1;">
@@ -340,6 +329,17 @@ function BWWC__render_general_settings_page_html()
             <input type="text" name="email_instructions_intro" value="<?php echo esc_attr(isset($bwwc_settings['email_instructions_intro']) ? $bwwc_settings['email_instructions_intro'] : ''); ?>" style="width: 75%;" placeholder="Complete your Bitcoin SV payment using the details below:" />
             <p class="description">Custom introductory text for email payment instructions. Leave empty to use default message.
               <br />Default: "Complete your Bitcoin SV payment using the details below:"
+            </p>
+          </td>
+        </tr>
+
+        <tr valign="top">
+          <th scope="row">Auto-complete paid orders:</th>
+          <td>
+            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php checked($bwwc_settings['autocomplete_paid_orders'], 1); ?> />
+            <p class="description">If checked - fully paid order will be marked as 'completed' and '<i>Your order is complete</i>' email will be immediately delivered to customer.
+            	<br />If unchecked: store admin will need to mark order as completed manually - assuming extra time needed to ship physical product after payment is received.
+            	<br />Note: virtual/downloadable products will automatically complete upon receiving full payment (so this setting does not have effect in this case).
             </p>
           </td>
         </tr>
@@ -449,14 +449,6 @@ function BWWC__render_advanced_settings_page_html()
  
  <table class="form-table">
     <tr valign="top">
-        <th scope="row">Delete Data on Uninstall</th>
-        <td>
-            <input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], '1'); ?> />
-            <span class="description">Remove all plugin data when uninstalling. <strong>Warning:</strong> This will delete payment history!</span>
-        </td>
-    </tr>
-    
-    <tr valign="top">
         <th scope="row">Payment Timeout</th>
         <td>
             <input type="text" name="assigned_address_expires_in_mins" value="<?php echo esc_attr($bwwc_settings['assigned_address_expires_in_mins']); ?>" size="6" />
@@ -467,8 +459,12 @@ function BWWC__render_advanced_settings_page_html()
     <tr valign="top">
       <th scope="row">BIP270 Payment Protocol</th>
       <td>
+        <input type="hidden" name="bwwc_settings[bip270_enabled]" value="0" />
         <label><input type="checkbox" name="bwwc_settings[bip270_enabled]" value="1" <?php checked($bwwc_settings['bip270_enabled'], '1'); ?> /> Enable BIP270 invoice payments</label>
-        <p class="description">Allow customers to use BIP270 Direct Payment Protocol for invoice-based payments.</p>
+        <p class="description">
+          When enabled, the checkout console shows the “Invoice” tab and a QR code with a signed invoice URL for wallets that support BIP270.
+          If unchecked, customers only see the classic Standard (BIP21) and Address tabs.
+        </p>
       </td>
     </tr>
 
@@ -484,18 +480,16 @@ function BWWC__render_advanced_settings_page_html()
     </tr>
 
     <tr valign="top">
-      <th scope="row">BRC-100 Origin Allowlist</th>
-      <td>
-        <textarea name="bwwc_settings[brc100_origin_allowlist]" rows="3" cols="50"><?php echo esc_textarea($bwwc_settings['brc100_origin_allowlist']); ?></textarea>
-        <p class="description">Optional: Comma-separated list of allowed origins for BRC-100 wallet postMessage communications. Leave empty to allow all.</p>
-      </td>
-    </tr>
-
-    <tr valign="top">
       <th scope="row">Payment Verified Webhook URL</th>
       <td>
         <input type="url" name="bwwc_settings[webhook_url]" value="<?php echo esc_attr($bwwc_settings['webhook_url']); ?>" style="width: 75%;" placeholder="https://yourapp.com/webhook/bsv-payment" />
-        <p class="description">Optional: URL to receive webhook notifications when payments are verified. Leave empty to disable.</p>
+        <p class="description">
+          <strong>Integration:</strong> HTTPS endpoint that receives a JSON webhook when an order payment is verified (reaches required confirmations).
+          <br /><strong>Use cases:</strong> Trigger external fulfillment systems, update inventory in external databases, send custom notifications, or integrate with third-party services.
+          <br /><strong>Payload includes:</strong> <code>order_id</code>, <code>order_key</code>, <code>amount_sats</code>, <code>txids</code>, and <code>timestamp</code>.
+          <br /><strong>Security:</strong> Webhook is only sent when both this URL <em>and</em> the secret below are configured. Payloads are signed with HMAC-SHA256 in the <code>X-BSV-Signature</code> header.
+          <br /><em>Leave both fields blank to disable webhooks entirely.</em>
+        </p>
       </td>
     </tr>
 
@@ -503,7 +497,12 @@ function BWWC__render_advanced_settings_page_html()
       <th scope="row">Webhook Secret</th>
       <td>
         <input type="password" name="bwwc_settings[webhook_secret]" value="<?php echo esc_attr($bwwc_settings['webhook_secret']); ?>" style="width: 75%;" />
-        <p class="description">Secret key for webhook signature verification. Keep secure.</p>
+        <p class="description">
+          <strong>Required for webhooks:</strong> Shared secret used to cryptographically sign webhook payloads with HMAC-SHA256.
+          <br /><strong>How to verify:</strong> Your webhook endpoint should compute <code>hash_hmac('sha256', $payload_json, $secret)</code> and compare it to the <code>X-BSV-Signature</code> header to ensure the webhook came from your WooCommerce store.
+          <br /><strong>Security best practice:</strong> Use a long, random string (32+ characters). Store it securely and never commit it to version control.
+          <br /><em>Generate a secure secret: <code>openssl rand -hex 32</code></em>
+        </p>
       </td>
     </tr>
   </table>
@@ -563,6 +562,17 @@ function BWWC__render_advanced_settings_page_html()
     <p style="margin: 0 0 10px 0; font-weight: bold;">Need Help Finding "Lost" Transactions?</p>
     <p style="margin: 0;">If you've changed derivation settings and can't see payments in ElectrumSV, use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to scan your xPub with different derivation paths and find your addresses.</p>
  </div>
+ 
+ <h3 style="margin-top: 40px; color: #d63638;">⚠️ Danger Zone</h3>
+ <table class="form-table">
+    <tr valign="top">
+        <th scope="row">Delete Data on Uninstall</th>
+        <td>
+            <input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], '1'); ?> />
+            <span class="description">Remove all plugin data when uninstalling. <strong>Warning:</strong> This will delete payment history!</span>
+        </td>
+    </tr>
+ </table>
  
  <p class="submit">
     <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>" />

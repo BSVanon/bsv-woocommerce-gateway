@@ -46,6 +46,10 @@ $g_BWWC__config_defaults = array(
 // 'soft_cron_max_loops_per_run'					=>	2,			// NOT USED. Check up to this number of assigned bitcoin addresses per soft cron run. Each loop involves number of DB queries as well as API query to blockchain - and this may slow down the site.
    'elists'																=>	array(),
    'use_aggregated_api'										=>  '0',		// Use aggregated API to efficiently retrieve bitcoin address balance
+   'bip270_enabled'                                         =>  '1',
+   'broadcaster_preference'                                =>  'whatsonchain',
+   'webhook_url'                                           =>  '',
+   'webhook_secret'                                        =>  '',
 
    // ------- General Settings
    'license_key'                          =>  'UNLICENSED',
@@ -227,7 +231,20 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
     // Load current settings and overwrite them with whatever values are present on submitted form
     $bwwc_settings = BWWC__get_settings();
 
+    $incoming_settings = array();
+    if (isset($_POST['bwwc_settings']) && is_array($_POST['bwwc_settings'])) {
+        $incoming_settings = BWWC__sanitize_recursive($_POST['bwwc_settings']);
+    }
+
     foreach ($g_BWWC__config_defaults as $k=>$v) {
+        if (array_key_exists($k, $incoming_settings)) {
+            if (!isset($bwwc_settings[$k])) {
+                $bwwc_settings[$k] = "";
+            }
+            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $incoming_settings[$k]);
+            continue;
+        }
+
         if (isset($_POST[$k])) {
             $sanitized_value = BWWC__sanitize_recursive($_POST[$k]);
             if (!isset($bwwc_settings[$k])) {

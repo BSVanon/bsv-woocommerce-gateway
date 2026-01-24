@@ -83,7 +83,7 @@ function BWWC__set_payment_state($order_id, $new_state, $reason = '')
     $order->save();
     
     // Send webhook if payment just became verified
-    if ($new_state === 'confirmed' && $old_state !== 'confirmed') {
+    if ($new_state === BWWC_PAYMENT_STATE_VERIFIED && $old_state !== BWWC_PAYMENT_STATE_VERIFIED) {
         BWWC__send_payment_verified_webhook($order_id);
     }
 

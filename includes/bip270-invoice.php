@@ -358,6 +358,21 @@ function BWWC__serve_receipt_download() {
 }
 
 /**
+ * Get invoice URL for BIP270 invoice protocol
+ */
+function BWWC__get_invoice_url($order_id, $order_key) {
+    $signature = BWWC__generate_invoice_signature($order_id, $order_key);
+    
+    $params = array(
+        'order_id' => $order_id,
+        'key' => $order_key,
+        'sig' => $signature
+    );
+    
+    return add_query_arg($params, home_url('/wc-api/bsv_invoice'));
+}
+
+/**
  * Get payment callback URL for BIP270 paymentUrl field
  */
 function BWWC__get_payment_callback_url($order_id, $order_key) {

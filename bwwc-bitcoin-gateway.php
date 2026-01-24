@@ -58,6 +58,12 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $this->icon 			= plugins_url('/images/bsv_buyitnow_32x.png', __FILE__);	// 32 pixels high
             $this->has_fields 		= false;
             $this->method_title     = __('Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce');
+            $this->method_description = __('Accept Bitcoin SV payments with live blockchain verification', 'sendbsv-bsv-payments-for-woocommerce');
+            
+            // Declare feature support for WooCommerce Blocks
+            $this->supports = array(
+                'products'
+            );
 
             // Load BWWC settings.
             $bwwc_settings = BWWC__get_settings();
@@ -71,7 +77,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $this->title = $this->get_option('title', __('Bitcoin SV Payment', 'sendbsv-bsv-payments-for-woocommerce'));
             $this->bitcoin_addr_merchant = $this->get_option('bitcoin_addr_merchant', '');
             $this->confs_num = $bwwc_settings['confs_num'];  //$this->settings['confirmations'];
-            $this->description = $this->get_option('description', __('Please proceed to the next screen to see necessary payment details.', 'sendbsv-bsv-payments-for-woocommerce'));	// Short description about the gateway which is shown on checkout.
+            $this->description = $this->get_option('description', __('Please proceed to the next screen for payment details.', 'sendbsv-bsv-payments-for-woocommerce') . "\n\n" . __('* BRC-100 Payment Button & Legacy Payments Supported', 'sendbsv-bsv-payments-for-woocommerce') . "\n" . __('* Variety of QR Codes Styles for any wallet', 'sendbsv-bsv-payments-for-woocommerce') . "\n" . __('* Live Payment Confirmation Tracker & Blockchain Explorer Link', 'sendbsv-bsv-payments-for-woocommerce'));	// Short description about the gateway which is shown on checkout.
             $this->instructions = $this->get_option('instructions', ''); // Detailed payment instructions for the buyer.
             $this->instructions_multi_payment_str  = __('You may send payments from multiple accounts to reach the total required.', 'sendbsv-bsv-payments-for-woocommerce');
             $this->instructions_single_payment_str = __('You must pay in a single payment in full.', 'sendbsv-bsv-payments-for-woocommerce');
@@ -345,9 +351,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
                 'description' => array(
                                 'title' => __('Customer Message', 'sendbsv-bsv-payments-for-woocommerce'),
-                                'type' => 'text',
+                                'type' => 'textarea',
                                 'description' => __('Initial instructions for the customer at checkout screen', 'sendbsv-bsv-payments-for-woocommerce'),
-                                'default' => __('Please proceed to the next screen to see necessary payment details.', 'sendbsv-bsv-payments-for-woocommerce')
+                                'default' => __('Please proceed to the next screen for payment details.', 'sendbsv-bsv-payments-for-woocommerce') . "\n\n" . __('* BRC-100 Payment Button & Legacy Payments Supported', 'sendbsv-bsv-payments-for-woocommerce') . "\n" . __('* Variety of QR Codes Styles for any wallet', 'sendbsv-bsv-payments-for-woocommerce') . "\n" . __('* Live Payment Confirmation Tracker & Blockchain Explorer Link', 'sendbsv-bsv-payments-for-woocommerce')
                             ),
                 'instructions' => array(
                                 'title' => __('Payment Instructions (HTML)', 'sendbsv-bsv-payments-for-woocommerce'),
@@ -523,6 +529,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
                 'order_id'								=> $order_id,
                 'order_total'			    	 	=> $order_total_in_btc,  // Order total in BTC
                 'order_datetime'  				=> gmdate('Y-m-d H:i:s T'),
+                'requested_by_ip'         => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
                 );
 
             // Only electrum_wallet provider is supported in v6.0.0+
@@ -554,6 +561,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
 
             // Removed legacy blockchain_info support (security vulnerability A0.6)
             $order->update_meta_data('_bwwc_address', $bitcoins_address);
+            $order->update_meta_data('_bwwc_order_total_in_btc', $order_total_in_btc);
             $order->update_meta_data('_bwwc_paid_total', 0);
             $order->update_meta_data('_bwwc_refunded', 0);
             $order->update_meta_data('_bwwc_exchange_rate', $exchange_rate);
@@ -637,7 +645,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             // Get order object.
             // http://wcdocs.woothemes.com/apidocs/class-WC_Order.html
             $order = wc_get_order($order_id);
-            if (!$order) {
+            if (!$order || $order->get_payment_method() !== 'bitcoin_sv') {
                 return;
             }
 
@@ -680,7 +688,7 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             if (!in_array($order->get_status(), array('pending', 'on-hold'), true)) {
                 return;
             }
-            if ($order->get_payment_method() !== 'bitcoin') {
+            if ($order->get_payment_method() !== 'bitcoin_sv') {
                 return;
             }
 

@@ -56,6 +56,7 @@ function BWWC__render_payment_console($order) {
     $bwwc_settings = BWWC__get_settings();
     $required_confirmations = isset($bwwc_settings['confs_num']) ? intval($bwwc_settings['confs_num']) : 1;
     $polling_interval = isset($bwwc_settings['status_polling_interval']) ? intval($bwwc_settings['status_polling_interval']) : 10;
+    $bip270_enabled = isset($bwwc_settings['bip270_enabled']) && $bwwc_settings['bip270_enabled'] === '1';
     
     if (!$bsv_address || !$bsv_amount) {
         return;
@@ -171,11 +172,12 @@ function BWWC__render_payment_console($order) {
         'bsvAddress' => $bsv_address,
         'bsvAmount' => $bsv_amount,
         'orderKey' => $order->get_order_key(),
-        'invoiceUrl' => $invoice_url,
+        'invoiceUrl' => $bip270_enabled ? $invoice_url : '',
         'siteName' => get_bloginfo('name'),
         'siteUrl' => home_url(),
         'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', dirname(__FILE__))),
         'debugEnabled' => BWWC__is_debug_mode(),
+        'bip270Enabled' => $bip270_enabled,
     ));
 
     // Render console
@@ -188,8 +190,10 @@ function BWWC__render_payment_console($order) {
                 <h2><?php esc_html_e('Pay with Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'); ?></h2>
                 <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
                 <p class="bsv-instruction">
-                    <span class="bsv-instruction-bip21" style="display: none;"><?php esc_html_e('Scan the QR with your BSV wallet. Amount and address are included.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
-                    <span class="bsv-instruction-bip270"><?php esc_html_e('Scan the QR to fetch invoice details and complete payment.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <span class="bsv-instruction-bip21" style="display: inline;"><?php esc_html_e('Scan the QR with your BSV wallet. Amount and address are included.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <?php if ($bip270_enabled): ?>
+                    <span class="bsv-instruction-bip270" style="display: none;"><?php esc_html_e('Scan the QR to fetch invoice details and complete payment.', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
+                    <?php endif; ?>
                     <span class="bsv-instruction-address-only" style="display: none;"><?php esc_html_e('Scan the QR to get the address, then manually enter the amount shown below. (HandCash-safe)', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
                 </p>
                 <?php endif; ?>
@@ -244,21 +248,28 @@ function BWWC__render_payment_console($order) {
                              data-amount="<?php echo esc_attr($bsv_amount); ?>" 
                              data-order-id="<?php echo esc_attr($order_id); ?>"
                              data-order-key="<?php echo esc_attr($order->get_order_key()); ?>"
-                             data-protocol="bip270"
+                             data-protocol="bip21"
                              style="display: inline-block;"></div>
                     </div>
                     
                     <?php if ($payment_state === 'waiting' || $payment_state === 'underpaid'): ?>
                     <div class="bsv-protocol-tabs" role="tablist" aria-label="<?php esc_attr_e('Payment protocol', 'sendbsv-bsv-payments-for-woocommerce'); ?>">
-                        <button class="bsv-protocol-tab" data-protocol="bip21" role="tab" aria-selected="false" type="button">
-                            <?php esc_html_e('Standard', 'sendbsv-bsv-payments-for-woocommerce'); ?>
+                        <?php
+                        $protocol_tabs = array(
+                            'bip21' => __('Standard', 'sendbsv-bsv-payments-for-woocommerce'),
+                        );
+                        if ($bip270_enabled) {
+                            $protocol_tabs['bip270'] = __('Invoice', 'sendbsv-bsv-payments-for-woocommerce');
+                        }
+                        $protocol_tabs['address-only'] = __('Address', 'sendbsv-bsv-payments-for-woocommerce');
+
+                        foreach ($protocol_tabs as $protocol_key => $label):
+                            $is_active = ($protocol_key === 'bip21');
+                        ?>
+                        <button class="bsv-protocol-tab<?php echo $is_active ? ' active' : ''; ?>" data-protocol="<?php echo esc_attr($protocol_key); ?>" role="tab" aria-selected="<?php echo $is_active ? 'true' : 'false'; ?>" type="button">
+                            <?php echo esc_html($label); ?>
                         </button>
-                        <button class="bsv-protocol-tab active" data-protocol="bip270" role="tab" aria-selected="true" type="button">
-                            <?php esc_html_e('Invoice', 'sendbsv-bsv-payments-for-woocommerce'); ?>
-                        </button>
-                        <button class="bsv-protocol-tab" data-protocol="address-only" role="tab" aria-selected="false" type="button">
-                            <?php esc_html_e('Address-only', 'sendbsv-bsv-payments-for-woocommerce'); ?>
-                        </button>
+                        <?php endforeach; ?>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -333,13 +344,13 @@ function BWWC__render_payment_console($order) {
                             $dot_class = 'failed';
                         } elseif ($payment_state === 'underpaid') {
                             $dot_class = ($i == 0) ? 'partial' : '';
-                        } elseif ($payment_state === 'detected' || $payment_state === 'pending') {
+                        } elseif ($payment_state === 'detected') {
                             if ($i < $confirmations) {
                                 $dot_class = 'confirmed';
                             } elseif ($i == 0 && $received_sats >= $expected_sats) {
                                 $dot_class = 'pending';
                             }
-                        } elseif ($payment_state === 'confirmed') {
+                        } elseif ($payment_state === 'verified') {
                             $dot_class = ($i < $confirmations) ? 'confirmed' : '';
                         }
                     ?>
@@ -350,13 +361,13 @@ function BWWC__render_payment_console($order) {
             <?php endif; ?>
 
             <!-- Payment details (inside card) -->
-            <?php if ($received_sats > 0 && ($payment_state === 'underpaid' || $payment_state === 'pending' || $payment_state === 'detected')): ?>
+            <?php if ($received_sats > 0 && ($payment_state === 'underpaid' || $payment_state === 'detected')): ?>
             <div class="bsv-payment-details">
                 <div class="bsv-detail-row">
                     <span class="bsv-detail-label"><?php esc_html_e('Received', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
                     <span class="bsv-detail-value"><?php echo esc_html(number_format($received_sats, 0, '.', ',')); ?> sats</span>
                 </div>
-                <?php if ($payment_state === 'pending' || $payment_state === 'detected' || $payment_state === 'confirmed'): ?>
+                <?php if ($payment_state === 'detected' || $payment_state === 'verified'): ?>
                 <div class="bsv-detail-row">
                     <span class="bsv-detail-label"><?php esc_html_e('Confirmed', 'sendbsv-bsv-payments-for-woocommerce'); ?></span>
                     <span class="bsv-detail-value"><?php echo esc_html(number_format($confirmed_sats, 0, '.', ',')); ?> sats</span>
@@ -385,7 +396,7 @@ function BWWC__render_payment_console($order) {
         <div class="bsv-footer-actions">
             <button class="bsv-link-btn bsv-recheck-btn" data-paid-state="<?php echo esc_attr($payment_state); ?>">
                 <?php 
-                if ($payment_state === 'detected' || $payment_state === 'confirmed') {
+                if ($payment_state === 'detected' || $payment_state === 'verified') {
                     esc_html_e('✓ Payment Received', 'sendbsv-bsv-payments-for-woocommerce');
                 } else {
                     esc_html_e("I've Paid", 'sendbsv-bsv-payments-for-woocommerce');
@@ -642,7 +653,7 @@ function BWWC__ajax_set_payment_detected() {
         return;
     }
     
-    BWWC__set_payment_state($order_id, 'detected', 'BRC-100 payment submitted');
+    BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'BRC-100 payment submitted');
     wp_send_json_success();
 }
 add_action('wp_ajax_bsv_set_payment_detected', 'BWWC__ajax_set_payment_detected');
@@ -668,7 +679,33 @@ function BWWC__ajax_store_receipt() {
         $order->update_meta_data('_bwwc_beef', sanitize_text_field(wp_unslash($_POST['beef'])));
     }
     if (isset($_POST['txid'])) {
-        $order->update_meta_data('_bwwc_txid', sanitize_text_field(wp_unslash($_POST['txid'])));
+        $txid = sanitize_text_field(wp_unslash($_POST['txid']));
+        $order->update_meta_data('_bwwc_txid', $txid);
+        
+        // Store txid in array format for consistency with blockchain checks
+        $existing_txids = $order->get_meta('_bwwc_txids', true);
+        if (!is_array($existing_txids)) {
+            $existing_txids = array();
+        }
+        if (!in_array($txid, $existing_txids, true)) {
+            $existing_txids[] = $txid;
+            $order->update_meta_data('_bwwc_txids', $existing_txids);
+        }
+    }
+    
+    // Update received amount if provided (BRC-100 wallet payment)
+    if (isset($_POST['amount_sats'])) {
+        $amount_sats = absint($_POST['amount_sats']);
+        if ($amount_sats > 0) {
+            $order->update_meta_data('_bwwc_received_sats', $amount_sats);
+            $order->update_meta_data('_bwwc_confirmed_sats', 0); // 0-conf initially
+            $order->update_meta_data('_bwwc_best_confirmations', 0);
+            
+            // Mark payment as detected (0-conf)
+            BWWC__set_payment_state($order_id, BWWC_PAYMENT_STATE_DETECTED, 'BRC-100 wallet payment submitted');
+            
+            BWWC__log_event(__FILE__, __LINE__, "BRC-100 receipt stored for order {$order_id}: {$amount_sats} sats, txid: " . (isset($_POST['txid']) ? sanitize_text_field(wp_unslash($_POST['txid'])) : 'none'));
+        }
     }
     
     $order->save();

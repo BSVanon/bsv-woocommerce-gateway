@@ -291,45 +291,46 @@
         },
         
         shouldStopPolling: function(data) {
-            // CRITICAL: Check order_status FIRST - this is the source of truth
-            // WooCommerce order status indicates actual order state
-            if (data.order_status === 'completed' || data.order_status === 'processing') {
-                this.debugLog('Stopping - order status is', data.order_status);
-                return { stop: true, reason: 'order ' + data.order_status };
-            }
-            
-            // Parse all values for additional checks
+            // Parse all values for checks
             const current = parseInt(data.best_confirmations) || 0;
             const required = parseInt(data.required_confirmations) || 1;
             const receivedSats = parseInt(data.received_sats) || 0;
             const expectedSats = parseInt(data.expected_sats) || 0;
             const confirmedSats = parseInt(data.confirmed_sats) || 0;
+            const state = data.payment_state || 'waiting';
             
             // Log current state for debugging
             this.debugLog('Poll check', {
-                state: data.payment_state,
+                state: state,
                 confirmed: confirmedSats + '/' + expectedSats,
                 confirmations: current + '/' + required,
                 orderStatus: data.order_status
             });
             
-            // Stop if payment is confirmed AND order should be completed
-            // This catches cases where payment is confirmed but order status hasn't updated yet
-            if (data.payment_state === 'confirmed' && 
+            // Stop if order is completed (final state)
+            if (data.order_status === 'completed') {
+                this.debugLog('Stopping - order completed');
+                return { stop: true, reason: 'order completed' };
+            }
+            
+            // Stop if payment is verified (has required confirmations)
+            // This is the TRUE completion condition for payment tracking
+            if (state === 'verified' && 
                 confirmedSats >= expectedSats && 
                 current >= required && 
                 expectedSats > 0) {
-                this.debugLog('Stopping - payment fully confirmed');
-                return { stop: true, reason: 'payment confirmed (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
+                this.debugLog('Stopping - payment fully verified');
+                return { stop: true, reason: 'payment verified (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
             }
             
             // Stop if expired with no funds received
-            if (data.payment_state === 'expired' && receivedSats == 0) {
+            if (state === 'expired' && receivedSats == 0) {
                 this.debugLog('Stopping - expired with no payment');
                 return { stop: true, reason: 'payment window expired with no payment' };
             }
             
-            // Continue polling for waiting, pending, underpaid states
+            // Continue polling for detected state (showing confirmation progress)
+            // Don't stop just because order status is 'processing' - we want to show confirmations accumulating
             return { stop: false };
         },
         
@@ -339,7 +340,7 @@
             
             const state = data.payment_state || 'waiting';
             
-            if (state === 'detected' || state === 'confirmed' || state === 'pending') {
+            if (state === 'detected' || state === 'verified') {
                 btn.text('Payment Received!');
                 btn.removeClass('bsv-btn-primary').addClass('bsv-btn-success');
                 btn.prop('disabled', true);
@@ -364,7 +365,7 @@
             const state = data.payment_state || 'waiting';
             
             // Hide wallet button when payment is detected/pending/confirmed
-            if (state === 'detected' || state === 'pending' || state === 'confirmed') {
+            if (state === 'detected' || state === 'verified') {
                 walletBtn.hide();
             } else if (state === 'waiting' || state === 'underpaid') {
                 // Show wallet button only in waiting/underpaid states (if wallet was detected)
@@ -384,14 +385,10 @@
                 },
                 detected: {
                     label: 'Payment Detected!',
-                    message: 'Your payment has been detected on the blockchain. Waiting for confirmation...'
+                    message: `Payment detected on blockchain! Awaiting ${data.required_confirmations || 1} confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
                 },
-                pending: {
-                    label: 'Payment Received',
-                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
-                },
-                confirmed: {
-                    label: 'Payment Confirmed',
+                verified: {
+                    label: 'Payment Verified',
                     message: 'Your payment has been confirmed. Thank you!'
                 },
                 expired: {
@@ -413,7 +410,7 @@
             const statusInfo = statusMessages[state] || statusMessages.waiting;
 
             // Update classes
-            statusStrip.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid status-pending');
+            statusStrip.removeClass('status-waiting status-detected status-verified status-expired status-underpaid status-overpaid');
             statusStrip.addClass('status-' + state);
 
             // Update content - find strong and span within .bsv-status-text
@@ -493,13 +490,13 @@
                     if (index === 0) {
                         dot.addClass('partial');
                     }
-                } else if (state === 'detected' || state === 'pending') {
+                } else if (state === 'detected') {
                     if (index < current) {
                         dot.addClass('confirmed');
                     } else if (index === 0 && received >= expected) {
                         dot.addClass('pending');
                     }
-                } else if (state === 'confirmed') {
+                } else if (state === 'verified') {
                     if (index < current) {
                         dot.addClass('confirmed');
                     }
@@ -603,12 +600,8 @@
                 return 'address-only';
             }
 
-            if (!this.isProtocolAvailable('bip270')) {
-                return stored === 'bip21' ? 'bip21' : (stored === 'address-only' ? 'address-only' : 'bip21');
-            }
-
-            // Default to invoice for better UX on supporting wallets
-            return 'bip270';
+            // Always default to BIP21 (Standard) for best compatibility
+            return 'bip21';
         },
 
         getStoredProtocol: function() {
@@ -620,7 +613,8 @@
             } catch (err) {
                 // Ignore storage errors (private mode, etc.)
             }
-            return this.isProtocolAvailable('bip270') ? 'bip270' : 'bip21';
+            // Default to BIP21 (Standard) for best wallet compatibility
+            return 'bip21';
         },
 
         storeProtocolPreference: function(protocol) {
@@ -730,11 +724,13 @@
 
             // Regenerate QR for selected protocol
             this.generateQRCode(protocol);
-        },
-
-        // Expose globally for BRC-100 integration
-        window.bsvPaymentData = bsvPaymentData;
+        }
     };
+
+    // Expose globally for BRC-100 integration
+    if (typeof bsvPaymentData !== 'undefined') {
+        window.bsvPaymentData = bsvPaymentData;
+    }
 
     // Initialize on document ready
     $(document).ready(function() {

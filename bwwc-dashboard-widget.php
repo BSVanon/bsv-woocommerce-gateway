@@ -57,11 +57,11 @@ function BWWC__render_dashboard_widget()
     // Exchange rate status
     $store_currency = get_woocommerce_currency();
     if ($store_currency != 'BTC') {
-        $exchange_rate = BWWC__get_exchange_rate_per_bitcoin($store_currency, 'getfirst', true);
+        $exchange_rate = BWWC__get_exchange_rate_per_bitcoin($store_currency, 'getfirst', false);
         echo '<div style="margin-bottom: 15px; padding: 10px; background: #f0f0f1; border-radius: 4px;">';
         echo '<strong>' . esc_html__('Exchange Rate:', 'sendbsv-bsv-payments-for-woocommerce') . '</strong> ';
-        if ($exchange_rate) {
-            echo '1 BSV = ' . number_format($exchange_rate, 2) . ' ' . esc_html($store_currency);
+        if ($exchange_rate && is_numeric($exchange_rate) && $exchange_rate > 0) {
+            echo '1 BSV = ' . number_format((float)$exchange_rate, 2) . ' ' . esc_html($store_currency);
         } else {
             echo '<span style="color: #dc3545;">' . esc_html__('Unable to fetch', 'sendbsv-bsv-payments-for-woocommerce') . '</span>';
         }

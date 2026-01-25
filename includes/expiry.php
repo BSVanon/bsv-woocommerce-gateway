@@ -175,7 +175,7 @@ function BWWC__get_time_until_expiry($order_id)
 function BWWC__format_time_remaining($seconds)
 {
     if ($seconds <= 0) {
-        return __('Expired', 'sendbsv-bsv-payments-for-woocommerce');
+        return __('Expired', 'bsvanon-bitcoin-sv-payments');
     }
     
     $hours = floor($seconds / 3600);
@@ -184,12 +184,12 @@ function BWWC__format_time_remaining($seconds)
     
     if ($hours > 0) {
         /* translators: 1: number of hours, 2: number of minutes */
-        return sprintf(__('%1$d hours %2$d minutes', 'sendbsv-bsv-payments-for-woocommerce'), $hours, $minutes);
+        return sprintf(__('%1$d hours %2$d minutes', 'bsvanon-bitcoin-sv-payments'), $hours, $minutes);
     } elseif ($minutes > 0) {
         /* translators: 1: number of minutes, 2: number of seconds */
-        return sprintf(__('%1$d minutes %2$d seconds', 'sendbsv-bsv-payments-for-woocommerce'), $minutes, $secs);
+        return sprintf(__('%1$d minutes %2$d seconds', 'bsvanon-bitcoin-sv-payments'), $minutes, $secs);
     } else {
         /* translators: %d: number of seconds */
-        return sprintf(__('%d seconds', 'sendbsv-bsv-payments-for-woocommerce'), $secs);
+        return sprintf(__('%d seconds', 'bsvanon-bitcoin-sv-payments'), $secs);
     }
 }

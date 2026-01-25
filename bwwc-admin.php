@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -329,13 +329,15 @@ function BWWC__reset_partial_settings($also_reset_persistent_settings=false)
     // Load current settings and overwrite ones that are present on submitted form with defaults
     $bwwc_settings = BWWC__get_settings();
 
-    foreach ($_POST as $k=>$v) {
-        $sanitized_value = BWWC__sanitize_recursive($v);
-        if (isset($g_BWWC__config_defaults[$k])) {
+    // Only process known config keys instead of iterating entire $_POST
+    foreach ($g_BWWC__config_defaults as $k => $default_value) {
+        // Check if this setting key exists in the POST data
+        if (isset($_POST[$k]) || isset($_POST['bwwc_settings'][$k])) {
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";
-            } // Force set to something.
-            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $g_BWWC__config_defaults[$k]);
+            }
+            // Reset to default value
+            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $default_value);
         }
     }
 

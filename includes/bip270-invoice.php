@@ -229,7 +229,7 @@ function BWWC__serve_bip270_invoice() {
     ));
 
     // Return PaymentTerms JSON
-    echo wp_json_encode($payment_terms, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    echo wp_json_encode($payment_terms, JSON_PRETTY_PRINT);
     exit;
 }
 
@@ -292,7 +292,7 @@ function BWWC__serve_receipt_download() {
 
     if (!$order_id || !$order_key || !$signature) {
         BWWC__log_bip270_invoice('Receipt download request missing parameters', array());
-        wp_die(esc_html__('Invalid request', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 400));
+        wp_die(esc_html__('Invalid request', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 400));
     }
 
     // Load order
@@ -301,7 +301,7 @@ function BWWC__serve_receipt_download() {
         BWWC__log_bip270_invoice('Receipt download failed: order not found', array(
             'orderId' => $order_id,
         ));
-        wp_die(esc_html__('Order not found', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 404));
+        wp_die(esc_html__('Order not found', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 404));
     }
 
     // Verify order key
@@ -309,7 +309,7 @@ function BWWC__serve_receipt_download() {
         BWWC__log_bip270_invoice('Receipt download failed: invalid order key', array(
             'orderId' => $order_id,
         ));
-        wp_die(esc_html__('Invalid order key', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 403));
+        wp_die(esc_html__('Invalid order key', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 403));
     }
 
     // Verify signature
@@ -318,7 +318,7 @@ function BWWC__serve_receipt_download() {
         BWWC__log_bip270_invoice('Receipt download failed: invalid signature', array(
             'orderId' => $order_id,
         ));
-        wp_die(esc_html__('Invalid signature', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 403));
+        wp_die(esc_html__('Invalid signature', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 403));
     }
 
     // Get receipt data
@@ -329,7 +329,7 @@ function BWWC__serve_receipt_download() {
         BWWC__log_bip270_invoice('Receipt download failed: no receipt data', array(
             'orderId' => $order_id,
         ));
-        wp_die(esc_html__('No receipt available', 'sendbsv-bsv-payments-for-woocommerce'), '', array('response' => 404));
+        wp_die(esc_html__('No receipt available', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 404));
     }
 
     // Serve the receipt

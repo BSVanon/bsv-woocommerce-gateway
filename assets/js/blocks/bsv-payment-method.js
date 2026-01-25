@@ -163,7 +163,7 @@ const Content = () => {
     return createElement('div', { className: 'bsv-select-card', 'aria-live': 'polite' },
         createElement('div', { className: 'bsv-select-header' },
             createElement('div', { className: 'bsv-select-title-group' },
-                createElement('div', { className: 'bsv-select-eyebrow' }, __('Digital Payment', 'sendbsv-bsv-payments-for-woocommerce')),
+                createElement('div', { className: 'bsv-select-eyebrow' }, __('Digital Payment', 'bsvanon-bitcoin-sv-payments')),
                 createElement('h3', null, defaultLabel)
             ),
             createElement('div', { className: 'bsv-select-badge' },
@@ -172,14 +172,14 @@ const Content = () => {
         ),
         createElement('p', { className: 'bsv-select-description' }, defaultDescription),
         createElement('div', { className: 'bsv-select-features' },
-            createElement(Feature, { label: __('BRC-100 Payment Button & Legacy Payments Supported', 'sendbsv-bsv-payments-for-woocommerce') }),
-            createElement(Feature, { label: __('Variety of QR Codes Styles for any wallet', 'sendbsv-bsv-payments-for-woocommerce') }),
-            createElement(Feature, { label: __('Live Payment Confirmation Tracker & Blockchain Explorer Link', 'sendbsv-bsv-payments-for-woocommerce') })
+            createElement(Feature, { label: __('BRC-100 Payment Button & Legacy Payments Supported', 'bsvanon-bitcoin-sv-payments') }),
+            createElement(Feature, { label: __('Variety of QR Codes Styles for any wallet', 'bsvanon-bitcoin-sv-payments') }),
+            createElement(Feature, { label: __('Live Payment Confirmation Tracker & Blockchain Explorer Link', 'bsvanon-bitcoin-sv-payments') })
         ),
         createElement('div', { className: 'bsv-select-next' },
             createElement('div', null,
-                createElement('span', { className: 'bsv-select-next-label' }, __('Up next', 'sendbsv-bsv-payments-for-woocommerce')),
-                createElement('strong', null, __('Scan QR & submit payment', 'sendbsv-bsv-payments-for-woocommerce'))
+                createElement('span', { className: 'bsv-select-next-label' }, __('Up next', 'bsvanon-bitcoin-sv-payments')),
+                createElement('strong', null, __('Scan QR & submit payment', 'bsvanon-bitcoin-sv-payments'))
             ),
             createElement('span', { className: 'bsv-select-arrow', 'aria-hidden': 'true' }, '→')
         )

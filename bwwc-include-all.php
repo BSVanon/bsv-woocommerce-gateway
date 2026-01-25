@@ -3,7 +3,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 //---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ if (!defined('BWWC_PLUGIN_NAME')) {
 
 
     // i18n plugin domain for language files
-    define('BWWC_I18N_DOMAIN', 'sendbsv-bsv-payments-for-woocommerce');
+    define('BWWC_I18N_DOMAIN', 'bsvanon-bitcoin-sv-payments');
 }
 
 // Determine which math extension is available (runs on every load so upgrades are detected).

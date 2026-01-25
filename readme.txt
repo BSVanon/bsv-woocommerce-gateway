@@ -20,7 +20,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 **Key Features:**
 * Direct payments to your ElectrumSV or BIP32-compatible wallet
 * Automatic per-order address derivation from your Master Public Key (xpub/MPK)
-* Real-time exchange rate conversion with configurable markup
+* Real-time exchange rate conversion via CoinGecko w/ CoinPaprika fallback (configurable markup)
 * Payment detection via blockchain APIs (WhatsOnChain + Bitails fallback)
 * Modern payment console with live status updates and countdown timer
 * Aggregate payment support (handles multiple transactions to same address)

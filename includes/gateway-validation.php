@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce - Gateway Validation Module
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -19,13 +19,13 @@ function BWWC__is_gateway_valid_for_use(&$ret_reason_message=null)
     if ($bwwc_settings['service_provider']=='electrum_wallet') {
         $mpk = BWWC__get_next_available_mpk();
         if (!$mpk) {
-            $reason_message = __("Please specify ElectrumSV  Master Public Key (MPK). <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information", 'sendbsv-bsv-payments-for-woocommerce');
+            $reason_message = __("Please specify ElectrumSV  Master Public Key (MPK). <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information", 'bsvanon-bitcoin-sv-payments');
             $valid = false;
         } elseif (!preg_match('/^[a-f0-9]{128}$/', $mpk) && !preg_match('/^xpub[a-zA-Z0-9]{107}$/', $mpk)) {
-            $reason_message = __("ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.", 'sendbsv-bsv-payments-for-woocommerce');
+            $reason_message = __("ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.", 'bsvanon-bitcoin-sv-payments');
             $valid = false;
         } elseif (!extension_loaded('gmp') && !extension_loaded('bcmath')) {
-            $reason_message = __("ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)!", 'sendbsv-bsv-payments-for-woocommerce');
+            $reason_message = __("ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)!", 'bsvanon-bitcoin-sv-payments');
             $valid = false;
         }
     }
@@ -89,7 +89,7 @@ function BWWC__is_gateway_valid_for_use(&$ret_reason_message=null)
                 $valid = false;
                 /* translators: 1: current age in hours, 2: maximum allowed hours */
                 $reason_message = sprintf(
-                    __("Bitcoin SV payment option is temporarily unavailable. Exchange rate data is %1\$s hours old (maximum allowed: %2\$s hours). Please try again later or contact the store owner.", 'sendbsv-bsv-payments-for-woocommerce'),
+                    __("Bitcoin SV payment option is temporarily unavailable. Exchange rate data is %1\$s hours old (maximum allowed: %2\$s hours). Please try again later or contact the store owner.", 'bsvanon-bitcoin-sv-payments'),
                     number_format($age_in_hours, 1),
                     $max_age_hours
                 );
@@ -114,7 +114,7 @@ function BWWC__is_gateway_valid_for_use(&$ret_reason_message=null)
 
     // if ($currency_code != 'BTC' && !@in_array($currency_code, $supported_currencies_arr))
     // {
-    //  $reason_message = __("Store currency is set to unsupported value", 'sendbsv-bsv-payments-for-woocommerce') . "('{$currency_code}'). " . __("Valid currencies: ", 'sendbsv-bsv-payments-for-woocommerce') . implode ($supported_currencies_arr, ", ");
+    //  $reason_message = __("Store currency is set to unsupported value", 'bsvanon-bitcoin-sv-payments') . "('{$currency_code}'). " . __("Valid currencies: ", 'bsvanon-bitcoin-sv-payments') . implode ($supported_currencies_arr, ", ");
     //  if ($ret_reason_message !== NULL)
     //    $ret_reason_message = $reason_message;
     // return false;

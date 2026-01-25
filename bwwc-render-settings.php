@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 // Include everything
@@ -101,21 +101,21 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(esc_html__('Security check failed. Please try again.', 'sendbsv-bsv-payments-for-woocommerce'));
+            wp_die(esc_html__('Security check failed. Please try again.', 'bsvanon-bitcoin-sv-payments'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
             BWWC__update_settings("", false);
-            $action_message = __('Settings updated!', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('Settings updated!', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['button_reset_bwwc_settings'])) {
             BWWC__reset_all_settings(false);
-            $action_message = __('All settings reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('All settings reverted to defaults.', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
             BWWC__reset_partial_settings(false);
-            $action_message = __('Settings on this page reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('Settings on this page reverted to defaults.', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['validate_bwwc-license'])) {
             BWWC__update_settings("", false);
-            $action_message = __('License validated.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('License validated.', 'bsvanon-bitcoin-sv-payments');
         }
     }
 
@@ -186,8 +186,8 @@ function BWWC__render_general_settings_page_html()
     <form method="post" action="">
       <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce'); ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'sendbsv-bsv-payments-for-woocommerce')); ?>');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bsvanon-bitcoin-sv-payments'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'bsvanon-bitcoin-sv-payments')); ?>');" />
       </p>
       <table class="form-table">
 
@@ -361,8 +361,8 @@ function BWWC__render_general_settings_page_html()
             <fieldset>
               <p>
                 <?php
-                $plugin_root = dirname(__FILE__);
-                $icon_dir = '/images/checkout-icons/';
+                $plugin_root = plugin_dir_path(__FILE__);
+                $icon_dir = 'images/checkout-icons/';
                 $icons = scandir($plugin_root . $icon_dir);
                 foreach ($icons as $icon) {
                     $icon_path = $plugin_root . $icon_dir . $icon;
@@ -375,8 +375,8 @@ function BWWC__render_general_settings_page_html()
                         continue;
                     }
 
-                    $icon_rel_path = $icon_dir . $icon;
-                    $icon_url = plugins_url($icon_rel_path, __FILE__);
+                    $icon_rel_path = '/' . $icon_dir . $icon;
+                    $icon_url = plugins_url($icon_rel_path, dirname(__FILE__));
                     echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . checked($bwwc_settings['selected_checkout_icon'], $icon_rel_path, false) . '/>';
                     echo '<label for="' . esc_attr($icon) . '"><img src="' . esc_url($icon_url) . '" height="32" alt="Checkout icon" /></label><br />';
                 }
@@ -385,7 +385,7 @@ function BWWC__render_general_settings_page_html()
               </fieldset>
               <p class="description">
                 Icon displayed to users when choosing the payment method.<br />
-                You can upload new icons to: <?php echo esc_html(str_replace(ABSPATH, "", $plugin_root . $icon_dir)); ?><br />
+                You can upload new icons to: <?php echo esc_html($plugin_root . $icon_dir); ?><br />
                 Make sure to scale the image to a height of 32px for best checkout alignment.
               </p>
           </td>
@@ -394,8 +394,8 @@ function BWWC__render_general_settings_page_html()
       </table>
 
       <p class="submit">
-          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>"             />
-          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments') ?>"             />
+          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bsvanon-bitcoin-sv-payments') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
       </p>
     </form>
 <?php
@@ -582,7 +582,7 @@ function BWWC__render_advanced_settings_page_html()
  </table>
  
  <p class="submit">
-    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>" />
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments') ?>" />
  </p>
  </form>
 <?php

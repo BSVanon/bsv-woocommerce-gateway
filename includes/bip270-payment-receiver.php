@@ -28,7 +28,7 @@ add_action('init', 'BWWC__register_bip270_payment_endpoint');
 function BWWC__receive_bip270_payment() {
     // Enforce HTTPS unless explicitly allowed for debugging
     if (!is_ssl() && !defined('BWWC_ALLOW_HTTP_INVOICE')) {
-        BWWC__send_bip270_error(__('HTTPS is required for BIP270 payments.', 'sendbsv-bsv-payments-for-woocommerce'), 400);
+        BWWC__send_bip270_error(__('HTTPS is required for BIP270 payments.', 'bsvanon-bitcoin-sv-payments'), 400);
     }
 
     $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
@@ -36,21 +36,21 @@ function BWWC__receive_bip270_payment() {
     $signature = isset($_GET['sig']) ? sanitize_text_field(wp_unslash($_GET['sig'])) : '';
 
     if (!$order_id || '' === $order_key || '' === $signature) {
-        BWWC__send_bip270_error(__('Missing order parameters.', 'sendbsv-bsv-payments-for-woocommerce'), 400);
+        BWWC__send_bip270_error(__('Missing order parameters.', 'bsvanon-bitcoin-sv-payments'), 400);
     }
 
     $order = wc_get_order($order_id);
     if (!$order) {
-        BWWC__send_bip270_error(__('Order not found.', 'sendbsv-bsv-payments-for-woocommerce'), 404);
+        BWWC__send_bip270_error(__('Order not found.', 'bsvanon-bitcoin-sv-payments'), 404);
     }
 
     if ($order->get_order_key() !== $order_key) {
-        BWWC__send_bip270_error(__('Invalid order key.', 'sendbsv-bsv-payments-for-woocommerce'), 403);
+        BWWC__send_bip270_error(__('Invalid order key.', 'bsvanon-bitcoin-sv-payments'), 403);
     }
 
     $expected_sig = BWWC__generate_invoice_signature($order_id, $order_key);
     if (!hash_equals($expected_sig, $signature)) {
-        BWWC__send_bip270_error(__('Invalid signature.', 'sendbsv-bsv-payments-for-woocommerce'), 403);
+        BWWC__send_bip270_error(__('Invalid signature.', 'bsvanon-bitcoin-sv-payments'), 403);
     }
 
     // Load payment details
@@ -64,7 +64,7 @@ function BWWC__receive_bip270_payment() {
     }
 
     if (!$bsv_address || $expected_sats <= 0) {
-        BWWC__send_bip270_error(__('Payment details unavailable for this order.', 'sendbsv-bsv-payments-for-woocommerce'), 500);
+        BWWC__send_bip270_error(__('Payment details unavailable for this order.', 'bsvanon-bitcoin-sv-payments'), 500);
     }
 
     $raw_body = file_get_contents('php://input');
@@ -86,14 +86,14 @@ function BWWC__receive_bip270_payment() {
     ));
 
     if (empty($raw_transactions)) {
-        BWWC__send_bip270_error(__('No transaction payload provided.', 'sendbsv-bsv-payments-for-woocommerce'), 400);
+        BWWC__send_bip270_error(__('No transaction payload provided.', 'bsvanon-bitcoin-sv-payments'), 400);
     }
 
     // For now support single-transaction payments
     $raw_tx = $raw_transactions[0];
     $raw_tx = strtolower(trim($raw_tx));
     if (!preg_match('/^[0-9a-f]+$/', $raw_tx) || (strlen($raw_tx) % 2) !== 0) {
-        BWWC__send_bip270_error(__('Invalid transaction hex payload.', 'sendbsv-bsv-payments-for-woocommerce'), 400);
+        BWWC__send_bip270_error(__('Invalid transaction hex payload.', 'bsvanon-bitcoin-sv-payments'), 400);
     }
 
     $outputs = BWWC__parse_raw_transaction_outputs($raw_tx);
@@ -103,7 +103,7 @@ function BWWC__receive_bip270_payment() {
 
     $locking_script = BWWC__address_to_locking_script($bsv_address);
     if (!$locking_script) {
-        BWWC__send_bip270_error(__('Unable to derive payment script from destination address.', 'sendbsv-bsv-payments-for-woocommerce'), 500);
+        BWWC__send_bip270_error(__('Unable to derive payment script from destination address.', 'bsvanon-bitcoin-sv-payments'), 500);
     }
 
     $paid_sats = 0;
@@ -114,11 +114,11 @@ function BWWC__receive_bip270_payment() {
     }
 
     if ($paid_sats === 0) {
-        BWWC__send_bip270_error(__('Submitted transaction does not pay the expected address.', 'sendbsv-bsv-payments-for-woocommerce'), 422);
+        BWWC__send_bip270_error(__('Submitted transaction does not pay the expected address.', 'bsvanon-bitcoin-sv-payments'), 422);
     }
 
     if ($paid_sats < $expected_sats) {
-        BWWC__send_bip270_error(__('Submitted transaction is under the required amount.', 'sendbsv-bsv-payments-for-woocommerce'), 422);
+        BWWC__send_bip270_error(__('Submitted transaction is under the required amount.', 'bsvanon-bitcoin-sv-payments'), 422);
     }
 
     $txid = BWWC__compute_txid_from_raw($raw_tx);
@@ -126,7 +126,7 @@ function BWWC__receive_bip270_payment() {
         $txid = isset($_GET['txid']) ? sanitize_text_field(wp_unslash($_GET['txid'])) : '';
     }
     if (!$txid) {
-        BWWC__send_bip270_error(__('Unable to derive transaction ID.', 'sendbsv-bsv-payments-for-woocommerce'), 400);
+        BWWC__send_bip270_error(__('Unable to derive transaction ID.', 'bsvanon-bitcoin-sv-payments'), 400);
     }
 
     // Idempotency check
@@ -172,7 +172,7 @@ function BWWC__receive_bip270_payment() {
         $order->add_order_note(
             sprintf(
                 /* translators: 1: txid, 2: satoshis */
-                __('BIP270 payment received via PaymentACK. TXID: %1$s, Amount: %2$s sats.', 'sendbsv-bsv-payments-for-woocommerce'),
+                __('BIP270 payment received via PaymentACK. TXID: %1$s, Amount: %2$s sats.', 'bsvanon-bitcoin-sv-payments'),
                 $txid,
                 number_format_i18n($paid_sats)
             )
@@ -186,7 +186,7 @@ function BWWC__receive_bip270_payment() {
     $ack_payload = array(
         'protocol' => 'bip270',
         'network' => 'bitcoin-sv',
-        'memo' => sprintf(__('Payment received for Order #%d', 'sendbsv-bsv-payments-for-woocommerce'), $order_id),
+        'memo' => sprintf(__('Payment received for Order #%d', 'bsvanon-bitcoin-sv-payments'), $order_id),
         'merchantData' => array(
             'orderId' => $order_id,
             'orderKey' => $order_key,
@@ -385,54 +385,54 @@ function BWWC__extract_hex_from_transaction_entry($entry) {
 function BWWC__parse_raw_transaction_outputs($raw_tx) {
     $binary = @hex2bin($raw_tx);
     if ($binary === false) {
-        return new WP_Error('bip270_invalid_hex', __('Invalid transaction hex.', 'sendbsv-bsv-payments-for-woocommerce'));
+        return new WP_Error('bip270_invalid_hex', __('Invalid transaction hex.', 'bsvanon-bitcoin-sv-payments'));
     }
 
     $length = strlen($binary);
     $offset = 0;
 
     if ($length < 10) {
-        return new WP_Error('bip270_tx_too_short', __('Transaction payload too short.', 'sendbsv-bsv-payments-for-woocommerce'));
+        return new WP_Error('bip270_tx_too_short', __('Transaction payload too short.', 'bsvanon-bitcoin-sv-payments'));
     }
 
     // version
     $offset += 4;
     if ($offset >= $length) {
-        return new WP_Error('bip270_tx_parse_error', __('Unexpected end of transaction payload.', 'sendbsv-bsv-payments-for-woocommerce'));
+        return new WP_Error('bip270_tx_parse_error', __('Unexpected end of transaction payload.', 'bsvanon-bitcoin-sv-payments'));
     }
 
     $input_count = BWWC__read_varint($binary, $offset);
     if ($input_count === false) {
-        return new WP_Error('bip270_varint_error', __('Failed to parse transaction inputs.', 'sendbsv-bsv-payments-for-woocommerce'));
+        return new WP_Error('bip270_varint_error', __('Failed to parse transaction inputs.', 'bsvanon-bitcoin-sv-payments'));
     }
 
     for ($i = 0; $i < $input_count; $i++) {
         if (($offset + 36) > $length) {
-            return new WP_Error('bip270_input_overflow', __('Malformed transaction input.', 'sendbsv-bsv-payments-for-woocommerce'));
+            return new WP_Error('bip270_input_overflow', __('Malformed transaction input.', 'bsvanon-bitcoin-sv-payments'));
         }
         $offset += 36; // prevout hash + index
 
         $script_len = BWWC__read_varint($binary, $offset);
         if ($script_len === false || ($offset + $script_len) > $length) {
-            return new WP_Error('bip270_script_overflow', __('Malformed input script.', 'sendbsv-bsv-payments-for-woocommerce'));
+            return new WP_Error('bip270_script_overflow', __('Malformed input script.', 'bsvanon-bitcoin-sv-payments'));
         }
         $offset += $script_len; // scriptSig
 
         if (($offset + 4) > $length) {
-            return new WP_Error('bip270_sequence_overflow', __('Malformed sequence field.', 'sendbsv-bsv-payments-for-woocommerce'));
+            return new WP_Error('bip270_sequence_overflow', __('Malformed sequence field.', 'bsvanon-bitcoin-sv-payments'));
         }
         $offset += 4; // sequence
     }
 
     $output_count = BWWC__read_varint($binary, $offset);
     if ($output_count === false) {
-        return new WP_Error('bip270_output_varint_error', __('Failed to parse transaction outputs.', 'sendbsv-bsv-payments-for-woocommerce'));
+        return new WP_Error('bip270_output_varint_error', __('Failed to parse transaction outputs.', 'bsvanon-bitcoin-sv-payments'));
     }
 
     $outputs = array();
     for ($i = 0; $i < $output_count; $i++) {
         if (($offset + 8) > $length) {
-            return new WP_Error('bip270_amount_overflow', __('Malformed output amount field.', 'sendbsv-bsv-payments-for-woocommerce'));
+            return new WP_Error('bip270_amount_overflow', __('Malformed output amount field.', 'bsvanon-bitcoin-sv-payments'));
         }
         $amount_bytes = substr($binary, $offset, 8);
         $satoshis = BWWC__le_bytes_to_int($amount_bytes);
@@ -440,7 +440,7 @@ function BWWC__parse_raw_transaction_outputs($raw_tx) {
 
         $script_len = BWWC__read_varint($binary, $offset);
         if ($script_len === false || ($offset + $script_len) > $length) {
-            return new WP_Error('bip270_output_script_overflow', __('Malformed output script.', 'sendbsv-bsv-payments-for-woocommerce'));
+            return new WP_Error('bip270_output_script_overflow', __('Malformed output script.', 'bsvanon-bitcoin-sv-payments'));
         }
         $script = substr($binary, $offset, $script_len);
         $offset += $script_len;
@@ -636,6 +636,6 @@ function BWWC__respond_with_payment_ack($payload) {
     header('Pragma: no-cache');
     header('Expires: 0');
 
-    echo wp_json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    echo wp_json_encode($payload);
     exit;
 }

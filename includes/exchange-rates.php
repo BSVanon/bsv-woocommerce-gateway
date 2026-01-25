@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce - Exchange Rate Module
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -29,19 +29,9 @@ function BWWC__get_exchange_rate_per_bitcoin($currency_code, $rate_retrieval_met
     //   if (!@in_array($currency_code, BWWC__get_settings ('supported_currencies_arr')))
 //      return false;
 
-    // $blockchain_url      = "http://blockchain.info/ticker";
-    // $bitcoincharts_url   = 'http://bitcoincharts.com/t/weighted_prices.json'; // Currently not used as they are sometimes sluggish as well.
-
-    /*
-    24H global weighted average:
-        https://api.bitcoinaverage.com/ticker/global/USD/
-        http://api.bitcoincharts.com/v1/weighted_prices.json
-    
-    Realtime:
-        https://api.bitcoinaverage.com/ticker/global/USD/
-        https://bitpay.com/api/rates
-    
-    */
+    // Exchange rate data is provided through our modular providers (see includes/providers/).
+    // Primary: CoinGecko (https://api.coingecko.com)
+    // Fallback: CoinPaprika (https://api.coinpaprika.com)
 
     $bwwc_settings = BWWC__get_settings();
     $exchange_rate_type = $bwwc_settings['exchange_rate_type'];

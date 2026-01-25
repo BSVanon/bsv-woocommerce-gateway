@@ -402,7 +402,7 @@ function BWWC__generate_new_bitcoin_address_for_electrum_wallet($bwwc_settings=f
     // Find next index to generate
     $next_key_index = $wpdb->get_var(
         $wpdb->prepare(
-            "SELECT MAX(`index_in_wallet`) AS `max_index_in_wallet` FROM `$btc_addresses_table_name` WHERE `origin_id` = %s",
+            "SELECT MAX(`index_in_wallet`) AS `max_index_in_wallet` FROM `" . esc_sql($btc_addresses_table_name) . "` WHERE `origin_id` = %s",
             $origin_id
         )
     );

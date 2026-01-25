@@ -102,7 +102,7 @@ function BWWC_cron_job_worker()
                     
                     // Mark address as used and skip further processing
                     $wpdb->query($wpdb->prepare(
-                        "UPDATE `$btc_addresses_table_name` SET `status` = 'used' WHERE `id` = %d",
+                        "UPDATE `" . esc_sql($btc_addresses_table_name) . "` SET `status` = 'used' WHERE `id` = %d",
                         $row_id
                     ));
                     continue;
@@ -120,7 +120,7 @@ function BWWC_cron_job_worker()
 
                 // Refresh 'received_funds_checked_at' field with confirmed balance
                 $ret_code = $wpdb->query($wpdb->prepare(
-                    "UPDATE `$btc_addresses_table_name` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
+                    "UPDATE `" . esc_sql($btc_addresses_table_name) . "` SET `total_received_funds` = %s, `received_funds_checked_at` = %d WHERE `id` = %d",
                     $confirmed_btc,
                     $current_time,
                     $row_id
@@ -132,14 +132,14 @@ function BWWC_cron_job_worker()
                         if (!$last_order_info || !@$last_order_info['order_id'] || !@$balance_info_array['balance'] || !@$last_order_info['order_total']) {
                             // No proper metadata present. Mark this address as 'xused' (used by unknown entity outside of this application) and be done with it forever.
                             $ret_code = $wpdb->query($wpdb->prepare(
-                                "UPDATE `$btc_addresses_table_name` SET `status` = 'xused' WHERE `id` = %d",
+                                "UPDATE `" . esc_sql($btc_addresses_table_name) . "` SET `status` = 'xused' WHERE `id` = %d",
                                 $row_id
                             ));
                             continue;
                         } else {
                             // Metadata for this address is present. Mark this address as 'assigned' and treat it like that further down...
                             $ret_code = $wpdb->query($wpdb->prepare(
-                                "UPDATE `$btc_addresses_table_name` SET `status` = 'assigned' WHERE `id` = %d",
+                                "UPDATE `" . esc_sql($btc_addresses_table_name) . "` SET `status` = 'assigned' WHERE `id` = %d",
                                 $row_id
                             ));
                         }
@@ -280,7 +280,7 @@ function BWWC_cron_job_worker()
                     // Note: `total_received_funds` and `received_funds_checked_at` are already updated above.
                     //
                     $ret_code = $wpdb->query($wpdb->prepare(
-                        "UPDATE `$btc_addresses_table_name` SET `status` = 'used', `address_meta` = %s WHERE `id` = %d",
+                        "UPDATE `" . esc_sql($btc_addresses_table_name) . "` SET `status` = 'used', `address_meta` = %s WHERE `id` = %d",
                         $address_meta_serialized,
                         $row_id
                     ));

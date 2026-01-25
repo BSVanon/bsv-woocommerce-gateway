@@ -233,7 +233,7 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
 
     $incoming_settings = array();
     if (isset($_POST['bwwc_settings']) && is_array($_POST['bwwc_settings'])) {
-        $incoming_settings = BWWC__sanitize_recursive($_POST['bwwc_settings']);
+        $incoming_settings = BWWC__sanitize_recursive(wp_unslash($_POST['bwwc_settings']));
     }
 
     foreach ($g_BWWC__config_defaults as $k=>$v) {
@@ -246,7 +246,7 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
         }
 
         if (isset($_POST[$k])) {
-            $sanitized_value = BWWC__sanitize_recursive($_POST[$k]);
+            $sanitized_value = BWWC__sanitize_recursive(wp_unslash($_POST[$k]));
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";
             } // Force set to something.
@@ -403,7 +403,7 @@ function BWWC__create_database_tables($bwwc_settings)
     ///$persistent_settings_table_name       = $wpdb->prefix . 'bwwc_persistent_settings';
     $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
 
-    if ($wpdb->get_var("SHOW TABLES LIKE '$btc_addresses_table_name'") != $btc_addresses_table_name) {
+    if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $btc_addresses_table_name)) != $btc_addresses_table_name) {
         $b_first_time = true;
     } else {
         $b_first_time = false;
@@ -464,7 +464,7 @@ function BWWC__delete_database_tables()
 
     ///$wpdb->query("DROP TABLE IF EXISTS `$persistent_settings_table_name`");
     ///$wpdb->query("DROP TABLE IF EXISTS `$electrum_wallets_table_name`");
-    $wpdb->query("DROP TABLE IF EXISTS `$btc_addresses_table_name`");
+    $wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($btc_addresses_table_name) . "`");
 }
 //===========================================================================
 
@@ -492,7 +492,7 @@ class BWWC_Fix_Legacy_Metadata_Command {
         // Get all addresses with status assigned or used
         $addresses = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT id, btc_address, address_meta FROM `$btc_addresses_table_name` WHERE status IN ('assigned', 'used')"
+                "SELECT id, btc_address, address_meta FROM `" . esc_sql($btc_addresses_table_name) . "` WHERE status IN ('assigned', 'used')"
             ),
             ARRAY_A
         );

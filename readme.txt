@@ -117,6 +117,17 @@ Your support helps maintain and improve this plugin for the entire BSV community
 
 == Changelog ==
 
+= 6.1.0 - 2026-01-24 =
+**BRC-100 + Blocks polish release**
+
+* Added richer BRC-100 wallet request/response flow with immediate `detected` states
+* Stored txid/raw hex/BEEF receipts on WooCommerce orders for audit trails
+* Hardened postMessage handlers (origin + nonce binding) to block spoofed events
+* Improved WooCommerce Blocks checkout support and payment console UX
+* Fixed partial settings reset to only touch submitted keys (no `$_POST` iteration)
+* Enforced sanitized + unslashed input for all settings saves
+* Escaped all dynamic SQL table names and removed unsafe JSON flags
+
 = 6.0.0 - 2026-01-17 =
 **Major security, architecture, and feature update**
 

@@ -1,5 +1,6 @@
 # Analysis and internal documentation (for AI assistant only)
 docs/
+docs/**
 
 # Development tools (not needed in WordPress.org submission)
 phpcs.xml

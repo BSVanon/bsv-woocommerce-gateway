@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 6.1.0
+Stable tag: 6.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -116,6 +116,14 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 6.1.1 - 2026-01-25 =
+**Critical WordPress.org compliance fix**
+
+* Fixed translators comment placement in gateway-validation.php to satisfy WordPress.org Plugin Check
+* Applied WordPress coding standards formatting (phpcbf)
+* Fixed Blocks checkout script registration paths
+* Fixed payment console CSS/JS asset loading
 
 = 6.1.0 - 2026-01-24 =
 **BRC-100 + Blocks polish release**

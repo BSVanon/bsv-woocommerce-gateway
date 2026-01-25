@@ -376,7 +376,7 @@ function BWWC__render_general_settings_page_html()
                     }
 
                     $icon_rel_path = '/' . $icon_dir . $icon;
-                    $icon_url = plugins_url($icon_rel_path, dirname(__FILE__));
+                    $icon_url = plugins_url($icon_rel_path, __FILE__);
                     echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . checked($bwwc_settings['selected_checkout_icon'], $icon_rel_path, false) . '/>';
                     echo '<label for="' . esc_attr($icon) . '"><img src="' . esc_url($icon_url) . '" height="32" alt="Checkout icon" /></label><br />';
                 }

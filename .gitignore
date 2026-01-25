@@ -1,0 +1,25 @@
+# Analysis and internal documentation (for AI assistant only)
+docs/
+docs/**
+
+# Development tools (not needed in WordPress.org submission)
+phpcs.xml
+phpstan.neon
+wordpress-stubs.php
+
+# Docker environment
+docker/
+libs/
+.env
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.log
+*.tmp

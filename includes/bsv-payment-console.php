@@ -140,18 +140,18 @@ function BWWC__render_payment_console($order) {
         $qr_script_version .= '.' . filemtime($qr_script_path);
     }
 
-    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', dirname(__FILE__)), array(), $css_console_version);
-    wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', dirname(__FILE__)), array('bsv-payment-console'), $css_grid_version);
-    wp_enqueue_style('bsv-payment-clean', plugins_url('/assets/css/bsv-payment-clean.css', dirname(__FILE__)), array('bsv-payment-grid'), $css_clean_version);
+    wp_enqueue_style('bsv-payment-console', plugins_url('/assets/css/bsv-payment-console.css', __FILE__), array(), $css_console_version);
+    wp_enqueue_style('bsv-payment-grid', plugins_url('/assets/css/bsv-payment-grid.css', __FILE__), array('bsv-payment-console'), $css_grid_version);
+    wp_enqueue_style('bsv-payment-clean', plugins_url('/assets/css/bsv-payment-clean.css', __FILE__), array('bsv-payment-grid'), $css_clean_version);
     
     // Use bundled jQuery QR code library (avoids WooCommerce dependency)
     if (wp_script_is('jquery-qrcode', 'registered')) {
         wp_deregister_script('jquery-qrcode');
     }
-    wp_register_script('jquery-qrcode', plugins_url('/assets/js/vendor/jquery.qrcode.js', dirname(__FILE__)), array('jquery'), $qr_script_version, true);
+    wp_register_script('jquery-qrcode', plugins_url('/assets/js/vendor/jquery.qrcode.js', __FILE__), array('jquery'), $qr_script_version, true);
     wp_enqueue_script('jquery-qrcode');
     
-    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', dirname(__FILE__)), array('jquery', 'jquery-qrcode'), $script_version, true);
+    wp_enqueue_script('bsv-payment-console', plugins_url('/assets/js/bsv-payment-console.js', __FILE__), array('jquery', 'jquery-qrcode'), $script_version, true);
     
     // Enqueue BRC-100 payment integration (desktop wallets)
     $brc100_script_path = trailingslashit($plugin_base_dir) . 'assets/js/bsv-brc100-payment.js';
@@ -159,7 +159,7 @@ function BWWC__render_payment_console($order) {
     if (file_exists($brc100_script_path)) {
         $brc100_version .= '.' . filemtime($brc100_script_path);
     }
-    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', dirname(__FILE__)), array('jquery', 'bsv-payment-console'), $brc100_version, true);
+    wp_enqueue_script('bsv-brc100-payment', plugins_url('/assets/js/bsv-brc100-payment.js', __FILE__), array('jquery', 'bsv-payment-console'), $brc100_version, true);
     
     // Generate signed invoice URL for BIP270 (endpoint loaded in bootstrap.php)
     $invoice_url = BWWC__get_invoice_url($order_id, $order->get_order_key());
@@ -175,7 +175,7 @@ function BWWC__render_payment_console($order) {
         'invoiceUrl' => $bip270_enabled ? $invoice_url : '',
         'siteName' => get_bloginfo('name'),
         'siteUrl' => home_url(),
-        'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', dirname(__FILE__))),
+        'logoUrl' => get_site_icon_url(512) ?: (plugins_url('assets/images/bsv-logo.png', __FILE__)),
         'debugEnabled' => BWWC__is_debug_mode(),
         'bip270Enabled' => $bip270_enabled,
     ));

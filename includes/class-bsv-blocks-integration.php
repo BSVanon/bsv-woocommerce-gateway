@@ -47,7 +47,7 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
      */
     public function get_payment_method_script_handles() {
         $script_path = '/assets/js/blocks/bsv-payment-method.js';
-        $script_url = plugins_url($script_path, dirname(__FILE__));
+        $script_url = plugins_url($script_path, __FILE__);
         $script_asset_path = dirname(__FILE__, 2) . '/assets/js/blocks/bsv-payment-method.asset.php';
         
         $script_asset = file_exists($script_asset_path)
@@ -103,7 +103,7 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
             'title' => $gateway->get_option('title'),
             'description' => $gateway->get_option('description'),
             'supports' => $gateway->supports,
-            'icon' => plugins_url($selected_icon, dirname(__FILE__)),
+            'icon' => plugins_url($selected_icon, __FILE__),
         );
     }
 }

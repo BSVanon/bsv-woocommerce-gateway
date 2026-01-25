@@ -97,7 +97,7 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
 
         $selected_icon = !empty($bwwc_settings['selected_checkout_icon'])
             ? $bwwc_settings['selected_checkout_icon']
-            : '/images/checkout-icons/bsv_2.png';
+            : '/images/checkout-icons/BSV-1.svg';
 
         return array(
             'title' => $gateway->get_option('title'),

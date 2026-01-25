@@ -364,10 +364,17 @@ function BWWC__render_general_settings_page_html()
                 $plugin_root = dirname(__FILE__);
                 $icon_dir = '/images/checkout-icons/';
                 $icons = scandir($plugin_root . $icon_dir);
-                foreach($icons as $icon) {
-                    if (!is_file($plugin_root . $icon_dir . $icon)) {
+                foreach ($icons as $icon) {
+                    $icon_path = $plugin_root . $icon_dir . $icon;
+                    if (!is_file($icon_path)) {
                         continue;
                     }
+
+                    $extension = strtolower(pathinfo($icon, PATHINFO_EXTENSION));
+                    if ($extension !== 'svg') {
+                        continue;
+                    }
+
                     $icon_rel_path = $icon_dir . $icon;
                     $icon_url = plugins_url($icon_rel_path, __FILE__);
                     echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . checked($bwwc_settings['selected_checkout_icon'], $icon_rel_path, false) . '/>';
@@ -379,7 +386,7 @@ function BWWC__render_general_settings_page_html()
               <p class="description">
                 Icon displayed to users when choosing the payment method.<br />
                 You can upload new icons to: <?php echo esc_html(str_replace(ABSPATH, "", $plugin_root . $icon_dir)); ?><br />
-                Make sure to scale the image to a height of 32px.
+                Make sure to scale the image to a height of 32px for best checkout alignment.
               </p>
           </td>
         </tr>

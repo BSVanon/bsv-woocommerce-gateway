@@ -31,6 +31,13 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 * PHP 8+ compatible
 * Modern WordPress 6.x and WooCommerce 9.x support
 
+= BRC-100 improvements in v6.1 =
+* `createAction` payloads enumerate required outputs (satoshis, locking scripts, metadata) so compatible wallets build the right transaction on the first try.
+* Wallet responses can submit txid, raw transaction, and optional BEEF blobs that we store on the WooCommerce order for audits/SPV workflows.
+* Successful submissions immediately mark the payment `detected`, keeping the checkout stepper responsive before confirmations.
+* postMessage handlers validate origin/source and bind to the order nonce to block spoofed payment events.
+* Order binding checks (ID, key, expected sats, nonce) prevent receipts from being replayed across orders.
+
 = Benefits =
 
 * Accept payment directly into your personal ElectrumSV wallet.

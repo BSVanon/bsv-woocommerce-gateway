@@ -67,7 +67,7 @@ $g_BWWC__config_defaults = array(
    'enable_soft_cron_job'                 =>  '1',    // Enable "soft" Wordpress-driven cron jobs.
 
     // New BSV settings
-    'selected_checkout_icon'               =>  '/images/checkout-icons/orange-1.png',
+    'selected_checkout_icon'               =>  '/images/checkout-icons/BSV-1.svg',
     //'checkout_icon_select'                 =>  '',
     
     // UI/UX Settings (v5.3.0+)

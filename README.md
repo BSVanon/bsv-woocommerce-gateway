@@ -23,6 +23,14 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Checkout Options**: Works with both WooCommerce Blocks and classic shortcode checkout
 - **Security Hardened**: TLS verification enforced, no unauthenticated triggers, WooCommerce logger integration
 
+## 🧩 BRC-100 Upgrades in v6.1
+
+- **Richer wallet requests**: `createAction` payloads now enumerate satoshis, locking scripts, and contextual metadata so BRC-100 wallets know exactly what to build.
+- **Instant receipts**: Client-side responses can submit txid, raw hex, and optional BEEF blobs which we store on the WooCommerce order for audits and future SPV workflows.
+- **Immediate state progress**: As soon as a BRC-100 wallet hands back a receipt we mark the payment `detected`, keeping the checkout stepper responsive even before confirmations land.
+- **Hardened messaging**: Updated postMessage handlers validate origin/source and bind to the order nonce to stop spoofed payment events.
+- **Order binding**: Return data is validated against order ID, key, expected sats, and nonce so receipts cannot be replayed across orders.
+
 ## 📦 Installation
 
 ### Requirements

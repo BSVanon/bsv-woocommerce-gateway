@@ -8,7 +8,7 @@ Stable tag: 6.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
-WC tested up to: 9.5
+WC tested up to: 10.4
 
 
 Accept Bitcoin SV payments directly to your wallet. Self-custody, no third-party processor. Modern fork with PHP 8+ and WooCommerce HPOS support.
@@ -29,7 +29,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 * WooCommerce HPOS (High-Performance Order Storage) compatible
 * WooCommerce Blocks checkout support
 * PHP 8+ compatible
-* Modern WordPress 6.x and WooCommerce 9.x support
+* Modern WordPress 6.9 and WooCommerce 10.4 support
 
 = BRC-100 improvements in v6.1 =
 * `createAction` payloads enumerate required outputs (satoshis, locking scripts, metadata) so compatible wallets build the right transaction on the first try.
@@ -158,7 +158,7 @@ Your support helps maintain and improve this plugin for the entire BSV community
 * Proper handling of payments received after expiry/cancellation
 
 **MULTI-FORMAT PAYMENT CONSOLE:**
-* Single QR code with BIP21/BIP270 protocol tab switching
+* Single QR code with BIP21 payment links plus optional BIP270-style invoice tab (pay:?r=) for compatible wallets
 * Local QR generation (no external services)
 * Real-time payment status updates
 * Countdown timer with expiry display

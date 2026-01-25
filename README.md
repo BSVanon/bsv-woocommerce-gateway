@@ -129,14 +129,12 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 ## 🗺️ Roadmap
 
 ### v6.2+ (in Planning)
-- Admin diagnostics panel UI (provider health monitoring)
-- PHPCS/PHPStan CI integration
-- BIP270 invoices + QR toggle (HandCash-ready)
-- HPOS/meta cleanup 
-- upgraded BRC-100 wallet flow + better receipts/instant “detected” UX
-- Enhanced address pool management
-- Multi-currency support improvements
-- Performance optimizations and more
+- Admin diagnostics panel UI (provider health monitoring) so merch dashboards surface provider health at a glance
+- Automated PHPCS/PHPStan CI gating to keep every commit linted before release
+- HandCash-ready BIP270 enhancements (formal QR toggle + richer callbacks)
+- Enhanced address pool management (pre-generation + smarter reuse policies)
+- Multi-currency support improvements beyond WooCommerce base currency
+- Additional performance profiling, caching, and API rate optimizations
 
 ## 🐛 Troubleshooting
 

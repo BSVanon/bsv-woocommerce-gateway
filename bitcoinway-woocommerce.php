@@ -3,12 +3,12 @@
  * Plugin Name: SendBSV BSV Payments for WooCommerce
  * Plugin URI: https://github.com/BSVanon/bsv-woocommerce-gateway
  * Description: Accept Bitcoin SV (BSV) payments directly to your wallet for physical and digital products at your WooCommerce store. Self-custody, no third-party processor required.
- * Version: 6.0.0
+ * Version: 6.1.0
  * Author: BSVanon
  * Author URI: https://sendbsv.com
  * License: GPL-2.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
- * Text Domain: sendbsv-bsv-payments-for-woocommerce
+ * Text Domain: bsvanon-bitcoin-sv-payments
  * Domain Path: /lang
  * Requires at least: 5.8
  * Tested up to: 6.9
@@ -24,10 +24,11 @@ if (!defined('ABSPATH')) {
 }
 
 
-// Declare HPOS compatibility
+// Declare WooCommerce feature compatibilities - MUST be called inside before_woocommerce_init hook
 add_action('before_woocommerce_init', function() {
     if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('custom_order_tables', __FILE__, true);
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, true);
     }
 });
 
@@ -95,10 +96,10 @@ function BWWC_activate()
 // Cron Subfunctions
 function BWWC__add_custom_scheduled_intervals($schedules)
 {
-    $schedules['seconds_30']     = array('interval'=>30,  'display'=>__('Once every 30 seconds', 'sendbsv-bsv-payments-for-woocommerce'));     // For testing only.
-    $schedules['minutes_1']      = array('interval'=>60,  'display'=>__('Once every 1 minute', 'sendbsv-bsv-payments-for-woocommerce'));
-    $schedules['minutes_2.5']    = array('interval'=>150, 'display'=>__('Once every 2.5 minutes', 'sendbsv-bsv-payments-for-woocommerce'));
-    $schedules['minutes_5']      = array('interval'=>300, 'display'=>__('Once every 5 minutes', 'sendbsv-bsv-payments-for-woocommerce'));
+    $schedules['seconds_30']     = array('interval'=>30,  'display'=>__('Once every 30 seconds', 'bsvanon-bitcoin-sv-payments'));     // For testing only.
+    $schedules['minutes_1']      = array('interval'=>60,  'display'=>__('Once every 1 minute', 'bsvanon-bitcoin-sv-payments'));
+    $schedules['minutes_2.5']    = array('interval'=>150, 'display'=>__('Once every 2.5 minutes', 'bsvanon-bitcoin-sv-payments'));
+    $schedules['minutes_5']      = array('interval'=>300, 'display'=>__('Once every 5 minutes', 'bsvanon-bitcoin-sv-payments'));
 
     return $schedules;
 }
@@ -111,7 +112,7 @@ function BWWC__add_custom_scheduled_intervals($schedules)
  */
 function BWWC__plugin_action_links($links)
 {
-    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'sendbsv-bsv-payments-for-woocommerce') . '</a>';
+    $settings_link = '<a href="' . admin_url('admin.php?page=BWWC-settings') . '">' . __('Settings', 'bsvanon-bitcoin-sv-payments') . '</a>';
     array_unshift($links, $settings_link);
     return $links;
 }
@@ -165,8 +166,8 @@ function BWWC_create_menu()
     // create new top-level menu
     // http://www.fileformat.info/info/unicode/char/e3f/index.htm
     add_menu_page(
-        __('Woo Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'),                    // Page title
-        __('Bitcoin SV', 'sendbsv-bsv-payments-for-woocommerce'),                        // Menu Title - lower corner of admin menu
+        __('Woo Bitcoin SV', 'bsvanon-bitcoin-sv-payments'),                    // Page title
+        __('Bitcoin SV', 'bsvanon-bitcoin-sv-payments'),                        // Menu Title - lower corner of admin menu
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page',                   // Function
@@ -176,8 +177,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __('WooCommerce Bitcoin SV Payments Gateway', 'sendbsv-bsv-payments-for-woocommerce'),                   // Page title
-        __('General Settings', 'sendbsv-bsv-payments-for-woocommerce'),               // Menu Title
+        __('WooCommerce Bitcoin SV Payments Gateway', 'bsvanon-bitcoin-sv-payments'),                   // Page title
+        __('General Settings', 'bsvanon-bitcoin-sv-payments'),               // Menu Title
         'manage_options',                                        // Capability
         'BWWC-settings',                                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_general_settings_page'                    // Function
@@ -185,8 +186,8 @@ function BWWC_create_menu()
 
     add_submenu_page(
         'BWWC-settings',                                        // Parent
-        __('Bitcoin SV Plugin Advanced Settings', 'sendbsv-bsv-payments-for-woocommerce'),       // Page title
-        __('Advanced Settings', 'sendbsv-bsv-payments-for-woocommerce'),                // Menu title
+        __('Bitcoin SV Plugin Advanced Settings', 'bsvanon-bitcoin-sv-payments'),       // Page title
+        __('Advanced Settings', 'bsvanon-bitcoin-sv-payments'),                // Menu title
         'manage_options',                                        // Capability
         'BWWC-settings-advanced',                        // Handle - First submenu's handle must be equal to parent's handle to avoid duplicate menu entry.
         'BWWC__render_advanced_settings_page'            // Function
@@ -203,7 +204,7 @@ function BWWC_set_lang_file()
     if (!empty($currentLocale)) {
         $moFile = dirname(__FILE__) . "/lang/" . $currentLocale . ".mo";
         if (@file_exists($moFile) && is_readable($moFile)) {
-            load_textdomain('sendbsv-bsv-payments-for-woocommerce', $moFile);
+            load_textdomain('bsvanon-bitcoin-sv-payments', $moFile);
         }
     }
 }

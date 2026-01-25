@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;

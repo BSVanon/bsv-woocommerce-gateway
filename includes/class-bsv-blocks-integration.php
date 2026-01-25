@@ -57,11 +57,18 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
                 'version' => BWWC_VERSION
             );
 
+        // Use filemtime for cache busting
+        $script_file_path = dirname(__FILE__, 2) . $script_path;
+        $script_version = $script_asset['version'];
+        if (file_exists($script_file_path)) {
+            $script_version .= '.' . filemtime($script_file_path);
+        }
+
         wp_register_script(
             'wc-bitcoin-sv-blocks-integration',
             $script_url,
             $script_asset['dependencies'],
-            $script_asset['version'],
+            $script_version,
             true
         );
 
@@ -76,16 +83,27 @@ final class BWWC_WC_Gateway_Blocks_Support extends AbstractPaymentMethodType {
     public function get_payment_method_data() {
         $payment_gateways = WC()->payment_gateways->payment_gateways();
         $gateway = isset($payment_gateways['bitcoin_sv']) ? $payment_gateways['bitcoin_sv'] : null;
-
+        
         if (!$gateway) {
             return array();
         }
 
+        // Use the selected checkout icon from core plugin settings
+        if (function_exists('BWWC__get_settings')) {
+            $bwwc_settings = BWWC__get_settings();
+        } else {
+            $bwwc_settings = get_option('woocommerce_bitcoin_sv_settings', array());
+        }
+
+        $selected_icon = !empty($bwwc_settings['selected_checkout_icon'])
+            ? $bwwc_settings['selected_checkout_icon']
+            : '/images/checkout-icons/BSV-1.svg';
+
         return array(
             'title' => $gateway->get_option('title'),
             'description' => $gateway->get_option('description'),
-            'supports' => array_filter($gateway->supports, array($gateway, 'supports')),
-            'icon' => plugins_url('/images/checkout-icons/bsv_2.png', dirname(__FILE__)),
+            'supports' => $gateway->supports,
+            'icon' => plugins_url($selected_icon, dirname(__FILE__)),
         );
     }
 }

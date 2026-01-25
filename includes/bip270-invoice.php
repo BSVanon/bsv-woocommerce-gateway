@@ -4,7 +4,12 @@
  * Serves PaymentTerms JSON for BSV wallets supporting invoice protocol
  * 
  * Wallets: HandCash, ElectrumSV, Centi, SimplyCash
- * Spec: https://github.com/moneybutton/bips/blob/master/bip-0270.mediawiki
+ * Spec: https://tsc.bsvblockchain.org/standards/direct-payment-protocol/
+ * 
+ * IMPORTANT: BSV Direct Payment Protocol requires HTTPS. Wallets will refuse
+ * to fetch invoice URLs over plain HTTP for security (anti-MITM).
+ * For local testing, use Cloudflare Tunnel or similar to provide HTTPS.
+ * See docs/CLOUDFLARE_TUNNEL_SETUP.md for setup instructions.
  */
 
 if (!defined('ABSPATH')) {
@@ -27,6 +32,10 @@ add_action('init', 'BWWC__register_bip270_endpoint');
 function BWWC__serve_bip270_invoice() {
     // Verify HTTPS (required for payment protocols)
     if (!is_ssl() && !defined('BWWC_ALLOW_HTTP_INVOICE')) {
+        BWWC__log_bip270_invoice('Rejected invoice request: HTTPS required', array(
+            'scheme' => (is_ssl() ? 'https' : 'http'),
+            'host' => isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : null,
+        ));
         wp_send_json_error(array(
             'message' => 'HTTPS required for invoice protocol'
         ), 400);
@@ -38,7 +47,19 @@ function BWWC__serve_bip270_invoice() {
     $order_key = isset($_GET['key']) ? sanitize_text_field($_GET['key']) : '';
     $signature = isset($_GET['sig']) ? sanitize_text_field($_GET['sig']) : '';
 
+    BWWC__log_bip270_invoice('Incoming invoice request', array(
+        'orderId' => $order_id,
+        'hasKey' => $order_key !== '' ? 'yes' : 'no',
+        'hasSig' => $signature !== '' ? 'yes' : 'no',
+        'remoteAddr' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : null,
+    ));
+
     if (!$order_id || !$order_key || !$signature) {
+        BWWC__log_bip270_invoice('Invoice request missing parameters', array(
+            'orderId' => $order_id,
+            'hasKey' => $order_key !== '' ? 'yes' : 'no',
+            'hasSig' => $signature !== '' ? 'yes' : 'no',
+        ));
         wp_send_json_error(array(
             'message' => 'Missing required parameters'
         ), 400);
@@ -48,6 +69,9 @@ function BWWC__serve_bip270_invoice() {
     // Load order
     $order = wc_get_order($order_id);
     if (!$order) {
+        BWWC__log_bip270_invoice('Invoice request failed: order not found', array(
+            'orderId' => $order_id,
+        ));
         wp_send_json_error(array(
             'message' => 'Order not found'
         ), 404);
@@ -56,6 +80,9 @@ function BWWC__serve_bip270_invoice() {
 
     // Verify order key
     if ($order->get_order_key() !== $order_key) {
+        BWWC__log_bip270_invoice('Invoice request failed: invalid order key', array(
+            'orderId' => $order_id,
+        ));
         wp_send_json_error(array(
             'message' => 'Invalid order key'
         ), 403);
@@ -65,6 +92,9 @@ function BWWC__serve_bip270_invoice() {
     // Verify signature (HMAC to prevent tampering)
     $expected_sig = BWWC__generate_invoice_signature($order_id, $order_key);
     if (!hash_equals($expected_sig, $signature)) {
+        BWWC__log_bip270_invoice('Invoice request failed: invalid signature', array(
+            'orderId' => $order_id,
+        ));
         wp_send_json_error(array(
             'message' => 'Invalid signature'
         ), 403);
@@ -72,8 +102,12 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Check if order is still payable
-    $payment_state = get_post_meta($order_id, 'payment_state', true);
+    $payment_state = BWWC__get_payment_state($order_id);
     if (!in_array($payment_state, array('waiting', 'underpaid', 'pending', 'detected'))) {
+        BWWC__log_bip270_invoice('Invoice request rejected due to order state', array(
+            'orderId' => $order_id,
+            'state' => $payment_state,
+        ));
         wp_send_json_error(array(
             'message' => 'Order is no longer accepting payment',
             'state' => $payment_state
@@ -82,12 +116,30 @@ function BWWC__serve_bip270_invoice() {
     }
 
     // Get payment details
-    $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
-    $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
-    $expected_sats = get_post_meta($order_id, 'expected_sats', true);
-    $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+    $bsv_address = $order->get_meta('_bwwc_address', true);
+    if (empty($bsv_address)) {
+        $bsv_address = get_post_meta($order_id, 'bitcoins_address', true);
+    }
+    $bsv_amount = $order->get_meta('_bwwc_order_total_in_btc', true);
+    if (empty($bsv_amount)) {
+        $bsv_amount = get_post_meta($order_id, 'order_total_in_btc', true);
+    }
+    $expected_sats = $order->get_meta('_bwwc_expected_sats', true);
+    if (empty($expected_sats)) {
+        $expected_sats = get_post_meta($order_id, 'expected_sats', true);
+    }
+    $expires_at = $order->get_meta('_bwwc_expires_at', true);
+    if (empty($expires_at)) {
+        $expires_at = get_post_meta($order_id, 'address_expires_at', true);
+    }
 
     if (!$bsv_address || !$bsv_amount || !$expected_sats) {
+        BWWC__log_bip270_invoice('Invoice request failed: missing payment details', array(
+            'orderId' => $order_id,
+            'hasAddress' => $bsv_address ? 'yes' : 'no',
+            'hasAmount' => $bsv_amount ? 'yes' : 'no',
+            'hasExpectedSats' => $expected_sats ? 'yes' : 'no',
+        ));
         wp_send_json_error(array(
             'message' => 'Payment details not available'
         ), 500);
@@ -96,6 +148,11 @@ function BWWC__serve_bip270_invoice() {
 
     // Check expiration
     if ($expires_at && time() > $expires_at) {
+        BWWC__log_bip270_invoice('Invoice request failed: invoice expired', array(
+            'orderId' => $order_id,
+            'expiresAt' => $expires_at,
+            'now' => time(),
+        ));
         wp_send_json_error(array(
             'message' => 'Invoice expired',
             'expires' => gmdate('c', $expires_at)
@@ -106,25 +163,49 @@ function BWWC__serve_bip270_invoice() {
     // Build locking script for P2PKH address
     $locking_script = BWWC__address_to_locking_script($bsv_address);
     if (!$locking_script) {
+        BWWC__log_bip270_invoice('Invoice request failed: locking script generation failed', array(
+            'orderId' => $order_id,
+        ));
         wp_send_json_error(array(
             'message' => 'Failed to generate payment script'
         ), 500);
         exit;
     }
 
-    // Build BIP270 PaymentTerms response
+    // Build BIP270 DPP PaymentTerms response per BSV TSC spec
+    $creation_timestamp = time();
+    $expiration_timestamp = $expires_at ? (int) $expires_at : ($creation_timestamp + 3600);
+
+    $merchant_data_payload = array(
+        'orderId' => $order_id,
+        'orderKey' => $order_key,
+        'plugin' => 'bsv-woocommerce-gateway',
+        'version' => BWWC_VERSION,
+    );
+
+    // BSV TSC DPP PaymentTerms structure
     $payment_terms = array(
         'network' => 'bitcoin-sv',
-        'creationTimestamp' => time(),
-        'expirationTimestamp' => $expires_at ?: (time() + 3600),
+        'version' => '1.0',
+        'creationTimestamp' => $creation_timestamp,
+        'expirationTimestamp' => $expiration_timestamp,
         'memo' => sprintf('Payment for WooCommerce Order #%d', $order_id),
         'paymentUrl' => BWWC__get_payment_callback_url($order_id, $order_key),
-        'merchantData' => array(
-            'orderId' => $order_id,
-            'orderKey' => $order_key,
-            'plugin' => 'bsv-woocommerce-gateway',
-            'version' => BWWC_VERSION
+        'merchantData' => base64_encode(wp_json_encode($merchant_data_payload)),
+        'modes' => array(
+            array(
+                'mode' => 'HybridPaymentMode',
+                'brfcId' => 'ef63d9775da5',
+                'outputs' => array(
+                    array(
+                        'amount' => intval($expected_sats),
+                        'script' => $locking_script,
+                        'description' => sprintf('Order #%d payment', $order_id)
+                    )
+                )
+            )
         ),
+        // Deprecated but kept for backward compatibility
         'outputs' => array(
             array(
                 'script' => $locking_script,
@@ -140,9 +221,38 @@ function BWWC__serve_bip270_invoice() {
     header('Pragma: no-cache');
     header('Expires: 0');
 
+    BWWC__log_bip270_invoice('Serving BIP270 PaymentTerms', array(
+        'orderId' => $order_id,
+        'expectedSats' => (int) $expected_sats,
+        'expiresAt' => $payment_terms['expirationTimestamp'],
+        'merchantDataBase64' => substr($payment_terms['merchantData'], 0, 64) . '...'
+    ));
+
     // Return PaymentTerms JSON
-    echo wp_json_encode($payment_terms, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    echo wp_json_encode($payment_terms, JSON_PRETTY_PRINT);
     exit;
+}
+
+/**
+ * Helper logger for invoice endpoint.
+ *
+ * @param string $message
+ * @param array  $context
+ */
+function BWWC__log_bip270_invoice($message, $context = array()) {
+    if (!function_exists('BWWC__is_debug_mode') || !function_exists('BWWC__log_debug')) {
+        return;
+    }
+
+    if (!BWWC__is_debug_mode()) {
+        return;
+    }
+
+    if (!empty($context)) {
+        $message .= ' | ' . wp_json_encode($context, JSON_UNESCAPED_SLASHES);
+    }
+
+    BWWC__log_debug($message);
 }
 
 /**
@@ -156,7 +266,99 @@ function BWWC__generate_invoice_signature($order_id, $order_key) {
 }
 
 /**
- * Generate signed invoice URL for BIP270 QR code
+ * Generate signed receipt download URL
+ */
+function BWWC__get_receipt_url($order_id, $order_key) {
+    $signature = BWWC__generate_invoice_signature($order_id, $order_key);
+    
+    $params = array(
+        'order_id' => $order_id,
+        'key' => $order_key,
+        'sig' => $signature
+    );
+    
+    return add_query_arg($params, home_url('/wc-api/bsv_receipt'));
+}
+
+/**
+ * Serve receipt download
+ */
+function BWWC__serve_receipt_download() {
+    BWWC__log_bip270_invoice('Incoming receipt download request', array());
+
+    $order_id = isset($_GET['order_id']) ? absint($_GET['order_id']) : 0;
+    $order_key = isset($_GET['key']) ? sanitize_text_field(wp_unslash($_GET['key'])) : '';
+    $signature = isset($_GET['sig']) ? sanitize_text_field(wp_unslash($_GET['sig'])) : '';
+
+    if (!$order_id || !$order_key || !$signature) {
+        BWWC__log_bip270_invoice('Receipt download request missing parameters', array());
+        wp_die(esc_html__('Invalid request', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 400));
+    }
+
+    // Load order
+    $order = wc_get_order($order_id);
+    if (!$order) {
+        BWWC__log_bip270_invoice('Receipt download failed: order not found', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Order not found', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 404));
+    }
+
+    // Verify order key
+    if ($order->get_order_key() !== $order_key) {
+        BWWC__log_bip270_invoice('Receipt download failed: invalid order key', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Invalid order key', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 403));
+    }
+
+    // Verify signature
+    $expected_sig = BWWC__generate_invoice_signature($order_id, $order_key);
+    if (!hash_equals($expected_sig, $signature)) {
+        BWWC__log_bip270_invoice('Receipt download failed: invalid signature', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('Invalid signature', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 403));
+    }
+
+    // Get receipt data
+    $raw_tx = $order->get_meta('_bwwc_raw_tx', true);
+    $beef = $order->get_meta('_bwwc_beef', true);
+
+    if (!$raw_tx && !$beef) {
+        BWWC__log_bip270_invoice('Receipt download failed: no receipt data', array(
+            'orderId' => $order_id,
+        ));
+        wp_die(esc_html__('No receipt available', 'bsvanon-bitcoin-sv-payments'), '', array('response' => 404));
+    }
+
+    // Serve the receipt
+    if ($beef) {
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="receipt-' . $order_id . '.json"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        echo $beef;
+    } else {
+        header('Content-Type: text/plain');
+        header('Content-Disposition: attachment; filename="receipt-' . $order_id . '.hex"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        echo $raw_tx;
+    }
+
+    BWWC__log_bip270_invoice('Served receipt download', array(
+        'orderId' => $order_id,
+        'type' => $beef ? 'beef' : 'raw_tx'
+    ));
+
+    exit;
+}
+
+/**
+ * Get invoice URL for BIP270 invoice protocol
  */
 function BWWC__get_invoice_url($order_id, $order_key) {
     $signature = BWWC__generate_invoice_signature($order_id, $order_key);

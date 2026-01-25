@@ -15,6 +15,7 @@
         maxPollingDuration: 7200000, // 2 hours in milliseconds
         pollCount: 0,
         reloadScheduled: false,
+        debugEnabled: false,
 
         init: function() {
             // Get order data from DOM
@@ -24,20 +25,22 @@
             this.orderId = consoleEl.data('order-id') || bsvPaymentData.orderId || null;
             this.orderKey = consoleEl.data('order-key') || bsvPaymentData.orderKey || null;
             this.pollingDelay = (consoleEl.data('polling-interval') || 10) * 1000;
+            this.debugEnabled = Boolean(bsvPaymentData && bsvPaymentData.debugEnabled);
 
             if (!this.orderId || !this.orderKey) {
                 console.warn('BSV Payment Console: Missing order ID or key');
                 return;
             }
 
-            // Generate QR code
-            this.generateQRCode();
+            // Restore protocol selection (defaults to Invoice when available)
+            this.currentProtocol = this.getInitialProtocol();
 
             // Bind event handlers
             this.bindEvents();
-            
-            // BIP270 protocol tab switching removed - deferred to v6.1
-            // See V6.1_ROADMAP.md for restoration instructions
+            this.bindProtocolTabs();
+
+            // Sync initial tab states & QR
+            this.applyProtocolSelection(this.currentProtocol, { skipStorage: true });
 
             // Initial status check to determine if we should poll
             this.checkStatus().done((response) => {
@@ -48,10 +51,16 @@
                         this.pollingStartTime = Date.now();
                         this.startPolling();
                     } else {
-                        console.log('BSV: Order in final state, polling not started - ' + shouldStop.reason);
+                        this.debugLog('Order in final state, polling not started -', shouldStop.reason);
                     }
                 }
             });
+        },
+
+        debugLog: function(...args) {
+            if (this.debugEnabled && console && console.log) {
+                console.log('BSV:', ...args);
+            }
         },
 
         bindEvents: function() {
@@ -199,7 +208,7 @@
                 // Check if polling has exceeded max duration (2 hours)
                 const elapsed = Date.now() - this.pollingStartTime;
                 if (elapsed > this.maxPollingDuration) {
-                    console.log('BSV: Polling stopped after 2 hours');
+                    this.debugLog('Polling stopped after 2 hours');
                     this.stopPolling();
                     return;
                 }
@@ -263,7 +272,7 @@
             // Stop polling on final states
             const shouldStopPolling = this.shouldStopPolling(data);
             if (shouldStopPolling.stop) {
-                console.log('BSV: Polling stopped - ' + shouldStopPolling.reason);
+                this.debugLog('Polling stopped -', shouldStopPolling.reason);
                 this.stopPolling();
             }
 
@@ -282,40 +291,46 @@
         },
         
         shouldStopPolling: function(data) {
-            // CRITICAL: Check order_status FIRST - this is the source of truth
-            // WooCommerce order status indicates actual order state
-            if (data.order_status === 'completed' || data.order_status === 'processing') {
-                console.log('BSV: Stopping - order status is ' + data.order_status);
-                return { stop: true, reason: 'order ' + data.order_status };
-            }
-            
-            // Parse all values for additional checks
+            // Parse all values for checks
             const current = parseInt(data.best_confirmations) || 0;
             const required = parseInt(data.required_confirmations) || 1;
             const receivedSats = parseInt(data.received_sats) || 0;
             const expectedSats = parseInt(data.expected_sats) || 0;
             const confirmedSats = parseInt(data.confirmed_sats) || 0;
+            const state = data.payment_state || 'waiting';
             
             // Log current state for debugging
-            console.log('BSV: Poll check - state=' + data.payment_state + ' confirmed=' + confirmedSats + '/' + expectedSats + ' confs=' + current + '/' + required + ' order_status=' + data.order_status);
+            this.debugLog('Poll check', {
+                state: state,
+                confirmed: confirmedSats + '/' + expectedSats,
+                confirmations: current + '/' + required,
+                orderStatus: data.order_status
+            });
             
-            // Stop if payment is confirmed AND order should be completed
-            // This catches cases where payment is confirmed but order status hasn't updated yet
-            if (data.payment_state === 'confirmed' && 
+            // Stop if order is completed (final state)
+            if (data.order_status === 'completed') {
+                this.debugLog('Stopping - order completed');
+                return { stop: true, reason: 'order completed' };
+            }
+            
+            // Stop if payment is verified (has required confirmations)
+            // This is the TRUE completion condition for payment tracking
+            if (state === 'verified' && 
                 confirmedSats >= expectedSats && 
                 current >= required && 
                 expectedSats > 0) {
-                console.log('BSV: Stopping - payment fully confirmed');
-                return { stop: true, reason: 'payment confirmed (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
+                this.debugLog('Stopping - payment fully verified');
+                return { stop: true, reason: 'payment verified (' + confirmedSats + ' sats, ' + current + '/' + required + ' confirmations)' };
             }
             
             // Stop if expired with no funds received
-            if (data.payment_state === 'expired' && receivedSats == 0) {
-                console.log('BSV: Stopping - expired with no payment');
+            if (state === 'expired' && receivedSats == 0) {
+                this.debugLog('Stopping - expired with no payment');
                 return { stop: true, reason: 'payment window expired with no payment' };
             }
             
-            // Continue polling for waiting, pending, underpaid states
+            // Continue polling for detected state (showing confirmation progress)
+            // Don't stop just because order status is 'processing' - we want to show confirmations accumulating
             return { stop: false };
         },
         
@@ -325,7 +340,7 @@
             
             const state = data.payment_state || 'waiting';
             
-            if (state === 'detected' || state === 'confirmed' || state === 'pending') {
+            if (state === 'detected' || state === 'verified') {
                 btn.text('Payment Received!');
                 btn.removeClass('bsv-btn-primary').addClass('bsv-btn-success');
                 btn.prop('disabled', true);
@@ -350,7 +365,7 @@
             const state = data.payment_state || 'waiting';
             
             // Hide wallet button when payment is detected/pending/confirmed
-            if (state === 'detected' || state === 'pending' || state === 'confirmed') {
+            if (state === 'detected' || state === 'verified') {
                 walletBtn.hide();
             } else if (state === 'waiting' || state === 'underpaid') {
                 // Show wallet button only in waiting/underpaid states (if wallet was detected)
@@ -370,14 +385,10 @@
                 },
                 detected: {
                     label: 'Payment Detected!',
-                    message: 'Your payment has been detected on the blockchain. Waiting for confirmation...'
+                    message: `Payment detected on blockchain! Awaiting ${data.required_confirmations || 1} confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
                 },
-                pending: {
-                    label: 'Payment Received',
-                    message: `Payment received! Awaiting ${data.required_confirmations || 1} blockchain confirmation(s). Each confirmation usually takes ~10 minutes—no action needed.`
-                },
-                confirmed: {
-                    label: 'Payment Confirmed',
+                verified: {
+                    label: 'Payment Verified',
                     message: 'Your payment has been confirmed. Thank you!'
                 },
                 expired: {
@@ -399,7 +410,7 @@
             const statusInfo = statusMessages[state] || statusMessages.waiting;
 
             // Update classes
-            statusStrip.removeClass('status-waiting status-detected status-confirmed status-expired status-underpaid status-overpaid status-pending');
+            statusStrip.removeClass('status-waiting status-detected status-verified status-expired status-underpaid status-overpaid');
             statusStrip.addClass('status-' + state);
 
             // Update content - find strong and span within .bsv-status-text
@@ -425,7 +436,7 @@
                 '</div>';
             
             statusStrip.after(stepperHtml);
-            console.log('BSV: Stepper created with ' + maxDots + ' dots');
+            this.debugLog('Stepper created with', maxDots, 'dots');
         },
         
         updateConfirmations: function(data) {
@@ -445,7 +456,7 @@
             
             // If stepper doesn't exist but should show, create it
             if (!confEl.length && state !== 'waiting') {
-                console.log('BSV: Creating stepper dynamically for state: ' + state);
+                this.debugLog('Creating stepper dynamically for state:', state);
                 this.createStepper(required);
             }
             
@@ -479,13 +490,13 @@
                     if (index === 0) {
                         dot.addClass('partial');
                     }
-                } else if (state === 'detected' || state === 'pending') {
+                } else if (state === 'detected') {
                     if (index < current) {
                         dot.addClass('confirmed');
                     } else if (index === 0 && received >= expected) {
                         dot.addClass('pending');
                     }
-                } else if (state === 'confirmed') {
+                } else if (state === 'verified') {
                     if (index < current) {
                         dot.addClass('confirmed');
                     }
@@ -578,7 +589,43 @@
             }
         },
 
-        generateQRCode: function(protocol) {
+        getInitialProtocol: function() {
+            const stored = this.getStoredProtocol();
+
+            if (stored === 'bip270' && this.isProtocolAvailable('bip270')) {
+                return 'bip270';
+            }
+
+            if (stored === 'address-only') {
+                return 'address-only';
+            }
+
+            // Always default to BIP21 (Standard) for best compatibility
+            return 'bip21';
+        },
+
+        getStoredProtocol: function() {
+            try {
+                const stored = window.localStorage.getItem('bsv_protocol_preference');
+                if (stored && (stored === 'bip21' || stored === 'bip270' || stored === 'address-only')) {
+                    return stored;
+                }
+            } catch (err) {
+                // Ignore storage errors (private mode, etc.)
+            }
+            // Default to BIP21 (Standard) for best wallet compatibility
+            return 'bip21';
+        },
+
+        storeProtocolPreference: function(protocol) {
+            try {
+                window.localStorage.setItem('bsv_protocol_preference', protocol);
+            } catch (err) {
+                // Storage failure is non-fatal
+            }
+        },
+
+        generateQRCode: function(protocol = 'bip21') {
             const qrEl = $('#bsv-qr-code');
             if (!qrEl.length) return;
 
@@ -593,11 +640,21 @@
                 return;
             }
 
-            // BIP21: Standard bitcoin: URI with address and amount
-            // Amount MUST be in BSV decimal, not sats
-            // BIP270 support deferred to v6.1 - see V6.1_ROADMAP.md
-            const qrPayload = `bitcoin:${address}?amount=${amount}`;
-            console.log('BSV: Generating BIP21 QR:', qrPayload);
+            let qrPayload;
+            if (protocol === 'bip270' && bsvPaymentData.invoiceUrl) {
+                // BIP270 DPP format: pay:?r=<HTTPS_URL_TO_PAYMENTTERMS>
+                qrPayload = `pay:?r=${bsvPaymentData.invoiceUrl}`;
+                this.debugLog('Generating BIP270 DPP invoice QR (pay:?r=)', qrPayload);
+            } else if (protocol === 'address-only') {
+                // Raw address only - HandCash compatible
+                // User must manually enter amount after scanning
+                qrPayload = address;
+                this.debugLog('Generating raw address QR (HandCash-safe)', qrPayload);
+            } else {
+                // BIP21 Standard format: bitcoin:<address>?sv&amount=<bsv>
+                qrPayload = `bitcoin:${address}?sv&amount=${amount}`;
+                this.debugLog('Generating BIP21 Standard QR', qrPayload);
+            }
 
             try {
                 // Clear existing QR
@@ -616,50 +673,70 @@
             }
         },
 
-        // BIP270 functions removed for v6.0.0 - restore in v6.1
-        // See V6.1_ROADMAP.md for restoration instructions
-        
-        /* RESTORE FOR v6.1:
-        getInvoiceUrl: function(orderId, orderKey) {
-            // Generate signed invoice URL for BIP270
-            // Server will verify signature to prevent tampering
-            const baseUrl = window.location.origin;
-            const params = new URLSearchParams({
-                order_id: orderId,
-                key: orderKey,
-                sig: 'placeholder' // Server generates real signature
-            });
-            
-            // Note: Real signature is generated server-side
-            // This is just for QR generation - actual URL comes from localized data
-            return bsvPaymentData.invoiceUrl || `${baseUrl}/wc-api/bsv_invoice?${params.toString()}`;
-        },
-
         bindProtocolTabs: function() {
             const self = this;
-            
+
+            // Disable BIP270 tab if invoice URL missing
+            if (!this.isProtocolAvailable('bip270')) {
+                $('.bsv-protocol-tab[data-protocol="bip270"]').prop('disabled', true).attr('aria-disabled', 'true');
+            }
+
             $('.bsv-protocol-tab, .bsv-wallet-tab').on('click', function() {
                 const $tab = $(this);
                 const protocol = $tab.data('protocol');
-                
-                // Update active state
-                $('.bsv-protocol-tab, .bsv-wallet-tab').removeClass('active').attr('aria-selected', 'false');
-                $tab.addClass('active').attr('aria-selected', 'true');
-                
-                // Update QR code
-                self.generateQRCode(protocol);
-                
-                // Update protocol description/hint
-                $('.bsv-protocol-description, .bsv-qr-hint').hide();
-                $(`.bsv-protocol-description[data-protocol="${protocol}"], .bsv-qr-hint[data-protocol="${protocol}"]`).show();
+                if (!protocol) {
+                    return;
+                }
+                self.applyProtocolSelection(protocol);
             });
+        },
+
+        isProtocolAvailable: function(protocol) {
+            if (protocol === 'bip270') {
+                return Boolean(bsvPaymentData.invoiceUrl);
+            }
+            return true;
+        },
+
+        applyProtocolSelection: function(protocol, options = {}) {
+            if (!this.isProtocolAvailable(protocol)) {
+                protocol = 'bip21';
+            }
+
+            this.currentProtocol = protocol;
+
+            if (!options.skipStorage) {
+                this.storeProtocolPreference(protocol);
+            }
+
+            // Update tab active state
+            $('.bsv-protocol-tab, .bsv-wallet-tab')
+                .removeClass('active')
+                .attr('aria-selected', 'false');
+
+            $(`.bsv-protocol-tab[data-protocol="${protocol}"], .bsv-wallet-tab[data-protocol="${protocol}"]`)
+                .addClass('active')
+                .attr('aria-selected', 'true');
+
+            // Toggle instruction text based on protocol
+            $('.bsv-instruction-bip21, .bsv-instruction-bip270, .bsv-instruction-address-only').hide();
+            $(`.bsv-instruction-${protocol}`).show();
+
+            // Regenerate QR for selected protocol
+            this.generateQRCode(protocol);
         }
-        END RESTORE FOR v6.1 */
     };
+
+    // Expose globally for BRC-100 integration
+    if (typeof bsvPaymentData !== 'undefined') {
+        window.bsvPaymentData = bsvPaymentData;
+    }
 
     // Initialize on document ready
     $(document).ready(function() {
-        BSVPaymentConsole.init();
+        if (typeof bsvPaymentData !== 'undefined') {
+            BSVPaymentConsole.init();
+        }
     });
 
 })(jQuery);

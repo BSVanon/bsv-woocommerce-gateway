@@ -15,18 +15,18 @@
 
     const BSVBRC7Payment = {
         init: async function() {
-            console.log('[BRC-7] Initializing wallet payment integration...');
-            console.log('[BRC-7] Current URL:', window.location.href);
+            if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] Initializing wallet payment integration...');
+            if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] Current URL:', window.location.href);
             
             this.bindPaymentButton();
             
             // Try to detect wallet using all available methods
             try {
                 const walletInfo = await this.ensureWallet();
-                console.log('[BRC-7] ✅ Wallet detected:', walletInfo.type);
+                if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] ✅ Wallet detected:', walletInfo.type);
                 $('#bsv-brc100-pay-button').prop('disabled', false).show();
             } catch (error) {
-                console.log('[BRC-7] ⚠️ No wallet detected:', error.message);
+                if (window.bsvPaymentData && window.bsvPaymentData.debugEnabled) console.log('[BRC-7] ⚠️ No wallet detected:', error.message);
                 console.log('[BRC-7] Button will remain hidden until wallet is available');
             }
         },
@@ -153,8 +153,14 @@
             // Build BRC-1 Transaction Creation request
             const brc1Request = {
                 description: `WooCommerce Order #${orderId} Payment`,
+                merchantData: {
+                    orderId: orderId,
+                    orderKey: bsvPaymentData.orderKey,
+                    expectedSats: amountSats,
+                    nonce: Math.random().toString(36).substr(2, 9)
+                },
                 outputs: [{
-                    satoshis: amountSats,
+                    satoshis: parseInt(amountSats),
                     lockingScript: lockingScript,
                     outputDescription: `Order #${orderId} payment`
                 }]
@@ -177,6 +183,29 @@
             const txid = this.extractTxid(result);
             if (txid) {
                 console.log('[BRC-7] ✅ Payment successful, txid:', txid);
+                
+                // Store richer receipt if available
+                if (result.rawTx || result.beef) {
+                    $.ajax({
+                        url: bsvPaymentData.statusEndpoint.replace('bsv_check_payment_status', 'bsv_store_receipt'),
+                        method: 'POST',
+                        data: {
+                            order_id: bsvPaymentData.orderId,
+                            order_key: bsvPaymentData.orderKey,
+                            raw_tx: result.rawTx,
+                            beef: result.beef,
+                            txid: txid,
+                            nonce: bsvPaymentData.nonce
+                        },
+                        success: function() {
+                            console.log('[BRC-7] Receipt stored');
+                        },
+                        error: function() {
+                            console.warn('[BRC-7] Failed to store receipt');
+                        }
+                    });
+                }
+                
                 this.showSuccess(txid);
             } else {
                 throw new Error('Payment created but no transaction ID returned');
@@ -213,6 +242,7 @@
                 
                 const onMessage = (e) => {
                     if (!e.isTrusted) return;
+                    if (e.source !== target) return;
                     const d = e.data || {};
                     if (d.type !== 'CWI' || d.isInvocation || d.id !== id) return;
                     
@@ -463,22 +493,39 @@
                 if (firstSend.txid) return firstSend.txid;
             }
 
-            console.warn('[BRC-7] Could not extract txid from result:', result);
             return null;
         },
 
-        showSuccess: function(txid) {
-            const message = `Payment sent successfully!\n\nTransaction ID: ${txid}\n\nThe page will refresh to check payment status.`;
-            alert(message);
-            
-            // Trigger payment check and reload
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+        showError: function(message) {
+            // Update status strip with error
+            const $status = $('.bsv-status-strip');
+            if ($status.length) {
+                $status.removeClass('status-waiting status-detected status-confirmed')
+                    .addClass('status-error')
+                    .find('.bsv-status-message')
+                    .text(message);
+            } else {
+                alert(`Payment Error\n\n${message}\n\nPlease try again or use the QR code to pay with a mobile wallet.`);
+            }
         },
 
-        showError: function(message) {
-            alert(`Payment Error\n\n${message}\n\nPlease try again or use the QR code to pay with a mobile wallet.`);
+        showSuccess: function(txid) {
+            // Hide wallet button, show success message
+            $('.bsv-wallet-payment').hide();
+            
+            // Update status strip
+            const $status = $('.bsv-status-strip');
+            if ($status.length) {
+                $status.removeClass('status-waiting status-error')
+                    .addClass('status-detected')
+                    .find('.bsv-status-message')
+                    .text('Payment submitted! Waiting for confirmation...');
+            }
+            
+            // Trigger status check
+            if (window.BSVPaymentConsole && typeof window.BSVPaymentConsole.checkStatus === 'function') {
+                window.BSVPaymentConsole.checkStatus();
+            }
         }
     };
 

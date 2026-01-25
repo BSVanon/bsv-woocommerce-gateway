@@ -4,11 +4,11 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 6.0.0
+Stable tag: 6.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
-WC tested up to: 9.5
+WC tested up to: 10.4
 
 
 Accept Bitcoin SV payments directly to your wallet. Self-custody, no third-party processor. Modern fork with PHP 8+ and WooCommerce HPOS support.
@@ -20,7 +20,7 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 **Key Features:**
 * Direct payments to your ElectrumSV or BIP32-compatible wallet
 * Automatic per-order address derivation from your Master Public Key (xpub/MPK)
-* Real-time exchange rate conversion with configurable markup
+* Real-time exchange rate conversion via CoinGecko w/ CoinPaprika fallback (configurable markup)
 * Payment detection via blockchain APIs (WhatsOnChain + Bitails fallback)
 * Modern payment console with live status updates and countdown timer
 * Aggregate payment support (handles multiple transactions to same address)
@@ -29,7 +29,14 @@ This plugin enables your WooCommerce store to accept Bitcoin SV (BSV) payments d
 * WooCommerce HPOS (High-Performance Order Storage) compatible
 * WooCommerce Blocks checkout support
 * PHP 8+ compatible
-* Modern WordPress 6.x and WooCommerce 9.x support
+* Modern WordPress 6.9 and WooCommerce 10.4 support
+
+= BRC-100 improvements in v6.1 =
+* `createAction` payloads enumerate required outputs (satoshis, locking scripts, metadata) so compatible wallets build the right transaction on the first try.
+* Wallet responses can submit txid, raw transaction, and optional BEEF blobs that we store on the WooCommerce order for audits/SPV workflows.
+* Successful submissions immediately mark the payment `detected`, keeping the checkout stepper responsive before confirmations.
+* postMessage handlers validate origin/source and bind to the order nonce to block spoofed payment events.
+* Order binding checks (ID, key, expected sats, nonce) prevent receipts from being replayed across orders.
 
 = Benefits =
 
@@ -110,6 +117,17 @@ Your support helps maintain and improve this plugin for the entire BSV community
 
 == Changelog ==
 
+= 6.1.0 - 2026-01-24 =
+**BRC-100 + Blocks polish release**
+
+* Added richer BRC-100 wallet request/response flow with immediate `detected` states
+* Stored txid/raw hex/BEEF receipts on WooCommerce orders for audit trails
+* Hardened postMessage handlers (origin + nonce binding) to block spoofed events
+* Improved WooCommerce Blocks checkout support and payment console UX
+* Fixed partial settings reset to only touch submitted keys (no `$_POST` iteration)
+* Enforced sanitized + unslashed input for all settings saves
+* Escaped all dynamic SQL table names and removed unsafe JSON flags
+
 = 6.0.0 - 2026-01-17 =
 **Major security, architecture, and feature update**
 
@@ -151,7 +169,7 @@ Your support helps maintain and improve this plugin for the entire BSV community
 * Proper handling of payments received after expiry/cancellation
 
 **MULTI-FORMAT PAYMENT CONSOLE:**
-* Single QR code with BIP21/BIP270 protocol tab switching
+* Single QR code with BIP21 payment links plus optional BIP270-style invoice tab (pay:?r=) for compatible wallets
 * Local QR generation (no external services)
 * Real-time payment status updates
 * Countdown timer with expiry display

@@ -1,7 +1,7 @@
 <?php
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
@@ -46,6 +46,10 @@ $g_BWWC__config_defaults = array(
 // 'soft_cron_max_loops_per_run'					=>	2,			// NOT USED. Check up to this number of assigned bitcoin addresses per soft cron run. Each loop involves number of DB queries as well as API query to blockchain - and this may slow down the site.
    'elists'																=>	array(),
    'use_aggregated_api'										=>  '0',		// Use aggregated API to efficiently retrieve bitcoin address balance
+   'bip270_enabled'                                         =>  '1',
+   'broadcaster_preference'                                =>  'whatsonchain',
+   'webhook_url'                                           =>  '',
+   'webhook_secret'                                        =>  '',
 
    // ------- General Settings
    'license_key'                          =>  'UNLICENSED',
@@ -63,7 +67,7 @@ $g_BWWC__config_defaults = array(
    'enable_soft_cron_job'                 =>  '1',    // Enable "soft" Wordpress-driven cron jobs.
 
     // New BSV settings
-    'selected_checkout_icon'               =>  '/images/checkout-icons/orange-1.png',
+    'selected_checkout_icon'               =>  '/images/checkout-icons/BSV-1.svg',
     //'checkout_icon_select'                 =>  '',
     
     // UI/UX Settings (v5.3.0+)
@@ -227,9 +231,22 @@ function BWWC__update_settings($bwwc_use_these_settings=false, $also_update_pers
     // Load current settings and overwrite them with whatever values are present on submitted form
     $bwwc_settings = BWWC__get_settings();
 
+    $incoming_settings = array();
+    if (isset($_POST['bwwc_settings']) && is_array($_POST['bwwc_settings'])) {
+        $incoming_settings = BWWC__sanitize_recursive(wp_unslash($_POST['bwwc_settings']));
+    }
+
     foreach ($g_BWWC__config_defaults as $k=>$v) {
+        if (array_key_exists($k, $incoming_settings)) {
+            if (!isset($bwwc_settings[$k])) {
+                $bwwc_settings[$k] = "";
+            }
+            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $incoming_settings[$k]);
+            continue;
+        }
+
         if (isset($_POST[$k])) {
-            $sanitized_value = BWWC__sanitize_recursive($_POST[$k]);
+            $sanitized_value = BWWC__sanitize_recursive(wp_unslash($_POST[$k]));
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";
             } // Force set to something.
@@ -312,13 +329,15 @@ function BWWC__reset_partial_settings($also_reset_persistent_settings=false)
     // Load current settings and overwrite ones that are present on submitted form with defaults
     $bwwc_settings = BWWC__get_settings();
 
-    foreach ($_POST as $k=>$v) {
-        $sanitized_value = BWWC__sanitize_recursive($v);
-        if (isset($g_BWWC__config_defaults[$k])) {
+    // Only process known config keys instead of iterating entire $_POST
+    foreach ($g_BWWC__config_defaults as $k => $default_value) {
+        // Check if this setting key exists in the POST data
+        if (isset($_POST[$k]) || isset($_POST['bwwc_settings'][$k])) {
             if (!isset($bwwc_settings[$k])) {
                 $bwwc_settings[$k] = "";
-            } // Force set to something.
-            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $g_BWWC__config_defaults[$k]);
+            }
+            // Reset to default value
+            BWWC__update_individual_bwwc_setting($bwwc_settings[$k], $default_value);
         }
     }
 
@@ -384,7 +403,7 @@ function BWWC__create_database_tables($bwwc_settings)
     ///$persistent_settings_table_name       = $wpdb->prefix . 'bwwc_persistent_settings';
     $btc_addresses_table_name = $wpdb->prefix . 'bwwc_btc_addresses';
 
-    if ($wpdb->get_var("SHOW TABLES LIKE '$btc_addresses_table_name'") != $btc_addresses_table_name) {
+    if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $btc_addresses_table_name)) != $btc_addresses_table_name) {
         $b_first_time = true;
     } else {
         $b_first_time = false;
@@ -445,7 +464,7 @@ function BWWC__delete_database_tables()
 
     ///$wpdb->query("DROP TABLE IF EXISTS `$persistent_settings_table_name`");
     ///$wpdb->query("DROP TABLE IF EXISTS `$electrum_wallets_table_name`");
-    $wpdb->query("DROP TABLE IF EXISTS `$btc_addresses_table_name`");
+    $wpdb->query("DROP TABLE IF EXISTS `" . esc_sql($btc_addresses_table_name) . "`");
 }
 //===========================================================================
 
@@ -473,7 +492,7 @@ class BWWC_Fix_Legacy_Metadata_Command {
         // Get all addresses with status assigned or used
         $addresses = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT id, btc_address, address_meta FROM `$btc_addresses_table_name` WHERE status IN ('assigned', 'used')"
+                "SELECT id, btc_address, address_meta FROM `" . esc_sql($btc_addresses_table_name) . "` WHERE status IN ('assigned', 'used')"
             ),
             ARRAY_A
         );
@@ -531,5 +550,20 @@ class BWWC_Fix_Legacy_Metadata_Command {
 
         WP_CLI::success( "Updated {$updated} legacy addresses." );
     }
+}
+//===========================================================================
+
+//===========================================================================
+add_action('admin_menu', 'BWWC__admin_menu');
+
+function BWWC__admin_menu() {
+    add_submenu_page(
+        'woocommerce',
+        'BSV Diagnostics',
+        'BSV Diagnostics',
+        'manage_options',
+        'bsv-diagnostics',
+        'BWWC__render_diagnostics_page'
+    );
 }
 //===========================================================================

@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 /*
 Bitcoin SV Payments for WooCommerce
-https://github.com/mboyd1/sendbsv-bsv-payments-for-woocommerce
+https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 */
 
 // Include everything
@@ -23,6 +23,74 @@ function BWWC__render_advanced_settings_page()
 //===========================================================================
 
 //===========================================================================
+function BWWC__render_diagnostics_page() {
+    echo '<div class="wrap">';
+    echo '<h1>BSV Diagnostics</h1>';
+    echo '<p>Check the health of BSV blockchain providers and APIs.</p>';
+    
+    $providers = array(
+        'Whatsonchain' => 'https://api.whatsonchain.com/v1/bsv/main/chain/info',
+        'Bitails' => 'https://api.bitails.io/v1/bsv/main/chain/info',
+        'CoinGecko' => 'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd',
+        'CoinPaprika' => 'https://api.coinpaprika.com/v1/tickers/bsv-bitcoin-sv'
+    );
+    
+    // Check for cached results (5-minute TTL)
+    $cache_key = 'bwwc_diagnostics_results';
+    $force_refresh = isset($_GET['refresh']) && $_GET['refresh'] === '1';
+    $cached_results = $force_refresh ? false : get_transient($cache_key);
+    
+    if ($cached_results === false) {
+        // Run fresh diagnostics
+        $results = array();
+        foreach ($providers as $name => $url) {
+            $start = microtime(true);
+            $response = wp_remote_get($url, array('timeout' => 10));
+            $time = round((microtime(true) - $start) * 1000, 2);
+            $status = is_wp_error($response) ? 'Error' : wp_remote_retrieve_response_code($response);
+            $message = is_wp_error($response) ? $response->get_error_message() : 'OK';
+            $status_class = $status == 200 ? 'success' : 'error';
+            
+            $results[$name] = array(
+                'status' => $status,
+                'time' => $time,
+                'message' => $message,
+                'status_class' => $status_class
+            );
+        }
+        
+        // Cache for 5 minutes
+        set_transient($cache_key, $results, 5 * MINUTE_IN_SECONDS);
+        $cache_timestamp = time();
+    } else {
+        $results = $cached_results;
+        $cache_timestamp = get_option('_transient_timeout_' . $cache_key, time()) - (5 * MINUTE_IN_SECONDS);
+    }
+    
+    // Display cache info and refresh button
+    echo '<p style="margin-bottom: 15px;">';
+    echo '<strong>Last checked:</strong> ' . esc_html(human_time_diff($cache_timestamp, time())) . ' ago | ';
+    echo '<a href="' . esc_url(add_query_arg('refresh', '1')) . '" class="button">Refresh Now</a>';
+    echo '</p>';
+    
+    echo '<table class="wp-list-table widefat fixed striped">';
+    echo '<thead><tr><th>Provider</th><th>Status</th><th>Response Time (ms)</th><th>Message</th></tr></thead><tbody>';
+    
+    foreach ($results as $name => $result) {
+        echo '<tr>';
+        echo '<td>' . esc_html($name) . '</td>';
+        echo '<td class="' . esc_attr($result['status_class']) . '">' . esc_html($result['status']) . '</td>';
+        echo '<td>' . esc_html($result['time']) . '</td>';
+        echo '<td>' . esc_html($result['message']) . '</td>';
+        echo '</tr>';
+    }
+    
+    echo '</tbody></table>';
+    echo '</div>';
+}
+//===========================================================================
+
+//===========================================================================
 function BWWC__render_settings_page($menu_page_name)
 {
     $bwwc_settings = BWWC__get_settings();
@@ -33,21 +101,21 @@ function BWWC__render_settings_page($menu_page_name)
             ! isset($_POST['bwwc_settings_nonce']) ||
             ! wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['bwwc_settings_nonce'])), 'bwwc_settings_action')
         ) {
-            wp_die(esc_html__('Security check failed. Please try again.', 'sendbsv-bsv-payments-for-woocommerce'));
+            wp_die(esc_html__('Security check failed. Please try again.', 'bsvanon-bitcoin-sv-payments'));
         }
 
         if (isset($_POST['button_update_bwwc_settings'])) {
             BWWC__update_settings("", false);
-            $action_message = __('Settings updated!', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('Settings updated!', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['button_reset_bwwc_settings'])) {
             BWWC__reset_all_settings(false);
-            $action_message = __('All settings reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('All settings reverted to defaults.', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['button_reset_partial_bwwc_settings'])) {
             BWWC__reset_partial_settings(false);
-            $action_message = __('Settings on this page reverted to defaults.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('Settings on this page reverted to defaults.', 'bsvanon-bitcoin-sv-payments');
         } elseif (isset($_POST['validate_bwwc-license'])) {
             BWWC__update_settings("", false);
-            $action_message = __('License validated.', 'sendbsv-bsv-payments-for-woocommerce');
+            $action_message = __('License validated.', 'bsvanon-bitcoin-sv-payments');
         }
     }
 
@@ -118,8 +186,8 @@ function BWWC__render_general_settings_page_html()
     <form method="post" action="">
       <?php wp_nonce_field('bwwc_settings_action', 'bwwc_settings_nonce'); ?>
       <p class="submit">
-        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce'); ?>"             />
-        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'sendbsv-bsv-payments-for-woocommerce')); ?>');" />
+        <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments'); ?>"             />
+        <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bsvanon-bitcoin-sv-payments'); ?>" onClick="return confirm('<?php echo esc_js(__('Are you sure you want to reset settings on this page?', 'bsvanon-bitcoin-sv-payments')); ?>');" />
       </p>
       <table class="form-table">
 
@@ -230,17 +298,6 @@ function BWWC__render_general_settings_page_html()
         </tr>
 
         <tr valign="top">
-          <th scope="row">Auto-complete paid orders:</th>
-          <td>
-            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php checked($bwwc_settings['autocomplete_paid_orders'], 1); ?> />
-            <p class="description">If checked - fully paid order will be marked as 'completed' and '<i>Your order is complete</i>' email will be immediately delivered to customer.
-            	<br />If unchecked: store admin will need to mark order as completed manually - assuming extra time needed to ship physical product after payment is received.
-            	<br />Note: virtual/downloadable products will automatically complete upon receiving full payment (so this setting does not have effect in this case).
-            </p>
-          </td>
-        </tr>
-
-        <tr valign="top">
             <th scope="row">Cron job type:</th>
             <td>
               <p class="description" style="padding: 10px; background: #f0f0f1; border-left: 4px solid #2271b1;">
@@ -277,6 +334,17 @@ function BWWC__render_general_settings_page_html()
         </tr>
 
         <tr valign="top">
+          <th scope="row">Auto-complete paid orders:</th>
+          <td>
+            <input type="hidden" name="autocomplete_paid_orders" value="0" /><input type="checkbox" name="autocomplete_paid_orders" value="1" <?php checked($bwwc_settings['autocomplete_paid_orders'], 1); ?> />
+            <p class="description">If checked - fully paid order will be marked as 'completed' and '<i>Your order is complete</i>' email will be immediately delivered to customer.
+            	<br />If unchecked: store admin will need to mark order as completed manually - assuming extra time needed to ship physical product after payment is received.
+            	<br />Note: virtual/downloadable products will automatically complete upon receiving full payment (so this setting does not have effect in this case).
+            </p>
+          </td>
+        </tr>
+
+        <tr valign="top">
           <th scope="row">Payment Status Polling Interval:</th>
           <td>
             <input type="number" name="status_polling_interval" value="<?php echo esc_attr(isset($bwwc_settings['status_polling_interval']) ? $bwwc_settings['status_polling_interval'] : '10'); ?>" min="5" max="60" size="4" /> seconds
@@ -293,15 +361,22 @@ function BWWC__render_general_settings_page_html()
             <fieldset>
               <p>
                 <?php
-                $plugin_root = dirname(__FILE__);
-                $icon_dir = '/images/checkout-icons/';
+                $plugin_root = plugin_dir_path(__FILE__);
+                $icon_dir = 'images/checkout-icons/';
                 $icons = scandir($plugin_root . $icon_dir);
-                foreach($icons as $icon) {
-                    if (!is_file($plugin_root . $icon_dir . $icon)) {
+                foreach ($icons as $icon) {
+                    $icon_path = $plugin_root . $icon_dir . $icon;
+                    if (!is_file($icon_path)) {
                         continue;
                     }
-                    $icon_rel_path = $icon_dir . $icon;
-                    $icon_url = plugins_url($icon_rel_path, __FILE__);
+
+                    $extension = strtolower(pathinfo($icon, PATHINFO_EXTENSION));
+                    if ($extension !== 'svg') {
+                        continue;
+                    }
+
+                    $icon_rel_path = '/' . $icon_dir . $icon;
+                    $icon_url = plugins_url($icon_rel_path, dirname(__FILE__));
                     echo '<input type="radio" name="selected_checkout_icon" id="' . esc_attr($icon) . '" value="' . esc_attr($icon_rel_path) . '" ' . checked($bwwc_settings['selected_checkout_icon'], $icon_rel_path, false) . '/>';
                     echo '<label for="' . esc_attr($icon) . '"><img src="' . esc_url($icon_url) . '" height="32" alt="Checkout icon" /></label><br />';
                 }
@@ -310,8 +385,8 @@ function BWWC__render_general_settings_page_html()
               </fieldset>
               <p class="description">
                 Icon displayed to users when choosing the payment method.<br />
-                You can upload new icons to: <?php echo esc_html(str_replace(ABSPATH, "", $plugin_root . $icon_dir)); ?><br />
-                Make sure to scale the image to a height of 32px.
+                You can upload new icons to: <?php echo esc_html($plugin_root . $icon_dir); ?><br />
+                Make sure to scale the image to a height of 32px for best checkout alignment.
               </p>
           </td>
         </tr>
@@ -319,8 +394,8 @@ function BWWC__render_general_settings_page_html()
       </table>
 
       <p class="submit">
-          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>"             />
-          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'sendbsv-bsv-payments-for-woocommerce') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
+          <input type="submit" class="button-primary"    name="button_update_bwwc_settings"        value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments') ?>"             />
+          <input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e('Reset settings', 'bsvanon-bitcoin-sv-payments') ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
       </p>
     </form>
 <?php
@@ -381,27 +456,69 @@ function BWWC__render_advanced_settings_page_html()
  
  <table class="form-table">
     <tr valign="top">
-        <th scope="row">Delete Data on Uninstall</th>
-        <td>
-            <input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], '1'); ?> />
-            <span class="description">Remove all plugin data when uninstalling. <strong>Warning:</strong> This will delete payment history!</span>
-        </td>
-    </tr>
-    
-    <tr valign="top">
         <th scope="row">Payment Timeout</th>
         <td>
             <input type="text" name="assigned_address_expires_in_mins" value="<?php echo esc_attr($bwwc_settings['assigned_address_expires_in_mins']); ?>" size="6" />
             <span class="description">minutes. How long customers have to complete payment before order expires. Default: 240 minutes (4 hours).</span>
         </td>
     </tr>
- </table>
+
+    <tr valign="top">
+      <th scope="row">BIP270 Payment Protocol</th>
+      <td>
+        <input type="hidden" name="bwwc_settings[bip270_enabled]" value="0" />
+        <label><input type="checkbox" name="bwwc_settings[bip270_enabled]" value="1" <?php checked($bwwc_settings['bip270_enabled'], '1'); ?> /> Enable BIP270 invoice payments</label>
+        <p class="description">
+          When enabled, the checkout console shows the “Invoice” tab and a QR code with a signed invoice URL for wallets that support BIP270.
+          If unchecked, customers only see the classic Standard (BIP21) and Address tabs.
+        </p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">Preferred Broadcaster</th>
+      <td>
+        <select name="bwwc_settings[broadcaster_preference]">
+          <option value="whatsonchain" <?php selected($bwwc_settings['broadcaster_preference'], 'whatsonchain'); ?>>Whatsonchain</option>
+          <option value="bitails" <?php selected($bwwc_settings['broadcaster_preference'], 'bitails'); ?>>Bitails</option>
+        </select>
+        <p class="description">Choose the primary blockchain broadcaster for transaction submissions.</p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">Payment Verified Webhook URL</th>
+      <td>
+        <input type="url" name="bwwc_settings[webhook_url]" value="<?php echo esc_attr($bwwc_settings['webhook_url']); ?>" style="width: 75%;" placeholder="https://yourapp.com/webhook/bsv-payment" />
+        <p class="description">
+          <strong>Integration:</strong> HTTPS endpoint that receives a JSON webhook when an order payment is verified (reaches required confirmations).
+          <br /><strong>Use cases:</strong> Trigger external fulfillment systems, update inventory in external databases, send custom notifications, or integrate with third-party services.
+          <br /><strong>Payload includes:</strong> <code>order_id</code>, <code>order_key</code>, <code>amount_sats</code>, <code>txids</code>, and <code>timestamp</code>.
+          <br /><strong>Security:</strong> Webhook is only sent when both this URL <em>and</em> the secret below are configured. Payloads are signed with HMAC-SHA256 in the <code>X-BSV-Signature</code> header.
+          <br /><em>Leave both fields blank to disable webhooks entirely.</em>
+        </p>
+      </td>
+    </tr>
+
+    <tr valign="top">
+      <th scope="row">Webhook Secret</th>
+      <td>
+        <input type="password" name="bwwc_settings[webhook_secret]" value="<?php echo esc_attr($bwwc_settings['webhook_secret']); ?>" style="width: 75%;" />
+        <p class="description">
+          <strong>Required for webhooks:</strong> Shared secret used to cryptographically sign webhook payloads with HMAC-SHA256.
+          <br /><strong>How to verify:</strong> Your webhook endpoint should compute <code>hash_hmac('sha256', $payload_json, $secret)</code> and compare it to the <code>X-BSV-Signature</code> header to ensure the webhook came from your WooCommerce store.
+          <br /><strong>Security best practice:</strong> Use a long, random string (32+ characters). Store it securely and never commit it to version control.
+          <br /><em>Generate a secure secret: <code>openssl rand -hex 32</code></em>
+        </p>
+      </td>
+    </tr>
+  </table>
  
  <h3 style="margin-top: 40px; color: #d63638;">⚠️ Advanced Derivation Settings</h3>
  <div style="padding: 15px; background: #fff3cd; border-left: 4px solid #d63638; margin-bottom: 20px;">
     <p style="margin: 0 0 10px 0; font-weight: bold; color: #d63638;">WARNING: Only modify these settings if you fully understand BIP32/BIP44 derivation paths!</p>
     <p style="margin: 0 0 10px 0;">Incorrect settings can cause transactions to appear "lost" or invisible in your wallet, even though they exist on the blockchain.</p>
-    <p style="margin: 0 0 10px 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Tracker</a> to locate your funds.</p>
+    <p style="margin: 0;">If you change these settings and later cannot see payments in ElectrumSV, you may need to use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to locate your funds.</p>
     <p style="margin: 0; font-weight: bold; color: #d63638;">DISCLAIMER: Merchant uses these advanced settings at their own risk. The plugin developers are not responsible for lost or inaccessible funds due to incorrect derivation configuration.</p>
  </div>
  
@@ -453,8 +570,19 @@ function BWWC__render_advanced_settings_page_html()
     <p style="margin: 0;">If you've changed derivation settings and can't see payments in ElectrumSV, use the <a href="https://github.com/BSVanon/xPub-Derivation-Key-and-Balance-Tracker" target="_blank" rel="noopener">xPub Derivation Key and Balance Tracker</a> to scan your xPub with different derivation paths and find your addresses.</p>
  </div>
  
+ <h3 style="margin-top: 40px; color: #d63638;">⚠️ Danger Zone</h3>
+ <table class="form-table">
+    <tr valign="top">
+        <th scope="row">Delete Data on Uninstall</th>
+        <td>
+            <input type="checkbox" name="delete_db_tables_on_uninstall" value="1" <?php checked($bwwc_settings['delete_db_tables_on_uninstall'], '1'); ?> />
+            <span class="description">Remove all plugin data when uninstalling. <strong>Warning:</strong> This will delete payment history!</span>
+        </td>
+    </tr>
+ </table>
+ 
  <p class="submit">
-    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'sendbsv-bsv-payments-for-woocommerce') ?>" />
+    <input type="submit" class="button-primary" name="button_update_bwwc_settings" value="<?php esc_attr_e('Save Changes', 'bsvanon-bitcoin-sv-payments') ?>" />
  </p>
  </form>
 <?php

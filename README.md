@@ -1,7 +1,8 @@
 # SendBSV BSV Payments for WooCommerce
 
-**Version:** 6.0.0  
+**Version:** 6.1.0  
 **Status:** Production Ready - Major Security & Architecture Release  
+**Tested up to:** WordPress 6.9 / WooCommerce 10.4  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 
 Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third-party processor required. Modern, maintained fork with PHP 8+ and WooCommerce HPOS support.
@@ -12,7 +13,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Per-Order Addresses**: Automatic unique address derivation from Master Public Key (xpub/MPK)
 - **Real-Time Exchange Rates**: CoinGecko + CoinPaprika fallback with configurable markup
 - **Payment Detection**: WhatsOnChain + Bitails API with automatic fallback
-- **Multi-Format Payment Console**: BIP21 and BIP270 invoice protocol support with tab switching
+- **Multi-Format Payment Console**: BIP21 payment links plus downloadable BIP270-style invoice payloads with tab switching
 - **Payment State Machine**: Canonical state tracking (waiting, detected, verified, expired, underpaid, overpaid)
 - **Expiry Enforcement**: Automatic payment window enforcement with late payment monitoring
 - **Local QR Generation**: Client-side QR codes (no external services)
@@ -22,6 +23,14 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Self-Custody Focused**: All funds settle directly to wallets you control
 - **Checkout Options**: Works with both WooCommerce Blocks and classic shortcode checkout
 - **Security Hardened**: TLS verification enforced, no unauthenticated triggers, WooCommerce logger integration
+
+## 🧩 BRC-100 Upgrades in v6.1
+
+- **Richer wallet requests**: `createAction` payloads now enumerate satoshis, locking scripts, and contextual metadata so BRC-100 wallets know exactly what to build.
+- **Instant receipts**: Client-side responses can submit txid, raw hex, and optional BEEF blobs which we store on the WooCommerce order for audits and future SPV workflows.
+- **Immediate state progress**: As soon as a BRC-100 wallet hands back a receipt we mark the payment `detected`, keeping the checkout stepper responsive even before confirmations land.
+- **Hardened messaging**: Updated postMessage handlers validate origin/source and bind to the order nonce to stop spoofed payment events.
+- **Order binding**: Return data is validated against order ID, key, expected sats, and nonce so receipts cannot be replayed across orders.
 
 ## 📦 Installation
 
@@ -42,7 +51,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 ### Required Settings
 1. Navigate to **WooCommerce → Settings → Payments → Bitcoin SV**
 2. Enable the gateway
-3. Enter your **ElectrumSV Master Public Key** (xpub format)
+3. Enter your **ElectrumSV/BIP32 Master Public Key** (xpub format)
 4. Set **Number of Confirmations** (recommended: 1-6)
 5. Save changes
 
@@ -72,7 +81,7 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 4. Confirm payment detection and order status update
 5. Verify order completion email is sent
 
-## ✅ What's New in v6.0.0
+## ✅ Highlights from the v6.0 Security Release
 
 ### 🔒 Security & Compliance
 - **TLS Verification**: All external API calls now enforce SSL certificate verification
@@ -101,7 +110,7 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 - **Payment State Machine**: 7 canonical states with idempotent transitions
 - **Expiry Enforcement**: Scheduled sweep finds and expires unpaid orders
 - **Late Payment Monitoring**: 7-30 day watch window for payments after expiry
-- **Multi-Format Console**: Single QR code with BIP21/BIP270 protocol tab switching
+- **Multi-Format Console**: Single QR code with BIP21 payment links plus optional BIP270-style invoice tab (pay:?r=) for compatible wallets
 - **Email Improvements**: Payment instructions with address, amount, and pay link
 - **Admin Metabox**: Order details with payment state, expected/received amounts, force recheck
 - **Chain Height Caching**: 60-second static cache reduces API calls
@@ -119,15 +128,13 @@ WooCommerce Blocks checkout **and** the classic `[woocommerce_checkout]` shortco
 
 ## 🗺️ Roadmap
 
-### v6.1 (in Development)
-- Admin diagnostics panel UI (provider health monitoring)
-- PHPCS/PHPStan CI integration
-- BIP270 invoices + QR toggle (HandCash-ready)
-- HPOS/meta cleanup 
-- upgraded BRC-100 wallet flow + better receipts/instant “detected” UX
-- Enhanced address pool management
-- Multi-currency support improvements
-- Performance optimizations and more
+### v6.2+ (in Planning)
+- Admin diagnostics panel UI (provider health monitoring) so merch dashboards surface provider health at a glance
+- Automated PHPCS/PHPStan CI gating to keep every commit linted before release
+- HandCash-ready BIP270 enhancements (formal QR toggle + richer callbacks)
+- Enhanced address pool management (pre-generation + smarter reuse policies)
+- Multi-currency support improvements beyond WooCommerce base currency
+- Additional performance profiling, caching, and API rate optimizations
 
 ## 🐛 Troubleshooting
 

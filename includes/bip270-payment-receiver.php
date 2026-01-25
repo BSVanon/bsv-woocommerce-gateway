@@ -186,6 +186,7 @@ function BWWC__receive_bip270_payment() {
     $ack_payload = array(
         'protocol' => 'bip270',
         'network' => 'bitcoin-sv',
+        /* translators: %d is the WooCommerce order number */
         'memo' => sprintf(__('Payment received for Order #%d', 'bsvanon-bitcoin-sv-payments'), $order_id),
         'merchantData' => array(
             'orderId' => $order_id,

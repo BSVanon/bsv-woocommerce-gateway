@@ -339,6 +339,7 @@ function BWWC__serve_receipt_download() {
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Binary BEEF data for file download
         echo $beef;
     } else {
         header('Content-Type: text/plain');
@@ -346,6 +347,7 @@ function BWWC__serve_receipt_download() {
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Raw transaction hex for file download
         echo $raw_tx;
     }
 

@@ -1,7 +1,7 @@
 # SendBSV BSV Payments for WooCommerce
 
-**Version:** 6.1.0  
-**Status:** Production Ready - Major Security & Architecture Release  
+**Version:** 6.1.1  
+**Status:** Production Ready - WordPress.org Compliance Release  
 **Tested up to:** WordPress 6.9 / WooCommerce 10.4  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
 

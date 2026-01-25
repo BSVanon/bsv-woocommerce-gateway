@@ -89,11 +89,7 @@ function BWWC__is_gateway_valid_for_use( &$ret_reason_message = null ) {
 			if ( $max_age_hours > 0 && $age_in_hours > $max_age_hours ) {
 				$valid = false;
 				/* translators: 1: current age in hours, 2: maximum allowed hours */
-				$reason_message = sprintf(
-					__( 'Bitcoin SV payment option is temporarily unavailable. Exchange rate data is %1$s hours old (maximum allowed: %2$s hours). Please try again later or contact the store owner.', 'bsvanon-bitcoin-sv-payments' ),
-					number_format( $age_in_hours, 1 ),
-					$max_age_hours
-				);
+				$reason_message = sprintf( __( 'Bitcoin SV payment option is temporarily unavailable. Exchange rate data is %1$s hours old (maximum allowed: %2$s hours). Please try again later or contact the store owner.', 'bsvanon-bitcoin-sv-payments' ), number_format( $age_in_hours, 1 ), $max_age_hours );
 
 				if ( $ret_reason_message !== null ) {
 					$ret_reason_message = $reason_message;

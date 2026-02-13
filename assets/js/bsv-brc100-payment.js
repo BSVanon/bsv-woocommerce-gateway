@@ -163,7 +163,11 @@
                     satoshis: parseInt(amountSats),
                     lockingScript: lockingScript,
                     outputDescription: `Order #${orderId} payment`
-                }]
+                }],
+                // Keep network handling async/non-blocking where wallet policy permits.
+                options: {
+                    acceptDelayedBroadcast: true
+                }
             };
 
             let result;

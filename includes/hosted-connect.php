@@ -36,6 +36,15 @@ function BWWC__mask_secret_hint( $value ) {
 }
 
 /**
+ * Resolve WooCommerce hosted settlement webhook endpoint URL.
+ *
+ * @return string
+ */
+function BWWC__get_hosted_webhook_url() {
+	return add_query_arg( 'wc-api', 'bwwc_hosted_settlement', home_url( '/' ) );
+}
+
+/**
  * Utility: for capability checks and hosted calls.
  *
  * @return array<string,mixed>
@@ -183,10 +192,43 @@ function BWWC__test_hosted_connection() {
 		);
 	}
 
+	// Ensure webhook secret exists locally, then register webhook target with hosted service.
+	$bwwc_settings = BWWC__get_settings();
+	$webhook_secret = isset( $bwwc_settings['hosted_webhook_secret'] ) ? trim( (string) $bwwc_settings['hosted_webhook_secret'] ) : '';
+	if ( '' === $webhook_secret ) {
+		$webhook_secret = wp_generate_password( 48, false, false );
+		$bwwc_settings['hosted_webhook_secret'] = $webhook_secret;
+		BWWC__update_settings( $bwwc_settings );
+	}
+
+	$webhook_result = BWWC__hosted_api_request(
+		'/v1/connectors/woocommerce/webhook-config',
+		array(
+			'webhook_url'    => BWWC__get_hosted_webhook_url(),
+			'webhook_secret' => $webhook_secret,
+		),
+		'POST'
+	);
+	if ( is_wp_error( $webhook_result ) || empty( $webhook_result['success'] ) ) {
+		$message = is_wp_error( $webhook_result )
+			? $webhook_result->get_error_message()
+			: ( isset( $webhook_result['error'] ) ? (string) $webhook_result['error'] : 'Webhook registration failed' );
+		return array(
+			'success' => false,
+			'message' => 'Connected to API, but webhook registration failed: ' . $message,
+			'data'    => array(
+				'capabilities' => isset( $result['data'] ) ? $result['data'] : array(),
+			),
+		);
+	}
+
 	return array(
 		'success' => true,
-		'message' => 'Connected successfully to Hosted Invoicing service',
-		'data'    => isset( $result['data'] ) ? $result['data'] : array(),
+		'message' => 'Connected successfully to Hosted Invoicing service and registered settlement webhook.',
+		'data'    => array(
+			'capabilities' => isset( $result['data'] ) ? $result['data'] : array(),
+			'webhook'      => isset( $webhook_result['data'] ) ? $webhook_result['data'] : array(),
+		),
 	);
 }
 

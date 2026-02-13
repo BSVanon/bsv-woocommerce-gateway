@@ -472,6 +472,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $bwwc_settings = BWWC__get_settings();
             $order = new WC_Order($order_id);
 
+            // Check processing mode
+            $processing_mode = isset($bwwc_settings['processing_mode']) ? $bwwc_settings['processing_mode'] : 'standalone_xpub';
+            
             // TODO: Implement CRM features within store admin dashboard
             $order_meta = array();
             $order_meta['bw_order'] = $order;
@@ -522,45 +525,95 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             $order_total_in_btc   = sprintf("%.8f", $order_total_in_btc);
 
             $bitcoins_address = false;
+            $hosted_session_data = false;
 
-            $order_info =
-            array(
-                'order_meta'							=> $order_meta,
-                'order_id'								=> $order_id,
-                'order_total'			    	 	=> $order_total_in_btc,  // Order total in BTC
-                'order_datetime'  				=> gmdate('Y-m-d H:i:s T'),
-                'requested_by_ip'         => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
+            // Process based on mode
+            if ($processing_mode === 'hosted_invoicing') {
+                // Hosted Invoicing mode - create hosted session
+                $session_result = BWWC__create_hosted_session($order_id, $order->get_total(), get_woocommerce_currency());
+                
+                if (is_wp_error($session_result) || !$session_result['success']) {
+                    $error_msg = is_wp_error($session_result) ? $session_result->get_error_message() : ($session_result['error'] ?? 'Unknown error');
+                    $msg = "ERROR: cannot create hosted session for order: '{$error_msg}'";
+                    BWWC__log_event(__FILE__, __LINE__, $msg);
+                    
+                    // User-friendly error message
+                    $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                    $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Hosted Payment Error', 'bsvanon-bitcoin-sv-payments') . '</h2>';
+                    $user_msg .= '<p>' . esc_html__('We\'re unable to create a hosted payment session at this time.', 'bsvanon-bitcoin-sv-payments') . '</p>';
+                    $user_msg .= '<p><strong>' . esc_html__('What you can do:', 'bsvanon-bitcoin-sv-payments') . '</strong></p>';
+                    $user_msg .= '<ul>';
+                    $user_msg .= '<li>' . esc_html__('Try placing your order again', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '<li>' . esc_html__('Contact the store owner for assistance', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '<li>' . esc_html__('Choose an alternative payment method', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '</ul>';
+                    $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Checkout', 'bsvanon-bitcoin-sv-payments') . '</a></p>';
+                    $user_msg .= '</div>';
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    exit($user_msg);
+                }
+                
+                $hosted_session_data = $session_result['data'];
+                $bitcoins_address = $hosted_session_data['payment_address'] ?? '';
+                
+                BWWC__log_event(__FILE__, __LINE__, "     Created hosted session for order_id {$order_id}. Session ID: " . ($hosted_session_data['session_id'] ?? 'unknown'));
+                
+            } else {
+                // Standalone xPub mode - generate local address
+                $order_info = array(
+                    'order_meta'        => $order_meta,
+                    'order_id'          => $order_id,
+                    'order_total'       => $order_total_in_btc,  // Order total in BTC
+                    'order_datetime'    => gmdate('Y-m-d H:i:s T'),
+                    'requested_by_ip'   => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
                 );
 
-            // Only electrum_wallet provider is supported in v6.0.0+
-            // Legacy blockchain_info provider removed (security: logged secrets in URLs)
-            $ret_info_array = BWWC__get_bitcoin_address_for_payment__electrum(BWWC__get_next_available_mpk(), $order_info);
-            $bitcoins_address = @$ret_info_array['generated_bitcoin_address'];
+                // Only electrum_wallet provider is supported in v6.0.0+
+                // Legacy blockchain_info provider removed (security: logged secrets in URLs)
+                $ret_info_array = BWWC__get_bitcoin_address_for_payment__electrum(BWWC__get_next_available_mpk(), $order_info);
+                $bitcoins_address = @$ret_info_array['generated_bitcoin_address'];
 
-            if (!$bitcoins_address) {
-                $msg = "ERROR: cannot generate Bitcoin SV address for the order: '" . @$ret_info_array['message'] . "'";
-                BWWC__log_event(__FILE__, __LINE__, $msg);
-                
-                // User-friendly error message
-                $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
-                $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Address Generation Error', 'bsvanon-bitcoin-sv-payments') . '</h2>';
-                $user_msg .= '<p>' . esc_html__('We\'re unable to generate a payment address for your order at this time.', 'bsvanon-bitcoin-sv-payments') . '</p>';
-                $user_msg .= '<p><strong>' . esc_html__('What you can do:', 'bsvanon-bitcoin-sv-payments') . '</strong></p>';
-                $user_msg .= '<ul>';
-                $user_msg .= '<li>' . esc_html__('Try placing your order again', 'bsvanon-bitcoin-sv-payments') . '</li>';
-                $user_msg .= '<li>' . esc_html__('Contact the store owner for assistance', 'bsvanon-bitcoin-sv-payments') . '</li>';
-                $user_msg .= '<li>' . esc_html__('Choose an alternative payment method', 'bsvanon-bitcoin-sv-payments') . '</li>';
-                $user_msg .= '</ul>';
-                $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Checkout', 'bsvanon-bitcoin-sv-payments') . '</a></p>';
-                $user_msg .= '</div>';
-                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-                exit($user_msg);
+                if (!$bitcoins_address) {
+                    $msg = "ERROR: cannot generate Bitcoin SV address for the order: '" . @$ret_info_array['message'] . "'";
+                    BWWC__log_event(__FILE__, __LINE__, $msg);
+                    
+                    // User-friendly error message
+                    $user_msg = '<div style="max-width: 600px; margin: 50px auto; padding: 30px; background: #fff; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">';
+                    $user_msg .= '<h2 style="color: #dc3545; margin-top: 0;">' . esc_html__('Payment Address Generation Error', 'bsvanon-bitcoin-sv-payments') . '</h2>';
+                    $user_msg .= '<p>' . esc_html__('We\'re unable to generate a payment address for your order at this time.', 'bsvanon-bitcoin-sv-payments') . '</p>';
+                    $user_msg .= '<p><strong>' . esc_html__('What you can do:', 'bsvanon-bitcoin-sv-payments') . '</strong></p>';
+                    $user_msg .= '<ul>';
+                    $user_msg .= '<li>' . esc_html__('Try placing your order again', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '<li>' . esc_html__('Contact the store owner for assistance', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '<li>' . esc_html__('Choose an alternative payment method', 'bsvanon-bitcoin-sv-payments') . '</li>';
+                    $user_msg .= '</ul>';
+                    $user_msg .= '<p style="margin-top: 20px;"><a href="' . esc_url(wc_get_checkout_url()) . '" style="display: inline-block; padding: 10px 20px; background: #0073aa; color: white; text-decoration: none; border-radius: 4px;">' . esc_html__('Return to Checkout', 'bsvanon-bitcoin-sv-payments') . '</a></p>';
+                    $user_msg .= '</div>';
+                    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+                    exit($user_msg);
+                }
+
+                BWWC__log_event(__FILE__, __LINE__, "     Generated unique Bitcoin SV address: '{$bitcoins_address}' for order_id " . $order_id);
             }
 
-            BWWC__log_event(__FILE__, __LINE__, "     Generated unique Bitcoin SV address: '{$bitcoins_address}' for order_id " . $order_id);
-
-            // Removed legacy blockchain_info support (security vulnerability A0.6)
-            $order->update_meta_data('_bwwc_address', $bitcoins_address);
+            // Store payment details based on mode
+            if ($processing_mode === 'hosted_invoicing' && $hosted_session_data) {
+                // Store hosted session data
+                $order->update_meta_data('_bwwc_hosted_session_id', $hosted_session_data['session_id'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_payment_url', $hosted_session_data['payment_url'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_qr_code', $hosted_session_data['qr_code'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_expires_at', $hosted_session_data['expires_at'] ?? '');
+                $order->update_meta_data('_bwwc_processing_mode', 'hosted_invoicing');
+                
+                // Also store address for backward compatibility
+                $order->update_meta_data('_bwwc_address', $bitcoins_address);
+            } else {
+                // Store standalone xPub data
+                $order->update_meta_data('_bwwc_address', $bitcoins_address);
+                $order->update_meta_data('_bwwc_processing_mode', 'standalone_xpub');
+            }
+            
+            // Common metadata for both modes
             $order->update_meta_data('_bwwc_order_total_in_btc', $order_total_in_btc);
             $order->update_meta_data('_bwwc_paid_total', 0);
             $order->update_meta_data('_bwwc_refunded', 0);

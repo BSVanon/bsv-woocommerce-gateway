@@ -23,6 +23,7 @@ require_once __DIR__ . '/providers/coingecko.php';
 require_once __DIR__ . '/providers/coinpaprika.php';
 require_once __DIR__ . '/providers/whatsonchain.php';
 require_once __DIR__ . '/providers/bitails.php';
+require_once __DIR__ . '/providers/sendbsv-rates.php';
 
 // Load payment state machine
 require_once __DIR__ . '/payment-state.php';
@@ -33,7 +34,11 @@ require_once __DIR__ . '/expiry.php';
 require_once __DIR__ . '/bip270-invoice.php';
 require_once __DIR__ . '/bip270-payment-receiver.php';
 
+// Load hosted invoicing module
+require_once __DIR__ . '/hosted-connect.php';
+
 // Register API endpoints
 add_action( 'woocommerce_api_bsv_invoice', 'BWWC__serve_bip270_invoice' );
 add_action( 'woocommerce_api_bsv_payment', 'BWWC__receive_bip270_payment' );
 add_action( 'woocommerce_api_bsv_receipt', 'BWWC__serve_receipt_download' );
+add_action( 'woocommerce_api_bwwc_hosted_settlement', 'BWWC__handle_hosted_settlement_webhook' );

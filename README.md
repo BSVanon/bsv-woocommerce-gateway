@@ -1,6 +1,6 @@
 # SendBSV BSV Payments for WooCommerce
 
-**Version:** 6.1.1  
+**Version:** 7.0.0  
 **Status:** Production Ready - WordPress.org Compliance Release  
 **Tested up to:** WordPress 6.9 / WooCommerce 10.4  
 **Requires:** WordPress 5.8+, WooCommerce 6.0+, PHP 7.4+
@@ -9,9 +9,11 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 
 ## 🚀 Features
 
-- **Direct Payments**: Funds go straight to your ElectrumSV or BIP32-compatible wallet
+- **Dual Processing Modes**: Choose between **Standalone xPub** (free) or **Hosted Invoicing** (paid service)
+- **Direct Payments**: Funds go straight to your ElectrumSV or BIP32-compatible wallet in standalone mode
+- **Professional Invoicing**: SPV-first checkout and hosted payment pages via SendBSV Invoicing service
 - **Per-Order Addresses**: Automatic unique address derivation from Master Public Key (xpub/MPK)
-- **Real-Time Exchange Rates**: CoinGecko + CoinPaprika fallback with configurable markup
+- **Priority Exchange Rates**: SendBSV rates (hosted mode) → CoinGecko → CoinPaprika automatic fallback
 - **Payment Detection**: WhatsOnChain + Bitails API with automatic fallback
 - **Multi-Format Payment Console**: BIP21 payment links plus downloadable BIP270-style invoice payloads with tab switching
 - **Payment State Machine**: Canonical state tracking (waiting, detected, verified, expired, underpaid, overpaid)
@@ -20,9 +22,10 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Aggregate Payments**: Automatically handles multiple transactions to same address
 - **Modern Stack**: PHP 8.0-8.3, WordPress 6.9, WooCommerce 10.4
 - **HPOS Compatible**: High-Performance Order Storage ready
-- **Self-Custody Focused**: All funds settle directly to wallets you control
+- **Self-Custody Focused**: All funds settle directly to wallets you control in standalone mode
 - **Checkout Options**: Works with both WooCommerce Blocks and classic shortcode checkout
 - **Security Hardened**: TLS verification enforced, no unauthenticated triggers, WooCommerce logger integration
+- **Guided Connection**: One-click OAuth-style connection to SendBSV Invoicing service
 
 ## 🧩 BRC-100 Upgrades in v6.1
 
@@ -32,6 +35,38 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Hardened messaging**: Updated postMessage handlers validate origin/source and bind to the order nonce to stop spoofed payment events.
 - **Order binding**: Return data is validated against order ID, key, expected sats, and nonce so receipts cannot be replayed across orders.
 
+## 🚀 v7.0 Upgrade: Hosted Invoicing Mode
+
+### New Dual-Mode Architecture
+**v7.0 introduces two processing modes for merchants to choose from:**
+
+#### **Standalone xPub Mode (Free)**
+- **What it is**: Traditional self-custody mode where you manage your own keys
+- **How it works**: Plugin generates unique payment addresses from your Master Public Key
+- **Funds go to**: Your ElectrumSV/BIP32-compatible wallet directly
+- **Best for**: Technical users who want full control, no service fees
+
+#### **Hosted Invoicing Mode (Paid Service)**
+- **What it is**: Professional SPV-first checkout via SendBSV Invoicing service
+- **How it works**: Plugin connects to SendBSV Invoicing service for hosted payment pages
+- **Features**: Professional invoicing, SPV payment detection, enhanced UX
+- **Best for**: Merchants who want premium features and simplified setup
+
+### Key Benefits of Hosted Invoicing
+- **Professional Payment Pages**: Branded hosted checkout experience
+- **SPV-First Detection**: Faster payment confirmation via Simplified Payment Verification
+- **Priority Exchange Rates**: SendBSV rates prioritized over public APIs
+- **Guided Connection**: One-click OAuth-style connection setup
+- **Automatic Settlements**: Webhook-based payment notifications
+- **Enhanced Reporting**: Detailed payment analytics and reporting
+
+### How to Switch Modes
+1. Go to **WooCommerce → Settings → Payments → Bitcoin SV**
+2. Select "Processing Mode" dropdown
+3. Choose between "Standalone xPub" or "Hosted Invoicing"
+4. For Hosted Invoicing: Click "Connect Hosted Invoicing" to authenticate
+5. Save settings and test checkout
+
 ## 📦 Installation
 
 ### Requirements
@@ -39,12 +74,13 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - WooCommerce 6.0 or higher
 - PHP 7.4 or higher (8.x recommended)
 - PHP extensions: `gmp` (preferred) or `bcmath`
+- **For Hosted Invoicing**: Active SendBSV Invoicing service account
 
 ### Steps
 1. Download or clone this repository
 2. Upload to `/wp-content/plugins/bitcoin-sv-payments-for-woocommerce/`
 3. Activate through WordPress admin → Plugins
-4. Configure with your ElectrumSV Master Public Key
+4. Choose your processing mode and configure accordingly
 
 ## ⚙️ Configuration
 

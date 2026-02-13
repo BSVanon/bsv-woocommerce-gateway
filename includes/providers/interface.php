@@ -73,11 +73,13 @@ function BWWC__get_blockchain_height( $provider = 'whatsonchain' ) {
  * Get BSV exchange rate in specified currency
  *
  * @param string $currency Target currency (e.g., 'USD', 'EUR')
- * @param string $provider Provider name ('coingecko' or 'coinpaprika')
+ * @param string $provider Provider name ('sendbsv', 'coingecko', or 'coinpaprika')
  * @return float|false Exchange rate, or false on failure
  */
 function BWWC__get_exchange_rate( $currency = 'USD', $provider = 'coingecko' ) {
 	switch ( $provider ) {
+		case 'sendbsv':
+			return BWWC__sendbsv_get_rate( $currency );
 		case 'coingecko':
 			return BWWC__coingecko_get_rate( $currency );
 		case 'coinpaprika':
@@ -103,7 +105,7 @@ function BWWC__get_blockchain_providers() {
  * @return array Provider names
  */
 function BWWC__get_rate_providers() {
-	return array( 'coingecko', 'coinpaprika' );
+	return array( 'sendbsv', 'coingecko', 'coinpaprika' );
 }
 
 /**

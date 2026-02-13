@@ -13,21 +13,41 @@ function BWWC__is_gateway_valid_for_use( &$ret_reason_message = null ) {
 	$valid         = true;
 	$bwwc_settings = BWWC__get_settings();
 
-	// 'service_provider'                     =>  'electrum_wallet',    // 'blockchain_info'
+	// Check processing mode
+	$processing_mode = isset( $bwwc_settings['processing_mode'] ) ? $bwwc_settings['processing_mode'] : 'standalone_xpub';
 
 	// ----------------------------------
-	// Validate settings
-	if ( $bwwc_settings['service_provider'] == 'electrum_wallet' ) {
-		$mpk = BWWC__get_next_available_mpk();
-		if ( ! $mpk ) {
-			$reason_message = __( 'Please specify ElectrumSV  Master Public Key (MPK). <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information', 'bsvanon-bitcoin-sv-payments' );
-			$valid          = false;
-		} elseif ( ! preg_match( '/^[a-f0-9]{128}$/', $mpk ) && ! preg_match( '/^xpub[a-zA-Z0-9]{107}$/', $mpk ) ) {
-			$reason_message = __( 'ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.', 'bsvanon-bitcoin-sv-payments' );
-			$valid          = false;
-		} elseif ( ! extension_loaded( 'gmp' ) && ! extension_loaded( 'bcmath' ) ) {
-			$reason_message = __( "ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)!", 'bsvanon-bitcoin-sv-payments' );
-			$valid          = false;
+	// Validate settings based on processing mode
+	if ( $processing_mode === 'standalone_xpub' ) {
+		// Standalone xPub mode validation
+		if ( $bwwc_settings['service_provider'] == 'electrum_wallet' ) {
+			$mpk = BWWC__get_next_available_mpk();
+			if ( ! $mpk ) {
+				$reason_message = __( 'Please specify ElectrumSV Master Public Key (MPK). <br />To retrieve MPK: launch your ElectrumSV wallet, select: Wallet->Information', 'bsvanon-bitcoin-sv-payments' );
+				$valid          = false;
+			} elseif ( ! preg_match( '/^[a-f0-9]{128}$/', $mpk ) && ! preg_match( '/^xpub[a-zA-Z0-9]{107}$/', $mpk ) ) {
+				$reason_message = __( 'ElectrumSV Master Public Key is invalid. Must be 128 or 111 characters long, consisting of digits and letters.', 'bsvanon-bitcoin-sv-payments' );
+				$valid          = false;
+			} elseif ( ! extension_loaded( 'gmp' ) && ! extension_loaded( 'bcmath' ) ) {
+				$reason_message = __( "ERROR: neither 'bcmath' nor 'gmp' math extensions are loaded For ElectrumSV wallet options to function. Contact your hosting company and ask them to enable either 'bcmath' or 'gmp' extensions. 'gmp' is preferred (much faster)!", 'bsvanon-bitcoin-sv-payments' );
+				$valid          = false;
+			}
+		}
+	} elseif ( $processing_mode === 'hosted_invoicing' ) {
+		// Hosted Invoicing mode validation
+		$connection_state = isset( $bwwc_settings['hosted_connection_state'] ) ? $bwwc_settings['hosted_connection_state'] : 'not_connected';
+		$connector_key = isset( $bwwc_settings['hosted_connector_key'] ) ? $bwwc_settings['hosted_connector_key'] : '';
+		
+		if ( $connection_state !== 'connected' || empty( $connector_key ) ) {
+			$reason_message = __( 'Hosted Invoicing is not connected. Please click "Connect Hosted Invoicing" in the plugin settings to connect to the SendBSV Invoicing service.', 'bsvanon-bitcoin-sv-payments' );
+			$valid = false;
+		}
+		
+		// Validate hosted API URL if provided
+		$api_base_url = isset( $bwwc_settings['hosted_api_base_url'] ) ? $bwwc_settings['hosted_api_base_url'] : '';
+		if ( ! empty( $api_base_url ) && ! filter_var( $api_base_url, FILTER_VALIDATE_URL ) ) {
+			$reason_message = __( 'Hosted API Base URL is invalid. Please check the URL format in the advanced settings.', 'bsvanon-bitcoin-sv-payments' );
+			$valid = false;
 		}
 	}
 

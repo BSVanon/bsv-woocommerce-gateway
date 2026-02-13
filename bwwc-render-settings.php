@@ -188,6 +188,21 @@ function BWWC__render_general_settings_page_html() {
 		<table class="form-table">
 
 		<tr valign="top">
+			<th scope="row">Processing Mode:</th>
+			<td>
+			<select name="processing_mode" id="processing_mode" class="select">
+				<option <?php selected( $bwwc_settings['processing_mode'], 'standalone_xpub' ); ?> value="standalone_xpub">Standalone xPub (Free)</option>
+				<option <?php selected( $bwwc_settings['processing_mode'], 'hosted_invoicing' ); ?> value="hosted_invoicing">Hosted Invoicing (Paid)</option>
+			</select>
+			<p class="description">
+				<strong>Standalone xPub (Free)</strong>: Generate payment addresses from your Master Public Key. You manage your own keys and monitor the blockchain.<br />
+				<strong>Hosted Invoicing (Paid)</strong>: Connect to SendBSV Invoicing service for SPV-first checkout and professional invoicing. Requires paid service account.<br />
+				<em>Note: Switching modes does not delete existing configuration.</em>
+			</p>
+			</td>
+		</tr>
+
+		<tr valign="top" id="standalone_settings_row" style="<?php echo $bwwc_settings['processing_mode'] == 'hosted_invoicing' ? 'display: none;' : ''; ?>">
 			<th scope="row">Bitcoin SV Address Generation:</th>
 			<td>
 			<select name="service_provider" class="select ">
@@ -199,7 +214,7 @@ function BWWC__render_general_settings_page_html() {
 			</td>
 		</tr>
 
-		<tr valign="top">
+		<tr valign="top" id="xpub_settings_row" style="<?php echo $bwwc_settings['processing_mode'] == 'hosted_invoicing' ? 'display: none;' : ''; ?>">
 			<th scope="row">Master Public Key (xPub):</th>
 			<td>
 			<textarea style="width:75%;" name="electrum_mpk_saved"><?php echo esc_textarea( $bwwc_settings['electrum_mpk_saved'] ); ?></textarea>
@@ -226,6 +241,77 @@ function BWWC__render_general_settings_page_html() {
 				</ol>
 				<p style="margin-top: 10px;"><em>Note: The Master Public Key allows address generation but cannot spend funds. It is safe to use on your web server.</em></p>
 			</p>
+			</td>
+		</tr>
+
+		<tr valign="top" id="hosted_settings_row" style="<?php echo $bwwc_settings['processing_mode'] == 'standalone_xpub' ? 'display: none;' : ''; ?>">
+			<th scope="row">Hosted Invoicing Connection:</th>
+			<td>
+				<div id="hosted_connection_status" style="margin-bottom: 15px; padding: 12px; background: <?php echo $bwwc_settings['hosted_connection_state'] == 'connected' ? '#d4edda' : '#fff3cd'; ?>; border-left: 4px solid <?php echo $bwwc_settings['hosted_connection_state'] == 'connected' ? '#28a745' : '#ffc107'; ?>;">
+					<strong>Status:</strong> 
+					<?php
+					$status_labels = array(
+						'not_connected' => 'Not Connected',
+						'connected' => 'Connected',
+						'reauth_required' => 'Re-authentication Required'
+					);
+					echo esc_html( $status_labels[ $bwwc_settings['hosted_connection_state'] ] ?? 'Unknown' );
+					?>
+					<?php if ( $bwwc_settings['hosted_connection_state'] == 'connected' && ! empty( $bwwc_settings['hosted_connection_ref'] ) ): ?>
+						<br><small>Reference: <?php echo esc_html( $bwwc_settings['hosted_connection_ref'] ); ?></small>
+					<?php endif; ?>
+				</div>
+				
+				<?php if ( $bwwc_settings['hosted_connection_state'] == 'not_connected' || $bwwc_settings['hosted_connection_state'] == 'reauth_required' ): ?>
+					<button type="button" id="connect_hosted_invoicing" class="button button-primary">
+						<?php echo $bwwc_settings['hosted_connection_state'] == 'reauth_required' ? 'Reconnect Hosted Invoicing' : 'Connect Hosted Invoicing'; ?>
+					</button>
+					<p class="description">
+						Connect to SendBSV Invoicing service for SPV-first checkout and professional invoicing.
+						This will redirect you to the SendBSV Invoicing platform to approve the connection.
+					</p>
+				<?php else: ?>
+					<button type="button" id="disconnect_hosted_invoicing" class="button button-secondary" style="color: #dc3232;">
+						Disconnect Hosted Invoicing
+					</button>
+					<p class="description">
+						You are connected to SendBSV Invoicing. Click disconnect to remove the connection.
+					</p>
+				<?php endif; ?>
+				
+				<div id="hosted_connector_key_container" style="margin-top: 15px; display: none;">
+					<label for="hosted_connector_key">Manual Connector Key (Advanced):</label><br>
+					<input type="password" id="hosted_connector_key" name="hosted_connector_key" value="<?php echo esc_attr( $bwwc_settings['hosted_connector_key'] ); ?>" style="width: 75%;" />
+					<p class="description">
+						<strong>Advanced users only:</strong> Manually enter your connector key if you have one.
+						Normally this is set automatically during the connection process.
+					</p>
+				</div>
+				
+				<div style="margin-top: 15px;">
+					<button type="button" id="toggle_advanced_hosted" class="button button-small">
+						Show Advanced Settings
+					</button>
+				</div>
+			</td>
+		</tr>
+
+		<tr valign="top" id="hosted_advanced_row" style="display: none;">
+			<th scope="row">Hosted API Settings:</th>
+			<td>
+				<label for="hosted_api_base_url">API Base URL:</label><br>
+				<input type="url" id="hosted_api_base_url" name="hosted_api_base_url" value="<?php echo esc_attr( $bwwc_settings['hosted_api_base_url'] ); ?>" style="width: 75%;" placeholder="https://sendbsv-invoicing.proud-mode-7a3d.workers.dev" /><br><br>
+				
+				<label for="hosted_webhook_secret">Webhook Secret:</label><br>
+				<input type="password" id="hosted_webhook_secret" name="hosted_webhook_secret" value="<?php echo esc_attr( $bwwc_settings['hosted_webhook_secret'] ); ?>" style="width: 75%;" /><br><br>
+				
+				<label for="hosted_timeout_ms">API Timeout (ms):</label><br>
+				<input type="number" id="hosted_timeout_ms" name="hosted_timeout_ms" value="<?php echo esc_attr( $bwwc_settings['hosted_timeout_ms'] ); ?>" min="1000" max="60000" style="width: 200px;" /><br><br>
+				
+				<p class="description">
+					<strong>Advanced configuration:</strong> Modify these settings only if you need to customize the hosted service connection.
+					Most users should leave these at their default values.
+				</p>
 			</td>
 		</tr>
 
@@ -394,6 +480,165 @@ function BWWC__render_general_settings_page_html() {
 			<input type="submit" class="button-secondary"  style="color:red;" name="button_reset_partial_bwwc_settings" value="<?php esc_attr_e( 'Reset settings', 'bsvanon-bitcoin-sv-payments' ); ?>" onClick="return confirm('Are you sure you want to reset settings on this page?');" />
 		</p>
 	</form>
+	
+	<script>
+	jQuery(document).ready(function($) {
+		// Toggle between standalone and hosted mode settings
+		function toggleModeSettings() {
+			var mode = $('#processing_mode').val();
+			
+			if (mode === 'standalone_xpub') {
+				$('#standalone_settings_row, #xpub_settings_row').show();
+				$('#hosted_settings_row, #hosted_advanced_row').hide();
+			} else {
+				$('#standalone_settings_row, #xpub_settings_row').hide();
+				$('#hosted_settings_row').show();
+			}
+		}
+		
+		// Initial toggle
+		toggleModeSettings();
+		
+		// Mode change handler
+		$('#processing_mode').on('change', toggleModeSettings);
+		
+		// Toggle advanced hosted settings
+		var advancedVisible = false;
+		$('#toggle_advanced_hosted').on('click', function() {
+			advancedVisible = !advancedVisible;
+			$('#hosted_advanced_row').toggle(advancedVisible);
+			$('#hosted_connector_key_container').toggle(advancedVisible);
+			$(this).text(advancedVisible ? 'Hide Advanced Settings' : 'Show Advanced Settings');
+		});
+		
+		// Connect Hosted Invoicing button
+		$('#connect_hosted_invoicing').on('click', function() {
+			var button = $(this);
+			var originalText = button.text();
+			
+			button.prop('disabled', true).text('Connecting...');
+			
+			// Show loading indicator
+			$('#hosted_connection_status').html(
+				'<strong>Status:</strong> Connecting...<br>' +
+				'<small>Redirecting to SendBSV Invoicing...</small>'
+			);
+			
+			// Make AJAX call to start connection
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'bwwc_hosted_connect_start',
+					nonce: '<?php echo wp_create_nonce( 'bwwc_hosted_connect' ); ?>'
+				},
+				success: function(response) {
+					if (response.success && response.data.connect_url) {
+						// Redirect to connect URL
+						window.location.href = response.data.connect_url;
+					} else {
+						alert('Failed to start connection: ' + (response.data?.message || 'Unknown error'));
+						button.prop('disabled', false).text(originalText);
+					}
+				},
+				error: function(xhr, status, error) {
+					alert('Connection error: ' + error);
+					button.prop('disabled', false).text(originalText);
+				}
+			});
+		});
+		
+		// Disconnect Hosted Invoicing button
+		$('#disconnect_hosted_invoicing').on('click', function() {
+			if (confirm('Are you sure you want to disconnect from Hosted Invoicing?\n\nThis will remove your connector key and hosted settings.')) {
+				var button = $(this);
+				var originalText = button.text();
+				
+				button.prop('disabled', true).text('Disconnecting...');
+				
+				// Make AJAX call to disconnect
+				$.ajax({
+					url: ajaxurl,
+					type: 'POST',
+					data: {
+						action: 'bwwc_hosted_disconnect',
+						nonce: '<?php echo wp_create_nonce( 'bwwc_hosted_connect' ); ?>'
+					},
+					success: function(response) {
+						if (response.success) {
+							// Update UI
+							$('#hosted_connection_status').html(
+								'<strong>Status:</strong> Not Connected<br>' +
+								'<small>Click "Connect Hosted Invoicing" to reconnect</small>'
+							);
+							
+							// Show connect button and hide disconnect
+							$('#connect_hosted_invoicing').show();
+							$('#disconnect_hosted_invoicing').hide();
+							
+							// Clear connector key field
+							$('#hosted_connector_key').val('');
+							
+							alert('Disconnected from Hosted Invoicing. Please save settings to persist this change.');
+						} else {
+							alert('Failed to disconnect: ' + (response.data?.message || 'Unknown error'));
+						}
+						button.prop('disabled', false).text(originalText);
+					},
+					error: function(xhr, status, error) {
+						alert('Disconnect error: ' + error);
+						button.prop('disabled', false).text(originalText);
+					}
+				});
+			}
+		});
+		
+		// Show manual connector key field when needed
+		$('#hosted_connector_key').on('focus', function() {
+			if (!advancedVisible) {
+				$('#toggle_advanced_hosted').click();
+			}
+		});
+		
+		// Test connection button (optional, could be added to advanced settings)
+		$(document).on('click', '#test_hosted_connection', function() {
+			var button = $(this);
+			var originalText = button.text();
+			
+			button.prop('disabled', true).text('Testing...');
+			
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'bwwc_hosted_test_connection',
+					nonce: '<?php echo wp_create_nonce( 'bwwc_hosted_connect' ); ?>'
+				},
+				success: function(response) {
+					if (response.success) {
+						alert('Connection test successful: ' + response.data.message);
+					} else {
+						alert('Connection test failed: ' + response.data.message);
+					}
+					button.prop('disabled', false).text(originalText);
+				},
+				error: function(xhr, status, error) {
+					alert('Test error: ' + error);
+					button.prop('disabled', false).text(originalText);
+				}
+			});
+		});
+	});
+	</script>
+	
+	<style>
+	#hosted_connection_status {
+		transition: background-color 0.3s, border-color 0.3s;
+	}
+	#connect_hosted_invoicing, #disconnect_hosted_invoicing {
+		margin-bottom: 10px;
+	}
+	</style>
 	<?php
 }
 // ===========================================================================

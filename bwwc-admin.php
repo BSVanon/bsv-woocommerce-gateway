@@ -64,6 +64,15 @@ $g_BWWC__config_defaults = array(
 	'exchange_rate_type'                   => 'vwap', // 'realtime', 'bestrate'.
 	'exchange_multiplier'                  => '1.00',
 
+	// v7.0 Hosted Invoicing Settings
+	'processing_mode'                      => 'standalone_xpub', // 'standalone_xpub' or 'hosted_invoicing'
+	'hosted_api_base_url'                  => 'https://sendbsv-invoicing.proud-mode-7a3d.workers.dev',
+	'hosted_connector_key'                 => '', // Stored securely, masked in UI
+	'hosted_connection_state'              => 'not_connected', // 'not_connected', 'connected', 'reauth_required'
+	'hosted_connection_ref'                => '', // Merchant/integration reference
+	'hosted_webhook_secret'                => '', // Webhook signing secret
+	'hosted_timeout_ms'                    => 30000, // API timeout in milliseconds
+
 	'delete_db_tables_on_uninstall'        => '0',
 	'autocomplete_paid_orders'             => '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Merchants should manually review orders before marking complete.
 	'enable_soft_cron_job'                 => '1',    // Enable "soft" Wordpress-driven cron jobs.

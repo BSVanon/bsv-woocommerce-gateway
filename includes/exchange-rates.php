@@ -66,13 +66,9 @@ function BWWC__get_exchange_rate_per_bitcoin( $currency_code, $rate_retrieval_me
 
 	$rates = array();
 
-	// Use new modular provider system with failover (v6.0.0)
-	$exchange_rate = BWWC__get_exchange_rate( $currency_code, 'coingecko' );
-
-	// If CoinGecko fails, try CoinPaprika fallback
-	if ( ! $exchange_rate ) {
-		$exchange_rate = BWWC__get_exchange_rate( $currency_code, 'coinpaprika' );
-	}
+	// Use priority-based provider system with failover (v7.0.0)
+	// Automatically selects SendBSV rates when in hosted mode, falls back to CoinGecko/CoinPaprika
+	$exchange_rate = BWWC__get_exchange_rate_with_priority( $currency_code );
 
 	if ( $exchange_rate ) {
 		// Save new currency exchange rate info in cache

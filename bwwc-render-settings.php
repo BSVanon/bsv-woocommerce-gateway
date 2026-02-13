@@ -283,7 +283,7 @@ function BWWC__render_general_settings_page_html() {
 					</button>
 					<button type="button" id="test_hosted_connection" class="button" style="margin-left:8px;">Test Connection</button>
 					<p class="description">
-						Open SendBSV onboarding, create your WooCommerce connector key, then paste key below in Advanced settings.
+						Start guided connect. You will return here automatically after approving access.
 					</p>
 				<?php else: ?>
 					<button type="button" id="disconnect_hosted_invoicing" class="button button-secondary" style="color: #dc3232;">
@@ -537,12 +537,12 @@ function BWWC__render_general_settings_page_html() {
 			var button = $(this);
 			var originalText = button.text();
 			
-			button.prop('disabled', true).text('Opening...');
+			button.prop('disabled', true).text('Redirecting...');
 			
 			// Show loading indicator
 			$('#hosted_connection_status').html(
-				'<strong>Status:</strong> Waiting for connector key...<br>' +
-				'<small>Open setup, generate key, paste key in Advanced, Save, then Test Connection.</small>'
+				'<strong>Status:</strong> Starting guided connect...<br>' +
+				'<small>You will be redirected to SendBSV Invoicing and then returned to WooCommerce.</small>'
 			);
 			
 			// Make AJAX call to start connection
@@ -555,9 +555,7 @@ function BWWC__render_general_settings_page_html() {
 				},
 				success: function(response) {
 					if (response.success && response.data.connect_url) {
-						window.open(response.data.connect_url, '_blank', 'noopener');
-						alert(response.data.message || 'Setup opened in a new tab.');
-						button.prop('disabled', false).text(originalText);
+						window.location.href = response.data.connect_url;
 					} else {
 						alert('Failed to start connection: ' + (response.data?.message || 'Unknown error'));
 						button.prop('disabled', false).text(originalText);

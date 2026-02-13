@@ -25,7 +25,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Self-Custody Focused**: All funds settle directly to wallets you control in standalone mode
 - **Checkout Options**: Works with both WooCommerce Blocks and classic shortcode checkout
 - **Security Hardened**: TLS verification enforced, no unauthenticated triggers, WooCommerce logger integration
-- **Hosted Connection**: Connect SendBSV Invoicing with a connector key from your merchant setup
+- **Hosted Connection**: Guided in-plugin connect flow (no manual key copy/paste in normal path)
 
 ## 🧩 BRC-100 Upgrades in v6.1
 
@@ -56,7 +56,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 - **Professional Payment Pages**: Branded hosted checkout experience
 - **SPV-First Detection**: Faster payment confirmation via Simplified Payment Verification
 - **Priority Exchange Rates**: SendBSV rates prioritized over public APIs
-- **Simple Connection**: Open SendBSV setup, issue connector key, paste key once
+- **Simple Connection**: Click connect in Woo, approve in SendBSV setup, return automatically
 - **Automatic Settlements**: Webhook-based payment notifications
 - **Enhanced Reporting**: Detailed payment analytics and reporting
 
@@ -64,7 +64,7 @@ Accept Bitcoin SV (BSV) payments directly to your wallet. Self-custody, no third
 1. Go to **WooCommerce → Settings → Payments → Bitcoin SV**
 2. Select "Processing Mode" dropdown
 3. Choose between "Standalone xPub" or "Hosted Invoicing"
-4. For Hosted Invoicing: Click "Connect Hosted Invoicing", generate a WooCommerce connector key in SendBSV setup, paste key once, then save + test connection
+4. For Hosted Invoicing: Click "Connect Hosted Invoicing", approve in SendBSV setup, return to Woo automatically, then run Test Connection
 5. Save settings and test checkout
 
 ## 📦 Installation

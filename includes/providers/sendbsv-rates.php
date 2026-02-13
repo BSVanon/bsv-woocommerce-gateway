@@ -43,12 +43,33 @@ function BWWC__sendbsv_get_rate( $currency = 'USD' ) {
 		return (float) $cached_rate;
 	}
 	
-	// Build API URL
-	$api_base_url = ! empty( $bwwc_settings['hosted_api_base_url'] ) 
-		? $bwwc_settings['hosted_api_base_url'] 
-		: 'https://sendbsv-invoicing.proud-mode-7a3d.workers.dev';
-	
-	$url = rtrim( $api_base_url, '/' ) . '/api/v1/rates?currency=' . strtolower( $currency );
+	// Build rates API URL (rates.sendbsv.com oracle).
+	$api_base_url = ! empty( $bwwc_settings['rates_api_url'] )
+		? rtrim( (string) $bwwc_settings['rates_api_url'], '/' )
+		: ( defined( 'BWWC_RATES_API_URL' ) ? rtrim( (string) BWWC_RATES_API_URL, '/' ) : 'https://rates.sendbsv.com' );
+	$api_key = ! empty( $bwwc_settings['rates_api_key'] )
+		? trim( (string) $bwwc_settings['rates_api_key'] )
+		: ( defined( 'BWWC_RATES_API_KEY' ) ? trim( (string) BWWC_RATES_API_KEY ) : '' );
+	if ( $api_key === '' ) {
+		BWWC__log_provider_failure( 'SendBSV', 'get_rate', 'Missing rates API key; falling back to CoinGecko' );
+		return BWWC__coingecko_get_rate( $currency );
+	}
+
+	$pair_map = array(
+		'USD' => 'bsvusd',
+		'EUR' => 'bsveur',
+		'GBP' => 'bsvgbp',
+		'JPY' => 'bsvjpy',
+		'KRW' => 'bsvkrw',
+		'MXN' => 'bsvmxn',
+		'CNY' => 'bsvcny',
+	);
+	$pair = isset( $pair_map[ $currency ] ) ? $pair_map[ $currency ] : null;
+	if ( ! $pair ) {
+		BWWC__log_provider_failure( 'SendBSV', 'get_rate', 'Unsupported currency pair: ' . $currency );
+		return BWWC__coingecko_get_rate( $currency );
+	}
+	$url = $api_base_url . '/v1/price/' . $pair;
 	
 	// Prepare request
 	$timeout = isset( $bwwc_settings['hosted_timeout_ms'] ) 
@@ -58,7 +79,7 @@ function BWWC__sendbsv_get_rate( $currency = 'USD' ) {
 	$args = array(
 		'timeout' => $timeout,
 		'headers' => array(
-			'Authorization' => 'Bearer ' . $bwwc_settings['hosted_connector_key'],
+			'x-api-key' => $api_key,
 			'Content-Type' => 'application/json',
 		),
 	);
@@ -76,13 +97,13 @@ function BWWC__sendbsv_get_rate( $currency = 'USD' ) {
 	$body = wp_remote_retrieve_body( $response );
 	$data = json_decode( $body, true );
 	
-	if ( $status_code !== 200 || ! isset( $data['rate'] ) ) {
+	if ( $status_code !== 200 || ! isset( $data['price'] ) ) {
 		BWWC__log_provider_failure( 'SendBSV', 'get_rate', 'Invalid response (HTTP ' . $status_code . '): ' . $body );
 		// Fall back to CoinGecko
 		return BWWC__coingecko_get_rate( $currency );
 	}
 	
-	$rate = (float) $data['rate'];
+	$rate = (float) $data['price'];
 	
 	if ( $rate <= 0 ) {
 		BWWC__log_provider_failure( 'SendBSV', 'get_rate', 'Invalid rate value: ' . $rate );
@@ -131,10 +152,10 @@ function BWWC__sendbsv_get_rate_provider_priority() {
 	if ( $processing_mode === 'hosted_invoicing' && 
 	     ! empty( $bwwc_settings['hosted_connector_key'] ) && 
 	     $bwwc_settings['hosted_connection_state'] === 'connected' ) {
-		// SendBSV rates first, then CoinGecko, then CoinPaprika
-		return array( 'sendbsv', 'coingecko', 'coinpaprika' );
+		// Hosted mode policy: SendBSV rates first, then CoinGecko.
+		return array( 'sendbsv', 'coingecko' );
 	} else {
-		// Default priority: CoinGecko first, then CoinPaprika
+		// Standalone/default: CoinGecko first, then CoinPaprika legacy fallback.
 		return array( 'coingecko', 'coinpaprika' );
 	}
 }

@@ -41,4 +41,3 @@ require_once __DIR__ . '/hosted-connect.php';
 add_action( 'woocommerce_api_bsv_invoice', 'BWWC__serve_bip270_invoice' );
 add_action( 'woocommerce_api_bsv_payment', 'BWWC__receive_bip270_payment' );
 add_action( 'woocommerce_api_bsv_receipt', 'BWWC__serve_receipt_download' );
-add_action( 'woocommerce_api_bwwc_hosted_settlement', 'BWWC__handle_hosted_settlement_webhook' );

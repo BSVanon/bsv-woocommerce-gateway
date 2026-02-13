@@ -4,7 +4,7 @@ Tags: bitcoin sv, bsv, payment gateway, woocommerce, cryptocurrency
 Requires at least: 5.8
 Tested up to: 6.9
 Requires PHP: 7.4
-Stable tag: 6.1.1
+Stable tag: 7.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 WC requires at least: 6.0
@@ -116,6 +116,16 @@ If you find this plugin useful, please consider supporting its development with 
 Your support helps maintain and improve this plugin for the entire BSV community!
 
 == Changelog ==
+
+= 7.0.0 - 2026-02-13 =
+**Hosted Invoicing baseline + contract alignment**
+
+* Added dual-mode processing: standalone xPub (free) and hosted invoicing (paid)
+* Added hosted connector session creation via `/v1/connectors/woocommerce/sessions` + `x-connector-key`
+* Added hosted webhook receiver hardening: signature verification, timestamp window, replay guard, idempotent order updates
+* Added rates oracle provider (`rates.sendbsv.com`) with CoinGecko fallback
+* Improved hosted admin UX for manual connector-key flow and secret masking
+* Added hosted payment CTA rendering path on checkout/thank-you pages
 
 = 6.1.1 - 2026-01-25 =
 **Critical WordPress.org compliance fix**

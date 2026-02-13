@@ -600,9 +600,15 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             if ($processing_mode === 'hosted_invoicing' && $hosted_session_data) {
                 // Store hosted session data
                 $order->update_meta_data('_bwwc_hosted_session_id', $hosted_session_data['session_id'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_intent_id', $hosted_session_data['intent_id'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_invoice_id', $hosted_session_data['invoice_id'] ?? '');
                 $order->update_meta_data('_bwwc_hosted_payment_url', $hosted_session_data['payment_url'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_status_url', $hosted_session_data['status_url'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_recheck_url', $hosted_session_data['recheck_url'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_internalize_url', $hosted_session_data['internalize_url'] ?? '');
                 $order->update_meta_data('_bwwc_hosted_qr_code', $hosted_session_data['qr_code'] ?? '');
                 $order->update_meta_data('_bwwc_hosted_expires_at', $hosted_session_data['expires_at'] ?? '');
+                $order->update_meta_data('_bwwc_hosted_raw', $hosted_session_data['raw'] ?? array());
                 $order->update_meta_data('_bwwc_processing_mode', 'hosted_invoicing');
                 
                 // Also store address for backward compatibility
@@ -621,6 +627,9 @@ function BWWC__plugins_loaded__load_bitcoin_gateway()
             
             // Store expected amount in satoshis for UI
             $expected_sats = intval(round($order_total_in_btc * 100000000));
+            if ($processing_mode === 'hosted_invoicing' && !empty($hosted_session_data['expected_sats'])) {
+                $expected_sats = intval($hosted_session_data['expected_sats']);
+            }
             $order->update_meta_data('_bwwc_expected_sats', $expected_sats);
             
             // Store expiration timestamp

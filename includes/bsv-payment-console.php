@@ -57,6 +57,36 @@ function BWWC__render_payment_console( $order ) {
 	$required_confirmations = isset( $bwwc_settings['confs_num'] ) ? intval( $bwwc_settings['confs_num'] ) : 1;
 	$polling_interval       = isset( $bwwc_settings['status_polling_interval'] ) ? intval( $bwwc_settings['status_polling_interval'] ) : 10;
 	$bip270_enabled         = isset( $bwwc_settings['bip270_enabled'] ) && $bwwc_settings['bip270_enabled'] === '1';
+	$processing_mode        = (string) $order->get_meta( '_bwwc_processing_mode', true );
+	$hosted_payment_url     = (string) $order->get_meta( '_bwwc_hosted_payment_url', true );
+	$hosted_status_url      = (string) $order->get_meta( '_bwwc_hosted_status_url', true );
+
+	$using_hosted_ui = ( $processing_mode === 'hosted_invoicing' && $hosted_payment_url !== '' );
+
+	if ( $using_hosted_ui ) {
+		$paid_like = in_array( $payment_state, array( 'verified', 'paid' ), true ) || in_array( $order->get_status(), array( 'processing', 'completed' ), true );
+		$is_waiting = in_array( $payment_state, array( 'waiting', 'pending', 'detected', 'underpaid' ), true );
+		echo '<div class="bsv-payment-console" style="max-width:760px;margin:24px auto;">';
+		echo '<div class="bsv-payment-card" style="padding:20px;">';
+		echo '<h2>' . esc_html__( 'Complete Payment', 'bsvanon-bitcoin-sv-payments' ) . '</h2>';
+		if ( $expected_sats ) {
+			echo '<p><strong>' . esc_html__( 'Expected:', 'bsvanon-bitcoin-sv-payments' ) . '</strong> ' . esc_html( number_format( intval( $expected_sats ), 0, '.', ',' ) ) . ' sats</p>';
+		}
+		if ( $received_sats ) {
+			echo '<p><strong>' . esc_html__( 'Received:', 'bsvanon-bitcoin-sv-payments' ) . '</strong> ' . esc_html( number_format( intval( $received_sats ), 0, '.', ',' ) ) . ' sats</p>';
+		}
+		if ( $paid_like ) {
+			echo '<p style="color:#0f8a3c;font-weight:600;">' . esc_html__( 'Payment received and verified.', 'bsvanon-bitcoin-sv-payments' ) . '</p>';
+		} elseif ( $is_waiting ) {
+			echo '<p>' . esc_html__( 'Open the hosted payment page to finish checkout.', 'bsvanon-bitcoin-sv-payments' ) . '</p>';
+			echo '<p><a class="button button-primary" href="' . esc_url( $hosted_payment_url ) . '" target="_blank" rel="noopener">' . esc_html__( 'Open Hosted Payment Page', 'bsvanon-bitcoin-sv-payments' ) . '</a></p>';
+		}
+		if ( $hosted_status_url ) {
+			echo '<p style="opacity:.8;"><small>' . esc_html__( 'Status is synced from hosted settlement events.', 'bsvanon-bitcoin-sv-payments' ) . '</small></p>';
+		}
+		echo '</div></div>';
+		return;
+	}
 
 	if ( ! $bsv_address || ! $bsv_amount ) {
 		return;

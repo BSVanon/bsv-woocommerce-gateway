@@ -11,7 +11,7 @@ https://github.com/mboyd1/bsvanon-bitcoin-sv-payments
 // ---------------------------------------------------------------------------
 // Global definitions
 if ( ! defined( 'BWWC_PLUGIN_NAME' ) ) {
-	define( 'BWWC_VERSION', '6.2.0' );
+	define( 'BWWC_VERSION', '7.0.0' );
 
 	// -----------------------------------------------
 	define( 'BWWC_EDITION', 'BSV' );

@@ -72,6 +72,8 @@ $g_BWWC__config_defaults = array(
 	'hosted_connection_ref'                => '', // Merchant/integration reference
 	'hosted_webhook_secret'                => '', // Webhook signing secret
 	'hosted_timeout_ms'                    => 30000, // API timeout in milliseconds
+	'rates_api_url'                        => 'https://rates.sendbsv.com',
+	'rates_api_key'                        => '',
 
 	'delete_db_tables_on_uninstall'        => '0',
 	'autocomplete_paid_orders'             => '0',   // v6.0.0: Changed to OFF by default (merchant-safe). Merchants should manually review orders before marking complete.
@@ -258,6 +260,14 @@ function BWWC__update_settings( $bwwc_use_these_settings = false, $also_update_p
 
 		if ( isset( $_POST[ $k ] ) ) {
 			$sanitized_value = BWWC__sanitize_recursive( wp_unslash( $_POST[ $k ] ) );
+
+			// Keep existing hosted secrets when form posts blank values.
+			if ( in_array( $k, array( 'hosted_connector_key', 'hosted_webhook_secret', 'rates_api_key' ), true ) ) {
+				if ( is_string( $sanitized_value ) && trim( $sanitized_value ) === '' && ! empty( $bwwc_settings[ $k ] ) ) {
+					continue;
+				}
+			}
+
 			if ( ! isset( $bwwc_settings[ $k ] ) ) {
 				$bwwc_settings[ $k ] = '';
 			} // Force set to something.
@@ -280,6 +290,12 @@ function BWWC__update_settings( $bwwc_use_these_settings = false, $also_update_p
 	// Array of MPK's. Single MPK = element with idx=0
 	$bwwc_settings['electrum_mpks'] = preg_split( '/[\s,]+/', $bwwc_settings['electrum_mpk_saved'] );
 	// ---------------------------------------
+
+	// Hosted mode connection state normalization.
+	if ( isset( $bwwc_settings['processing_mode'] ) && $bwwc_settings['processing_mode'] === 'hosted_invoicing' ) {
+		$has_connector_key = ! empty( $bwwc_settings['hosted_connector_key'] );
+		$bwwc_settings['hosted_connection_state'] = $has_connector_key ? 'connected' : 'not_connected';
+	}
 
 	// ---------------------------------------
 	// Reschedule cron if settings changed

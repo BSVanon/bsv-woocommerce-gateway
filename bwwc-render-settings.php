@@ -91,6 +91,21 @@ function BWWC__render_diagnostics_page() {
 // ===========================================================================
 function BWWC__render_settings_page( $menu_page_name ) {
 	$bwwc_settings = BWWC__get_settings();
+	$connector_key_hint = '';
+	$webhook_secret_hint = '';
+	$rates_api_key_hint = '';
+	if ( ! empty( $bwwc_settings['hosted_connector_key'] ) ) {
+		$key               = trim( (string) $bwwc_settings['hosted_connector_key'] );
+		$connector_key_hint = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '...' . substr( $key, -4 ) : 'configured';
+	}
+	if ( ! empty( $bwwc_settings['hosted_webhook_secret'] ) ) {
+		$key                = trim( (string) $bwwc_settings['hosted_webhook_secret'] );
+		$webhook_secret_hint = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '...' . substr( $key, -4 ) : 'configured';
+	}
+	if ( ! empty( $bwwc_settings['rates_api_key'] ) ) {
+		$key               = trim( (string) $bwwc_settings['rates_api_key'] );
+		$rates_api_key_hint = strlen( $key ) > 8 ? substr( $key, 0, 4 ) . '...' . substr( $key, -4 ) : 'configured';
+	}
 
 	$action_message = '';
 	if ( $_SERVER['REQUEST_METHOD'] === 'POST' ) {
@@ -266,14 +281,15 @@ function BWWC__render_general_settings_page_html() {
 					<button type="button" id="connect_hosted_invoicing" class="button button-primary">
 						<?php echo $bwwc_settings['hosted_connection_state'] == 'reauth_required' ? 'Reconnect Hosted Invoicing' : 'Connect Hosted Invoicing'; ?>
 					</button>
+					<button type="button" id="test_hosted_connection" class="button" style="margin-left:8px;">Test Connection</button>
 					<p class="description">
-						Connect to SendBSV Invoicing service for SPV-first checkout and professional invoicing.
-						This will redirect you to the SendBSV Invoicing platform to approve the connection.
+						Open SendBSV onboarding, create your WooCommerce connector key, then paste key below in Advanced settings.
 					</p>
 				<?php else: ?>
 					<button type="button" id="disconnect_hosted_invoicing" class="button button-secondary" style="color: #dc3232;">
 						Disconnect Hosted Invoicing
 					</button>
+					<button type="button" id="test_hosted_connection" class="button" style="margin-left:8px;">Test Connection</button>
 					<p class="description">
 						You are connected to SendBSV Invoicing. Click disconnect to remove the connection.
 					</p>
@@ -281,10 +297,9 @@ function BWWC__render_general_settings_page_html() {
 				
 				<div id="hosted_connector_key_container" style="margin-top: 15px; display: none;">
 					<label for="hosted_connector_key">Manual Connector Key (Advanced):</label><br>
-					<input type="password" id="hosted_connector_key" name="hosted_connector_key" value="<?php echo esc_attr( $bwwc_settings['hosted_connector_key'] ); ?>" style="width: 75%;" />
+					<input type="password" id="hosted_connector_key" name="hosted_connector_key" value="" placeholder="<?php echo esc_attr( $connector_key_hint ? 'Configured: ' . $connector_key_hint : 'Paste connector key' ); ?>" autocomplete="off" style="width: 75%;" />
 					<p class="description">
-						<strong>Advanced users only:</strong> Manually enter your connector key if you have one.
-						Normally this is set automatically during the connection process.
+						Leave blank to keep current connector key.
 					</p>
 				</div>
 				
@@ -303,13 +318,19 @@ function BWWC__render_general_settings_page_html() {
 				<input type="url" id="hosted_api_base_url" name="hosted_api_base_url" value="<?php echo esc_attr( $bwwc_settings['hosted_api_base_url'] ); ?>" style="width: 75%;" placeholder="https://sendbsv-invoicing.proud-mode-7a3d.workers.dev" /><br><br>
 				
 				<label for="hosted_webhook_secret">Webhook Secret:</label><br>
-				<input type="password" id="hosted_webhook_secret" name="hosted_webhook_secret" value="<?php echo esc_attr( $bwwc_settings['hosted_webhook_secret'] ); ?>" style="width: 75%;" /><br><br>
+				<input type="password" id="hosted_webhook_secret" name="hosted_webhook_secret" value="" placeholder="<?php echo esc_attr( $webhook_secret_hint ? 'Configured: ' . $webhook_secret_hint : 'Paste webhook secret' ); ?>" autocomplete="off" style="width: 75%;" /><br><br>
 				
 				<label for="hosted_timeout_ms">API Timeout (ms):</label><br>
 				<input type="number" id="hosted_timeout_ms" name="hosted_timeout_ms" value="<?php echo esc_attr( $bwwc_settings['hosted_timeout_ms'] ); ?>" min="1000" max="60000" style="width: 200px;" /><br><br>
+
+				<label for="rates_api_url">Rates API URL:</label><br>
+				<input type="url" id="rates_api_url" name="rates_api_url" value="<?php echo esc_attr( $bwwc_settings['rates_api_url'] ?? 'https://rates.sendbsv.com' ); ?>" style="width: 75%;" placeholder="https://rates.sendbsv.com" /><br><br>
+
+				<label for="rates_api_key">Rates API Key:</label><br>
+				<input type="password" id="rates_api_key" name="rates_api_key" value="" placeholder="<?php echo esc_attr( $rates_api_key_hint ? 'Configured: ' . $rates_api_key_hint : 'Paste rates API key' ); ?>" autocomplete="off" style="width: 75%;" /><br><br>
 				
 				<p class="description">
-					<strong>Advanced configuration:</strong> Modify these settings only if you need to customize the hosted service connection.
+					<strong>Advanced configuration:</strong> Modify these settings only if you need to customize hosted connectivity.
 					Most users should leave these at their default values.
 				</p>
 			</td>
@@ -516,12 +537,12 @@ function BWWC__render_general_settings_page_html() {
 			var button = $(this);
 			var originalText = button.text();
 			
-			button.prop('disabled', true).text('Connecting...');
+			button.prop('disabled', true).text('Opening...');
 			
 			// Show loading indicator
 			$('#hosted_connection_status').html(
-				'<strong>Status:</strong> Connecting...<br>' +
-				'<small>Redirecting to SendBSV Invoicing...</small>'
+				'<strong>Status:</strong> Waiting for connector key...<br>' +
+				'<small>Open setup, generate key, paste key in Advanced, Save, then Test Connection.</small>'
 			);
 			
 			// Make AJAX call to start connection
@@ -534,8 +555,9 @@ function BWWC__render_general_settings_page_html() {
 				},
 				success: function(response) {
 					if (response.success && response.data.connect_url) {
-						// Redirect to connect URL
-						window.location.href = response.data.connect_url;
+						window.open(response.data.connect_url, '_blank', 'noopener');
+						alert(response.data.message || 'Setup opened in a new tab.');
+						button.prop('disabled', false).text(originalText);
 					} else {
 						alert('Failed to start connection: ' + (response.data?.message || 'Unknown error'));
 						button.prop('disabled', false).text(originalText);
